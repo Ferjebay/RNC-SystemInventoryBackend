@@ -1,4 +1,4 @@
-import { IsAlphanumeric, IsEmail, IsNotEmpty, IsNumberString, IsString, MaxLength, MinLength } from "class-validator";
+import { IsEmail, IsNotEmpty, IsNumberString, IsString, MaxLength, MinLength } from "class-validator";
 
 export class CreateCustomerDto {
 

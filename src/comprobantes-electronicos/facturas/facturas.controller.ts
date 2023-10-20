@@ -7,16 +7,6 @@ import { UpdateFacturaDto } from './dto/update-factura.dto';
 export class FacturasController {
   constructor(private readonly facturasService: FacturasService) {}
 
-  @Post()
-  create(@Body() createFacturaDto: CreateFacturaDto) {
-    return this.facturasService.create(createFacturaDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.facturasService.findAll();
-  }
-
   @Get('getNumFactura')
   getNumComprobante(
     @Headers('sucursal_id') sucursal_id: string,

@@ -1,16 +1,17 @@
 import { Injectable, forwardRef, Inject } from '@nestjs/common';
 import { CreateFacturaDto } from './dto/create-factura.dto';
-// import { UpdateFacturaDto } from './dto/update-factura.dto';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CustomersService } from '../../customers/customers.service';
 import { InvoicesService } from 'src/invoices/invoices.service';
+import { EmailService } from 'src/email/email.service';
 const axios = require('axios');
 const moment = require('moment');
 const builder = require("xmlbuilder");
 const fs = require("fs");
 const path = require('path');
+const pdf = require('html-pdf');
 const { execSync } = require('node:child_process');
 const XMLParser = require("fast-xml-parser").XMLParser;
 
@@ -23,15 +24,118 @@ export class FacturasService {
     @Inject(forwardRef(() => InvoicesService))
     private invoiceService: InvoicesService,
     private readonly customerService: CustomersService,
+    private readonly emailService: EmailService,
   ){}
 
-  create(createFacturaDto: CreateFacturaDto) {
-    return 'This action adds a new factura';
+  formatInvoice = (cliente, detalle, claveAcceso, numFactura, valoresFactura) => {
+    let plantilla = /*html*/`<!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <title>Example 1</title>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
+        <style>
+        div {
+  border: 1px solid blue;
+  padding: 5px;
+}
+
+.clearfix {
+  overflow: auto;
+}
+
+nav {
+  float: left;
+  width: 30%;
+  border: 1px solid #73AD21;
+  padding-left: 5px;
+  margin: 5px;
+}
+
+section {
+  float: left;
+  width: 65%;
+  border: 1px solid red;
+  padding: 10px;
+  margin: 5px;
+}
+
+span {
+  font-size:18px;
+  font-weight: bold;
+}  
+        </style>
+      </head>
+      <body>       
+      
+<div class="clearfix">
+
+<nav>
+  <span>nav</span>
+    <ul>
+      <li><a target="_blank" href="/default.asp">Home</a></li>
+      <li><a target="_blank" href="https://www.w3schools.com/css/default.asp">CSS</a></li>
+      <li><a target="_blank" href="https://www.w3schools.com/html/default.asp">HTML</a></li>
+      <li><a target="_blank" href="https://www.w3schools.com/js/default.asp">JavaScript</a></li>
+    </ul>
+  </nav>
+
+  <section>
+    <span>CSS Layout</span>
+    <p>La propiedad floar especifica si un elemento debe flotar.
+      
+    La propiedad clear se utiliza para controlar el comportamiento de los elementos flotantes.</p>
+  </section>
+
+  <section>
+    <span>Section</span>
+    <p>En su uso más simple, la propiedad float se puede utilizar para realizar la composición de los elementos.
+
+    Como en este caso que determina la situación de Nav y Section.</p>
+  </section>
+
+</div>
+            
+      </body>
+    </html>`
+
+    return plantilla;
   }
 
-  findAll() {
-    return `This action returns all facturas`;
+  createInvoicePDF = ( cliente, detalle, claveAcceso, numFactura, valoresFactura ) => {
+
+      const content = this.formatInvoice(cliente, detalle, claveAcceso, numFactura, valoresFactura);    
+
+      const options = { 
+        childProcessOptions: {
+          env: {
+            OPENSSL_CONF: '/dev/null',
+          },
+        },
+        border: {
+          "top": "12px",           
+          "right": "50px",
+          "bottom": "12px",
+          "left": "50px"
+        }, 
+      };
+
+      try {
+        const pathPDF = path.resolve(__dirname, `../../../static/SRI/RED-NUEVA-CONEXION/PDF/${ claveAcceso }.pdf`);
+
+        pdf.create(content, options).toFile(pathPDF, async function(err, res) {
+            if (err){
+                console.log(err);
+            } else {
+              console.log( "pdf creado" );
+              // sendEmailHelper( cliente.email, claveAcceso, numFactura )
+            }
+        });      
+      } catch (error) {
+        console.log( error );
+      }
   }
+
 
   calcularDigitoVerificadorMod11( clave ){
     let factor = 7;
@@ -106,7 +210,7 @@ export class FacturasService {
 
   async generarFacturaElectronica( 
     cliente_id: any, claveAcceso: string, sucursal_id: any,
-    subtotal, iva, descuento, total, items, invoice_id: string
+    subtotal, iva, descuento, total, items, invoice_id: string = null
     ){
     const clientFound = await this.customerService.findOne( cliente_id );
     const { numComprobante, ambiente } = await this.getNumComprobante( sucursal_id );
@@ -228,10 +332,10 @@ export class FacturasService {
     var xml = builder.create(obj, { encoding: 'UTF-8' }).end({ pretty: true});
     
     const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/Generados/${ claveAcceso }.xml`);
+    const pathPDF = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/PDF`);
     const xmlOutPath = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/Firmados/${ claveAcceso }.xml`);
 
     const java = process.env.JAVA_PATH;
-
     const pathCertificado = path.resolve(__dirname, `../../../static/SRI/FIRMAS/${ infoCompany[0].company_id.archivo_certificado }`);
 
     try {
@@ -247,7 +351,18 @@ export class FacturasService {
     } catch (err) {
       console.log(err)
     }
+
+    try {
+      await fs.mkdirSync(path.dirname(pathPDF), {recursive: true})
+    } catch (err) {
+      console.log(err)
+    }
+
+    //--------------- PROBAR GENERACION PDF---------
+    // this.createInvoicePDF('1', '2', claveAcceso, '4', '5')
+    //---------------------------------------------
     
+    //---------------- Firmar XML--------------------------
     const cmd = java + ' -jar "' + path.resolve('static/resource/jar/firmaxml1 (1).jar') + '" "' + pathXML + '" "' + pathCertificado + '" "' + infoCompany[0].company_id.clave_certificado + '" "' + xmlOutPath + '"';
 
     try {
@@ -255,6 +370,7 @@ export class FacturasService {
     } catch (err) {
         console.log('error firma: ', err)
     }
+    //------------------------------------------------------
     
     //ENVIAR AL SRI
     let signedXml = null;
@@ -339,14 +455,20 @@ export class FacturasService {
           await this.invoiceService.update( invoice_id, { respuestaSRI } )
       }else{
         setTimeout(async () =>{
-            this.estadoXml( nombreComercial, claveAcceso, infoCompany[0].ambiente, invoice_id );
-        }, 2200)
+            this.estadoXml( 
+              nombreComercial, 
+              claveAcceso, 
+              infoCompany[0].ambiente, 
+              invoice_id, 
+              clientFound[0].email,
+              numComprobante 
+            );
+        }, 2700)
       }
     }
-
   }
 
-  async estadoXml(nombreComercial, accessKey, ambiente, invoice_id) {
+  async estadoXml(nombreComercial, accessKey, ambiente, invoice_id, client_email, numComprobante) {
     
     let host = (ambiente === 'PRUEBA') ? 'https://celcer.sri.gob.ec' : 'https://cel.sri.gob.ec';
 
@@ -371,10 +493,10 @@ export class FacturasService {
     let resp = null;
 
     try {
-        resp = await axios(config);
+      resp = await axios(config);
     } catch (err) {
-        console.log('error axio:', err);
-        await this.invoiceService.update( invoice_id, { estadoSRI: "ERROR COMPR ESTADO SRI" } );
+      console.log('error axio:', err);
+      await this.invoiceService.update( invoice_id, { estadoSRI: "ERROR COMPR ESTADO SRI" } );
     }
 
     if (resp !== null && resp.status === 200) {
@@ -399,6 +521,9 @@ export class FacturasService {
 
         await fs.mkdirSync(path.dirname(pathXML), {recursive: true, })
         await fs.writeFileSync(pathXML, resp.data, {flag: 'w+', encoding: 'utf-8'});
+
+        //Enviar Correo
+        this.emailService.sendComprobantes(client_email, accessKey, numComprobante);
 
       } catch (err) {
         console.log(err)

@@ -1,21 +1,20 @@
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
+  <a target="blank"><img src="https://pr1.nicelocal.ec/456ZxpxAiT0HsyTldU-uSQ/640x340,q85/4px-BW84_n0QJGVPszge3NRBsKw-2VcOifrJIjPYFYkOtaCZxxXQ2XW3jsO4qSqBfY-ABNB0oHF8kV0y9gxSKw8ubNfY-CVt71BaMNhNwKBZUBa_mzvj0g" width="350" alt="Nest Logo" /></a>
 </p>
 
 
-## Teslo | API
+## Sistema de facturacion e inventario
 
-1. Levantar la base de datos
+1. Instalar depedencias
 
 ```
-  docker-compose up -d 
+  npm install
 ```
 
-## Running the app
+2. Ejecutar aplicacioj
 
-```bash
-# development
-$ npm run start
+```
+  npm run start
 ```
 
 
