@@ -1,5 +1,6 @@
 import { User } from "src/auth/entities/user.entity";
 import { Customer } from "src/customers/entities/customer.entity";
+import { Email } from "src/email/entities/email.entity";
 import { Provider } from "src/providers/entities/provider.entity";
 import { Sucursal } from "src/sucursal/entities/sucursal.entity";
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
@@ -21,6 +22,9 @@ export class Company {
 
     @OneToMany(() => Sucursal, (sucursal) => sucursal.company_id )
     sucursal: Sucursal[]
+
+    @OneToMany(() => Email, (email) => email.company_id )
+    emails: Email[]
 
     @Column({ type: 'varchar', length: 255 })
     razon_social: string;

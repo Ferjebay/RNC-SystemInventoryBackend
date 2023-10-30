@@ -11,7 +11,7 @@ export class Customer {
     @OneToMany(() => Invoice, (invoice) => invoice.customer_id)
     invoices: Invoice[];
 
-    @ManyToOne(() => Company, (company) => company.provider)
+    @ManyToOne(() => Company, (company) => company.customer)
     @JoinColumn({ name: 'company_id' })
     company_id: Company
 

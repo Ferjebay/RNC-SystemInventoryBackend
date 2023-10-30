@@ -5,11 +5,12 @@ import { SucursalModule } from 'src/sucursal/sucursal.module';
 import { CustomersModule } from 'src/customers/customers.module';
 import { InvoicesModule } from 'src/invoices/invoices.module';
 import { EmailModule } from 'src/email/email.module';
+import { MessagesWsModule } from '../../messages-ws/messages-ws.module';
 
 @Module({
   controllers: [FacturasController],
   providers: [FacturasService],
-  imports: [ SucursalModule, CustomersModule, EmailModule, forwardRef(() => InvoicesModule) ],
+  imports: [ SucursalModule, CustomersModule, EmailModule, MessagesWsModule,forwardRef(() => InvoicesModule) ],
   exports: [ FacturasService ]
 })
 export class FacturasModule {}

@@ -36,6 +36,8 @@ export class SucursalService {
 
   async findAll( estado: boolean, company_id: Company ) {
     let option:any = { 
+      relations: { company_id: true },
+      select: { company_id: { id: true } },
       where: { company_id: { id: company_id } },
       order: { created_at: "DESC" } 
     }
@@ -64,9 +66,6 @@ export class SucursalService {
         })
         .getMany();
     }
-
-    if ( sucursal.length === 0 ) 
-      throw new NotFoundException(`sucursal with ${ term } not found`);
 
     return sucursal;
   }

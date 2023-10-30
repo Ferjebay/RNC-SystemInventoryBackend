@@ -6,6 +6,7 @@ import { Company } from './entities/company.entity';
 import { Repository } from 'typeorm';
 import { isUUID, validate } from 'class-validator';
 import { readFileSync } from 'fs';
+import { Email } from 'src/email/entities/email.entity';
 const fs = require('fs');
 const path = require('path');
 
@@ -14,12 +15,13 @@ export class CompaniesService {
 
   constructor(
     @InjectRepository( Company )
-    private readonly companyRepository: Repository<Company>
+    private readonly companyRepository: Repository<Company>,
+    @InjectRepository( Email )
+    private readonly emailRepository: Repository<Email>
   ){}
 
   async create(createCompanyDto: CreateCompanyDto, files: any = null) {
     try {      
-      let { archivo_certificado_old, ...rest } = createCompanyDto;
       let company: Company;
       let logo_name = null;
       const cert_name = files.archivo_certificado[0].originalname;
@@ -33,9 +35,18 @@ export class CompaniesService {
         logo: logo_name
       }); 
 
-      await this.companyRepository.save( company );
+      const companyCreated = await this.companyRepository.save( company );
 
-      return { ok: true, msg: "Se actualizaron los datos exitosamente" };      
+      const email = new Email();
+      email.company_id = companyCreated;
+      email.host = '';
+      email.usuario = '';
+      email.puerto = 12345;
+      email.password = '';
+      email.seguridad = 'SSL';
+      this.emailRepository.save( email );
+
+      return { ok: true, msg: "Empresa creada exitosamente" };      
 
     } catch (error) {
       this.handleExceptions( error );

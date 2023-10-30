@@ -10,7 +10,7 @@ export class Invoice {
     @PrimaryGeneratedColumn('uuid')
     id?: string;
 
-    @ManyToOne(() => Sucursal, (sucursal) => sucursal.buys)
+    @ManyToOne(() => Sucursal, (sucursal) => sucursal.invoices)
     @JoinColumn({ name: 'sucursal_id' })
     sucursal_id: Sucursal;
 
@@ -28,7 +28,7 @@ export class Invoice {
     @Column({ type: 'varchar', length: 50, unique: true })
     clave_acceso: string;
 
-    @Column({ type: 'varchar', length: 50, unique: true })
+    @Column({ type: 'varchar', length: 50 })
     numero_comprobante: string;
 
     @Column({ type: "decimal", precision: 8, scale: 2 })

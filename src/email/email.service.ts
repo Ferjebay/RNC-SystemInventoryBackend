@@ -4,7 +4,8 @@ import { UpdateEmailDto } from './dto/update-email.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Email } from './entities/email.entity';
 import { Repository } from 'typeorm';
-const path = require('path');
+import path from 'path';
+// import nodemailer from "nodemailer";
 var nodemailer = require('nodemailer');
 
 @Injectable()
@@ -23,8 +24,11 @@ export class EmailService {
     const config = {
       host,
       port: puerto,
-      secure: true,
-      tls: { rejectUnauthorized: false },
+      secure: puerto === 465 ? true : false,
+      greetingTimeout: 12000,
+      connectionTimeout: 12000,
+      dnsTimeout: 12000,
+      // tls: { rejectUnauthorized: false },
       auth: { user: usuario, pass: password }
     }
  
@@ -48,8 +52,6 @@ export class EmailService {
 
   async sendComprobantes( client_email: string, clave_acceso: string, numComprobante: string ) {
     const email = await this.findAll();
-
-    console.log( email[0] );
 
     const { host, usuario, puerto, password } = email[0];
     
@@ -93,7 +95,7 @@ export class EmailService {
   async findOne(id: string) {
     let email: Email;
 
-    email = await this.emailRepository.findOneBy({ id });
+    email = await this.emailRepository.findOneBy({ company_id: { id } });
 
     if ( !email ) 
       throw new NotFoundException('No se encontro algun registro');
@@ -101,13 +103,13 @@ export class EmailService {
     return email;
   }
 
-  async update(id: string, updateEmailDto: UpdateEmailDto) {
+  async update(id: string, updateEmailDto: UpdateEmailDto){
     await this.findOne( id );
 
-    const { email_client, ...rest } = updateEmailDto
+    const { email_client, puerto, ...rest } = updateEmailDto
 
     try {
-      await this.emailRepository.update( id, { ...rest } );
+      await this.emailRepository.update( id, { ...rest, puerto: +puerto } );
 
       return {
         ok: true,

@@ -5,10 +5,11 @@ import { Invoice } from "./invoice.entity";
 @Entity('InvoiceToProduct')
 export class InvoiceToProduct {
 
-    constructor(  cantidad: number, v_total: number, invoice_id: Invoice, product_id: Product ){
+    constructor(cantidad: number, v_total: number, descuento: number, invoice_id: Invoice, product_id: Product){
         this.cantidad = cantidad;
         this.v_total = v_total;
         this.product_id = product_id;
+        this.descuento = descuento;
         this.invoice_id = invoice_id
     }
 
@@ -20,6 +21,9 @@ export class InvoiceToProduct {
 
     @Column({ type: "decimal", precision: 8, scale: 2 })
     public v_total: number;
+
+    @Column({ type: "decimal", precision: 8, scale: 2 })
+    public descuento: number;
 
     @ManyToOne(() => Invoice, (invoice) => invoice.invoiceToProduct)
     @JoinColumn({ name: 'invoice_id' })

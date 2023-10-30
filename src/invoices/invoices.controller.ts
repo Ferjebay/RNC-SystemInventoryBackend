@@ -18,14 +18,16 @@ export class InvoicesController {
 
   @Get(':estado?')
   findAll(
+    @Headers('tipo') tipo: string,
+    @Headers('sucursal_id') sucursal_id: Sucursal,
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean 
   ) {
-    return this.invoicesService.findAll( estado );
+    return this.invoicesService.findAll( estado, tipo, sucursal_id );
   }
 
-  @Get(':id')
+  @Get('/filterInvoice/:id')
   findOne(@Param('id') id: string) {
-    return this.invoicesService.findOne(+id);
+    return this.invoicesService.findOne(id);
   }
 
   @Patch(':id')

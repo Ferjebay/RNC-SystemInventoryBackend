@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { CustomersService } from '../../customers/customers.service';
 import { InvoicesService } from 'src/invoices/invoices.service';
 import { EmailService } from 'src/email/email.service';
+import { MessagesWsService } from 'src/messages-ws/messages-ws.service';
 const axios = require('axios');
 const moment = require('moment');
 const builder = require("xmlbuilder");
@@ -25,6 +26,7 @@ export class FacturasService {
     private invoiceService: InvoicesService,
     private readonly customerService: CustomersService,
     private readonly emailService: EmailService,
+    private readonly messageWsService: MessagesWsService
   ){}
 
   formatInvoice = (cliente, detalle, claveAcceso, numFactura, valoresFactura) => {
@@ -210,8 +212,12 @@ span {
 
   async generarFacturaElectronica( 
     cliente_id: any, claveAcceso: string, sucursal_id: any,
-    subtotal, iva, descuento, total, items, invoice_id: string = null
-    ){
+    subtotal, iva, descuento, total, items, invoice_id: string = null, tipo: string, user_id: any
+    ){   
+
+    if ( tipo == 'EMISION' ) 
+      claveAcceso = await this.getClaveAcceso( sucursal_id );
+
     const clientFound = await this.customerService.findOne( cliente_id );
     const { numComprobante, ambiente } = await this.getNumComprobante( sucursal_id );
       
@@ -409,19 +415,22 @@ span {
     } catch (err) {
       console.log('error axio:', err)
       await this.invoiceService.update( invoice_id, { estadoSRI: "ERROR AL ENVIO SRI" } );
+      return this.messageWsService.updateStateInvoice( user_id );
     }
 
     //----------------- Aumentar Secuencial de factura -----------------
-     const secuencial = numComprobante.split('-')[2];
-     let option: any = {};
+    if ( tipo != 'PROFORMA' ) {
+      const secuencial = numComprobante.split('-')[2];
+      let option: any = {};
+      
+      if ( ambiente == 'PRUEBA' ) 
+         option.secuencia_factura_pruebas = parseInt( secuencial ) + 1;
+       else
+       option.secuencia_factura_produccion = parseInt( secuencial ) + 1;
      
-     if ( ambiente == 'PRUEBA' ) 
-        option.secuencia_factura_pruebas = parseInt( secuencial ) + 1;
-      else
-      option.secuencia_factura_produccion = parseInt( secuencial ) + 1;
-    
-    const sucursal: any = sucursal_id;
-    await this.sucursalRepository.update( sucursal, option );
+     const sucursal: any = sucursal_id;
+     await this.sucursalRepository.update( sucursal, option );
+    }
     // -----------------------------------------------------------------
     
     //Leer xml de respuesta del SRI
@@ -452,7 +461,9 @@ span {
           const infoAdicional = mensaje?.informacionAdicional || 'NO HAY INFO ADICIONAL'
 
           const respuestaSRI = `MENSAJE: ${ mensaje.mensaje } - INFOADICIONAL: ${ infoAdicional }`
+          
           await this.invoiceService.update( invoice_id, { respuestaSRI } )
+          return this.messageWsService.updateStateInvoice( user_id );
       }else{
         setTimeout(async () =>{
             this.estadoXml( 
@@ -461,14 +472,15 @@ span {
               infoCompany[0].ambiente, 
               invoice_id, 
               clientFound[0].email,
-              numComprobante 
+              numComprobante,
+              user_id 
             );
         }, 2700)
       }
     }
   }
 
-  async estadoXml(nombreComercial, accessKey, ambiente, invoice_id, client_email, numComprobante) {
+  async estadoXml(nombreComercial, accessKey, ambiente, invoice_id, client_email, numComprobante, user_id) {
     
     let host = (ambiente === 'PRUEBA') ? 'https://celcer.sri.gob.ec' : 'https://cel.sri.gob.ec';
 
@@ -515,12 +527,15 @@ span {
         respuestaSRI = `MENSAJE: ${ mensaje.mensaje } - INFOADICIONAL: ${ infoAdicional }`
       }
       await this.invoiceService.update( invoice_id, { estadoSRI: estado, respuestaSRI } )
+      this.messageWsService.updateStateInvoice( user_id );
 
       try {
         const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial.split(' ').join('-') }/${ directorio }/${ accessKey }.xml`);
 
         await fs.mkdirSync(path.dirname(pathXML), {recursive: true, })
         await fs.writeFileSync(pathXML, resp.data, {flag: 'w+', encoding: 'utf-8'});
+
+        await this.invoiceService.update( invoice_id, { numero_comprobante: numComprobante, clave_acceso: accessKey } );
 
         //Enviar Correo
         this.emailService.sendComprobantes(client_email, accessKey, numComprobante);

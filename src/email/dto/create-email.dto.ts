@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import { IsNotEmpty, IsNumber, IsNumberString, IsOptional, IsString } from "class-validator";
 
 export class CreateEmailDto {
 
@@ -8,13 +8,22 @@ export class CreateEmailDto {
     @IsString()
     usuario: string;
     
-    @IsNumber()
+    @IsNotEmpty()
     puerto: number;
     
     @IsString()
     password: string;
 
+    @IsString()
+    seguridad: string;
+
+    @IsString()
+    empresa: string;
+
     @IsOptional()
     email_client: string;
+
+    @IsOptional()
+    id: string;
 
 }

@@ -37,6 +37,15 @@ export class CreateInvoiceDto {
     estadoSRI?: string;
 
     @IsOptional()
+    tipo?: string;
+
+    @IsOptional()
+    id?: string;
+
+    @IsOptional()
+    clave_acceso?: string;
+
+    @IsOptional()
     respuestaSRI?: string;
 
 }

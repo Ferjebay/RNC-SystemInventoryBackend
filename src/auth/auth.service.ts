@@ -117,6 +117,7 @@ export class AuthService {
         permisos: true,
         fullName: true,
         company: { id: true, sucursal: { id: true } },
+        sucursales: true,
         roles: true
       }
     })

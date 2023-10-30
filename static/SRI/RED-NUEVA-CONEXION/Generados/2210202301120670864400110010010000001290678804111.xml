@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<factura id="comprobante" version="1.0.0">
+  <infoTributaria>
+    <ambiente>1</ambiente>
+    <tipoEmision>1</tipoEmision>
+    <razonSocial>RED NUEVA CONEXION</razonSocial>
+    <ruc>1206708644001</ruc>
+    <claveAcceso>2210202301120670864400110010010000001290678804111</claveAcceso>
+    <codDoc>01</codDoc>
+    <estab>001</estab>
+    <ptoEmi>001</ptoEmi>
+    <secuencial>000000129</secuencial>
+    <dirMatriz>nzbxnmbzxmbcmz</dirMatriz>
+  </infoTributaria>
+  <infoFactura>
+    <fechaEmision>22/10/2023</fechaEmision>
+    <dirEstablecimiento>vvdfvd</dirEstablecimiento>
+    <obligadoContabilidad>NO</obligadoContabilidad>
+    <tipoIdentificacionComprador>04</tipoIdentificacionComprador>
+    <razonSocialComprador>JUAN FERNANDO SAA AYALA</razonSocialComprador>
+    <identificacionComprador>1230981047123</identificacionComprador>
+    <direccionComprador>jfoijoifer</direccionComprador>
+    <totalSinImpuestos>6</totalSinImpuestos>
+    <totalDescuento>0.06</totalDescuento>
+    <totalConImpuestos>
+      <totalImpuesto>
+        <codigo>2</codigo>
+        <codigoPorcentaje>2</codigoPorcentaje>
+        <baseImponible>5.94</baseImponible>
+        <tarifa>12</tarifa>
+        <valor>0.71</valor>
+      </totalImpuesto>
+    </totalConImpuestos>
+    <propina>0</propina>
+    <importeTotal>6.65</importeTotal>
+    <moneda>DOLAR</moneda>
+    <pagos>
+      <pago>
+        <formaPago>01</formaPago>
+        <total>6.65</total>
+      </pago>
+    </pagos>
+  </infoFactura>
+  <detalles>
+    <detalle>
+      <codigoPrincipal>3473789312</codigoPrincipal>
+      <descripcion>CABLE DE RED CAT 3</descripcion>
+      <cantidad>3</cantidad>
+      <precioUnitario>2.00</precioUnitario>
+      <descuento>0.06</descuento>
+      <precioTotalSinImpuesto>5.94</precioTotalSinImpuesto>
+      <impuestos>
+        <impuesto>
+          <codigo>2</codigo>
+          <codigoPorcentaje>2</codigoPorcentaje>
+          <tarifa>12</tarifa>
+          <baseImponible>5.94</baseImponible>
+          <valor>0.71</valor>
+        </impuesto>
+      </impuestos>
+    </detalle>
+  </detalles>
+  <infoAdicional>
+    <campoAdicional nombre="Email">juan96saa@gmail.com</campoAdicional>
+  </infoAdicional>
+</factura>

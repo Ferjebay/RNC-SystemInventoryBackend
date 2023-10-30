@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<factura id="comprobante" version="1.0.0">
+  <infoTributaria>
+    <ambiente>1</ambiente>
+    <tipoEmision>1</tipoEmision>
+    <razonSocial>RED NUEVA CONEXION</razonSocial>
+    <ruc>1206708644001</ruc>
+    <claveAcceso>2210202301120670864400110010010000001343703463517</claveAcceso>
+    <codDoc>01</codDoc>
+    <estab>001</estab>
+    <ptoEmi>001</ptoEmi>
+    <secuencial>000000134</secuencial>
+    <dirMatriz>nzbxnmbzxmbcmz</dirMatriz>
+  </infoTributaria>
+  <infoFactura>
+    <fechaEmision>22/10/2023</fechaEmision>
+    <dirEstablecimiento>vvdfvd</dirEstablecimiento>
+    <obligadoContabilidad>NO</obligadoContabilidad>
+    <tipoIdentificacionComprador>04</tipoIdentificacionComprador>
+    <razonSocialComprador>JUAN FERNANDO SAA AYALA</razonSocialComprador>
+    <identificacionComprador>1230981047123</identificacionComprador>
+    <direccionComprador>jfoijoifer</direccionComprador>
+    <totalSinImpuestos>15</totalSinImpuestos>
+    <totalDescuento>0.3</totalDescuento>
+    <totalConImpuestos>
+      <totalImpuesto>
+        <codigo>2</codigo>
+        <codigoPorcentaje>0</codigoPorcentaje>
+        <baseImponible>14.7</baseImponible>
+        <tarifa>0</tarifa>
+        <valor>0.00</valor>
+      </totalImpuesto>
+    </totalConImpuestos>
+    <propina>0</propina>
+    <importeTotal>14.7</importeTotal>
+    <moneda>DOLAR</moneda>
+    <pagos>
+      <pago>
+        <formaPago>01</formaPago>
+        <total>14.7</total>
+      </pago>
+    </pagos>
+  </infoFactura>
+  <detalles>
+    <detalle>
+      <codigoPrincipal>3423424521</codigoPrincipal>
+      <descripcion>ROUTER MIKROTIK RB450</descripcion>
+      <cantidad>1</cantidad>
+      <precioUnitario>15.00</precioUnitario>
+      <descuento>0.30</descuento>
+      <precioTotalSinImpuesto>14.70</precioTotalSinImpuesto>
+      <impuestos>
+        <impuesto>
+          <codigo>2</codigo>
+          <codigoPorcentaje>0</codigoPorcentaje>
+          <tarifa>0</tarifa>
+          <baseImponible>14.70</baseImponible>
+          <valor>0.00</valor>
+        </impuesto>
+      </impuestos>
+    </detalle>
+  </detalles>
+  <infoAdicional>
+    <campoAdicional nombre="Email">juan96saa@gmail.com</campoAdicional>
+  </infoAdicional>
+</factura>

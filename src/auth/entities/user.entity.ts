@@ -39,12 +39,6 @@ export class User {
     @Column({ type: 'text' })
     celular: string;
 
-    @Column({ type: 'text', nullable: true })
-    facebook?: string;
-
-    @Column({ type: 'text', nullable: true })
-    twitter?: string;
-    
     @Column({ type: 'text', array: true })
     roles: string[];
 
