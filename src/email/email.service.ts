@@ -4,7 +4,7 @@ import { UpdateEmailDto } from './dto/update-email.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Email } from './entities/email.entity';
 import { Repository } from 'typeorm';
-import path from 'path';
+const path = require('path');
 // import nodemailer from "nodemailer";
 var nodemailer = require('nodemailer');
 
@@ -50,11 +50,9 @@ export class EmailService {
     } 
   }
 
-  async sendComprobantes( client_email: string, clave_acceso: string, numComprobante: string ) {
-    const email = await this.findAll();
+  async sendComprobantes( client_email: string, clave_acceso: string, numComprobante: string, company_id: string ) {
+    const { host, usuario, puerto, password } = await this.findOne( company_id );
 
-    const { host, usuario, puerto, password } = email[0];
-    
     const config = {
       host,
       port: puerto,

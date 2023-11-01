@@ -473,14 +473,15 @@ span {
               invoice_id, 
               clientFound[0].email,
               numComprobante,
-              user_id 
+              user_id,
+              infoCompany[0].company_id.id,  
             );
         }, 2700)
       }
     }
   }
 
-  async estadoXml(nombreComercial, accessKey, ambiente, invoice_id, client_email, numComprobante, user_id) {
+  async estadoXml(nombreComercial, accessKey, ambiente, invoice_id, client_email, numComprobante, user_id, company_id) {
     
     let host = (ambiente === 'PRUEBA') ? 'https://celcer.sri.gob.ec' : 'https://cel.sri.gob.ec';
 
@@ -538,7 +539,7 @@ span {
         await this.invoiceService.update( invoice_id, { numero_comprobante: numComprobante, clave_acceso: accessKey } );
 
         //Enviar Correo
-        this.emailService.sendComprobantes(client_email, accessKey, numComprobante);
+        this.emailService.sendComprobantes(client_email, accessKey, numComprobante, company_id);
 
       } catch (err) {
         console.log(err)
