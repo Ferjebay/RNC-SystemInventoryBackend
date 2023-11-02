@@ -12,7 +12,7 @@ const moment = require('moment');
 const builder = require("xmlbuilder");
 const fs = require("fs");
 const path = require('path');
-const pdf = require('html-pdf');
+// const pdf = require('html-pdf');
 const { execSync } = require('node:child_process');
 const XMLParser = require("fast-xml-parser").XMLParser;
 
@@ -29,114 +29,114 @@ export class FacturasService {
     private readonly messageWsService: MessagesWsService
   ){}
 
-  formatInvoice = (cliente, detalle, claveAcceso, numFactura, valoresFactura) => {
-    let plantilla = /*html*/`<!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="utf-8">
-        <title>Example 1</title>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
-        <style>
-        div {
-  border: 1px solid blue;
-  padding: 5px;
-}
+//   formatInvoice = (cliente, detalle, claveAcceso, numFactura, valoresFactura) => {
+//     let plantilla = /*html*/`<!DOCTYPE html>
+//     <html lang="en">
+//       <head>
+//         <meta charset="utf-8">
+//         <title>Example 1</title>
+//         <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
+//         <style>
+//         div {
+//   border: 1px solid blue;
+//   padding: 5px;
+// }
 
-.clearfix {
-  overflow: auto;
-}
+// .clearfix {
+//   overflow: auto;
+// }
 
-nav {
-  float: left;
-  width: 30%;
-  border: 1px solid #73AD21;
-  padding-left: 5px;
-  margin: 5px;
-}
+// nav {
+//   float: left;
+//   width: 30%;
+//   border: 1px solid #73AD21;
+//   padding-left: 5px;
+//   margin: 5px;
+// }
 
-section {
-  float: left;
-  width: 65%;
-  border: 1px solid red;
-  padding: 10px;
-  margin: 5px;
-}
+// section {
+//   float: left;
+//   width: 65%;
+//   border: 1px solid red;
+//   padding: 10px;
+//   margin: 5px;
+// }
 
-span {
-  font-size:18px;
-  font-weight: bold;
-}  
-        </style>
-      </head>
-      <body>       
+// span {
+//   font-size:18px;
+//   font-weight: bold;
+// }  
+//         </style>
+//       </head>
+//       <body>       
       
-<div class="clearfix">
+// <div class="clearfix">
 
-<nav>
-  <span>nav</span>
-    <ul>
-      <li><a target="_blank" href="/default.asp">Home</a></li>
-      <li><a target="_blank" href="https://www.w3schools.com/css/default.asp">CSS</a></li>
-      <li><a target="_blank" href="https://www.w3schools.com/html/default.asp">HTML</a></li>
-      <li><a target="_blank" href="https://www.w3schools.com/js/default.asp">JavaScript</a></li>
-    </ul>
-  </nav>
+// <nav>
+//   <span>nav</span>
+//     <ul>
+//       <li><a target="_blank" href="/default.asp">Home</a></li>
+//       <li><a target="_blank" href="https://www.w3schools.com/css/default.asp">CSS</a></li>
+//       <li><a target="_blank" href="https://www.w3schools.com/html/default.asp">HTML</a></li>
+//       <li><a target="_blank" href="https://www.w3schools.com/js/default.asp">JavaScript</a></li>
+//     </ul>
+//   </nav>
 
-  <section>
-    <span>CSS Layout</span>
-    <p>La propiedad floar especifica si un elemento debe flotar.
+//   <section>
+//     <span>CSS Layout</span>
+//     <p>La propiedad floar especifica si un elemento debe flotar.
       
-    La propiedad clear se utiliza para controlar el comportamiento de los elementos flotantes.</p>
-  </section>
+//     La propiedad clear se utiliza para controlar el comportamiento de los elementos flotantes.</p>
+//   </section>
 
-  <section>
-    <span>Section</span>
-    <p>En su uso más simple, la propiedad float se puede utilizar para realizar la composición de los elementos.
+//   <section>
+//     <span>Section</span>
+//     <p>En su uso más simple, la propiedad float se puede utilizar para realizar la composición de los elementos.
 
-    Como en este caso que determina la situación de Nav y Section.</p>
-  </section>
+//     Como en este caso que determina la situación de Nav y Section.</p>
+//   </section>
 
-</div>
+// </div>
             
-      </body>
-    </html>`
+//       </body>
+//     </html>`
 
-    return plantilla;
-  }
+//     return plantilla;
+//   }
 
-  createInvoicePDF = ( cliente, detalle, claveAcceso, numFactura, valoresFactura ) => {
+//   createInvoicePDF = ( cliente, detalle, claveAcceso, numFactura, valoresFactura ) => {
 
-      const content = this.formatInvoice(cliente, detalle, claveAcceso, numFactura, valoresFactura);    
+//       const content = this.formatInvoice(cliente, detalle, claveAcceso, numFactura, valoresFactura);    
 
-      const options = { 
-        childProcessOptions: {
-          env: {
-            OPENSSL_CONF: '/dev/null',
-          },
-        },
-        border: {
-          "top": "12px",           
-          "right": "50px",
-          "bottom": "12px",
-          "left": "50px"
-        }, 
-      };
+//       const options = { 
+//         childProcessOptions: {
+//           env: {
+//             OPENSSL_CONF: '/dev/null',
+//           },
+//         },
+//         border: {
+//           "top": "12px",           
+//           "right": "50px",
+//           "bottom": "12px",
+//           "left": "50px"
+//         }, 
+//       };
 
-      try {
-        const pathPDF = path.resolve(__dirname, `../../../static/SRI/RED-NUEVA-CONEXION/PDF/${ claveAcceso }.pdf`);
+//       try {
+//         const pathPDF = path.resolve(__dirname, `../../../static/SRI/RED-NUEVA-CONEXION/PDF/${ claveAcceso }.pdf`);
 
-        pdf.create(content, options).toFile(pathPDF, async function(err, res) {
-            if (err){
-                console.log(err);
-            } else {
-              console.log( "pdf creado" );
-              // sendEmailHelper( cliente.email, claveAcceso, numFactura )
-            }
-        });      
-      } catch (error) {
-        console.log( error );
-      }
-  }
+//         pdf.create(content, options).toFile(pathPDF, async function(err, res) {
+//             if (err){
+//                 console.log(err);
+//             } else {
+//               console.log( "pdf creado" );
+//               // sendEmailHelper( cliente.email, claveAcceso, numFactura )
+//             }
+//         });      
+//       } catch (error) {
+//         console.log( error );
+//       }
+//   }
 
 
   calcularDigitoVerificadorMod11( clave ){
