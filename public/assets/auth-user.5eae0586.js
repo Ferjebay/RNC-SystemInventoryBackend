@@ -1,0 +1,1 @@
+import{j as t}from"./index.9a69bdf9.js";const r=t("auth/user",{state:()=>({token:"",modeDark:!0}),persist:!0,getters:{},actions:{setToken(e){this.token=e},setModeDark(e){this.modeDark=e}}});export{r as u};
