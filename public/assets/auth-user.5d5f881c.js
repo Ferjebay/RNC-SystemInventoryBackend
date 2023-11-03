@@ -1,1 +1,0 @@
-import{j as t}from"./index.33b032fc.js";const o=t("auth/user",{state:()=>({token:"",modeDark:!1}),persist:!0,getters:{},actions:{setToken(e){this.token=e},setModeDark(e){this.modeDark=e}}});export{o as u};
