@@ -160,7 +160,7 @@ export class FacturasService {
 
   async getNumComprobante( sucursal_id: any ){
     const queryBuilder = this.sucursalRepository.createQueryBuilder('sucursal'); 
-    let { ambiente, establecimiento, punto_emision, secuencial } = await queryBuilder
+    let valores = await queryBuilder
       .select(["establecimiento", "punto_emision", "ambiente"])
       .addSelect(`CASE
                   WHEN (ambiente = 'PRODUCCION') THEN sucursal.secuencia_factura_produccion
@@ -168,14 +168,16 @@ export class FacturasService {
               END`, "secuencial")
       .where("id = :id", { id: sucursal_id })
       .getRawOne();
+
+    console.log( valores );
     
-    establecimiento = establecimiento.toString().padStart(3, '0')
-    punto_emision   = punto_emision.toString().padStart(3, '0')
-    secuencial      = secuencial.toString().padStart(9, '0')
+    valores.establecimiento = valores.establecimiento.toString().padStart(3, '0')
+    valores.punto_emision   = valores.punto_emision.toString().padStart(3, '0')
+    valores.secuencial      = valores.secuencial.toString().padStart(9, '0')
 
-    const numComprobante = `${ establecimiento }-${ punto_emision }-${ secuencial }`
+    const numComprobante = `${ valores.establecimiento }-${ valores.punto_emision }-${ valores.secuencial }`
 
-    return { numComprobante, ambiente };
+    return { numComprobante, ambiente: 'PRUEBA' };
   }
 
   async getClaveAcceso( sucursal_id: Sucursal ){
