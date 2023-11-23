@@ -24,21 +24,12 @@ export class InvoicesService {
   ){}
 
   async create(createInvoiceDto: CreateInvoiceDto, sucursal_id: Sucursal) {
-    // console.log( createInvoiceDto );
-    // return "fds";
-
-    //Borrar archivos generados antes del error al envio SRI
-    // if( createInvoiceDto.estadoSRI == 'ERROR AL ENVIO SRI' ){
-    //   const ruta = path.resolve(__dirname, `../../static/SRI/FIRMAS`);
-    //   fs.unlinkSync(`${ ruta }/${ createInvoiceDto.clave_acceso }`)    
-    // }
-
     try {
       let invoiceCreated: any = { id: null };
       const claveAcceso = await this.facturaService.getClaveAcceso( sucursal_id );
       const { numComprobante } = await this.facturaService.getNumComprobante( sucursal_id );
 
-      if (createInvoiceDto.tipo !== 'EMISION') {
+      if (createInvoiceDto.tipo !== 'EMISION'){
         let invoiceEntity = new Invoice();
         invoiceEntity = { 
           ...createInvoiceDto,
@@ -67,26 +58,22 @@ export class InvoicesService {
       
       if (createInvoiceDto.tipo == 'FACTURA' || createInvoiceDto.tipo == 'EMISION') {
         this.facturaService.generarFacturaElectronica( 
-          createInvoiceDto.customer_id, 
+          createInvoiceDto, 
           claveAcceso,
           sucursal_id,
-          createInvoiceDto.subtotal,
-          createInvoiceDto.iva,
-          createInvoiceDto.descuento,
-          createInvoiceDto.total,
-          createInvoiceDto.products,
-          invoiceCreated.id,
-          createInvoiceDto.tipo,
-          createInvoiceDto.user_id
+          invoiceCreated.id
         )        
+      }else{
+        this.facturaService.generarProforma(
+          createInvoiceDto,
+          sucursal_id
+        );
       }
   
       return { ok: true };      
     } catch (error) {
-      // console.log( error );
       this.handleDBExceptions( error )
     }
-    return 'This action adds a new invoice';
   }
 
   async findAll( estado: boolean, tipo: string, sucursal_id: Sucursal ) {
@@ -98,9 +85,9 @@ export class InvoicesService {
         invoiceToProduct: { product_id: true }
       }, 
       select: { 
-        customer_id: { nombres: true }, 
-        sucursal_id: { nombre: true }, 
-        user_id:     { fullName: true },
+        customer_id: { nombres: true, id: true, tipo_documento: true, numero_documento: true }, 
+        sucursal_id: { id: true, nombre: true, ambiente: true, direccion: true }, 
+        user_id:     { fullName: true, id: true },
         invoiceToProduct: { v_total: true, cantidad: true, product_id: true, descuento: true }
       },
       order: { created_at: "DESC" },
@@ -130,7 +117,7 @@ export class InvoicesService {
       },
       select: { 
         customer_id: { id: true },
-        sucursal_id: { company_id: { id: true } } 
+        sucursal_id: { id: true, company_id: { id: true } } 
       }
     });
 

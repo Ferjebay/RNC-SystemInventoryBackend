@@ -37,6 +37,6 @@ export class CreateBuyDto {
     @IsNumber()
     total: number
 
-    @IsDateString()
+    @IsString()
     fecha_compra: string;
 }

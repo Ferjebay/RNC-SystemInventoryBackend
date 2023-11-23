@@ -54,9 +54,9 @@ export class CompaniesService {
   }
 
   async findAll( estado: boolean ) {
-    let option:any = { order: { created_at: "DESC" } }
+    let option:any = { order: { created_at: "DESC" }, where: { isActive: null } }
 
-    if ( estado ) option.where = { isActive: true }
+    if ( estado ) option.where.isActive = true 
 
     return await this.companyRepository.find( option );
   }

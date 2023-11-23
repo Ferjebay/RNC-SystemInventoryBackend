@@ -39,9 +39,19 @@ export class ProvidersService {
 
   async findAll( estado: boolean, company_id: Company ) {
 
-    let option:any = { where: { company: { id: company_id } }, order: { created_at: "DESC" } }
+    let option:any = { 
+      where: { 
+        company: { 
+          id: company_id,
+          isActive: null 
+        } 
+      }, 
+      order: { 
+        created_at: "DESC" 
+      } 
+    }
 
-    if ( estado ) option.where = { isActive: true };
+    if ( estado ) option.where.isActive = true;
 
     return await this.providerRepository.find( option );
   }

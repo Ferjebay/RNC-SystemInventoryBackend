@@ -1,4 +1,5 @@
-import { IsEmail, IsNotEmpty, IsNumberString, IsString, MaxLength, MinLength } from "class-validator";
+import { IsEmail, IsNotEmpty, IsNumberString, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
+import { Company } from "src/companies/entities/company.entity";
 
 export class CreateCustomerDto {
 

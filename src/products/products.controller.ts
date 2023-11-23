@@ -5,6 +5,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
 import { Pagination } from 'nestjs-typeorm-paginate';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
+import { Company } from 'src/companies/entities/company.entity';
 
 @Controller('products')
 export class ProductsController {
@@ -25,18 +26,21 @@ export class ProductsController {
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number = 5,
     @Query('busqueda' ) busqueda: string
   ): Promise<Pagination<Product>> {
-    
+
     return this.productsService.findAll({
       page,
       limit,
-      route: 'http://localhost:3000/products',
+      route: `${ process.env.HOST_API }/products`,
     }, sucursal_id);
     
   }
 
   @Get(':term')
-  findOne(@Param('term') term: string) {
-    return this.productsService.findOne( term );
+  findOne(
+    @Headers('company_id') company_id: string,
+    @Param('term') term: string
+  ) {
+    return this.productsService.findOne( term, company_id );
   }
 
   @Patch(':id')
@@ -46,7 +50,6 @@ export class ProductsController {
   ) {
     return this.productsService.update(id, updateProductDto);
   }
-
   
   @Patch(':id/:estado')
   setEstado(

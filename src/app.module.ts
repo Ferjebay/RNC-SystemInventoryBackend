@@ -18,6 +18,9 @@ import { InvoicesModule } from './invoices/invoices.module';
 import { FacturasModule } from './comprobantes-electronicos/facturas/facturas.module';
 import { SucursalModule } from './sucursal/sucursal.module';
 import { EmailModule } from './email/email.module';
+import { MikrotikModule } from './mikrotik/mikrotik.module';
+import { RouterModule } from './router/router.module';
+import { InternetModule } from './internet/internet.module';
 
 @Module({
   imports: [
@@ -56,7 +59,10 @@ import { EmailModule } from './email/email.module';
     InvoicesModule,
     FacturasModule,
     SucursalModule,
-    EmailModule
+    EmailModule,
+    MikrotikModule,
+    RouterModule,
+    InternetModule
   ],
   controllers: [AppController],
   providers: [AppService],

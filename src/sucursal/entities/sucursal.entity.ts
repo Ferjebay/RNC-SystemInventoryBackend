@@ -12,7 +12,7 @@ export class Sucursal {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @ManyToOne(() => Company, (company) => company.sucursal)
+    @ManyToOne(() => Company, (company) => company.sucursal, { eager: true })
     @JoinColumn({ name: 'company_id' })
     company_id: Company;
 
@@ -44,6 +44,12 @@ export class Sucursal {
 
     @Column({ type: 'int', nullable: true, default: 1 })
     secuencia_factura_pruebas?: number;
+
+    @Column({ type: 'int', nullable: true })
+    secuencia_nota_credito_produccion: number;
+
+    @Column({ type: 'int', nullable: true, default: 1 })
+    secuencia_nota_credito_pruebas?: number;
 
     @Column({ type: 'enum',  enum: ["PRODUCCION", "PRUEBA"], default: 'PRUEBA' })
     ambiente: EnviromentType;

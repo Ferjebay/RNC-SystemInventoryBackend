@@ -35,7 +35,7 @@ export class Buy {
     @Column({ type: "decimal", precision: 8, scale: 2, default: 0 })
     subtotal: number;
     
-    @Column({ type: 'int', default: 0 })
+    @Column({ type: "decimal", precision: 8, scale: 2 })
     descuento: number;
 
     @Column({ type: "decimal", precision: 8, scale: 2, default: 0 })

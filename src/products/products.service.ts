@@ -16,6 +16,7 @@ import {
   IPaginationOptions
 } from 'nestjs-typeorm-paginate';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
+import { Company } from 'src/companies/entities/company.entity';
 
 @Injectable()
 export class ProductsService {
@@ -49,15 +50,31 @@ export class ProductsService {
     );
   }
 
-  async findOne(term: string) {
+  async findOne(term: string, company_id: string = null) {
     let product: Product[];
 
     if ( isUUID(term) ) {
-      product = await this.productRepository.findBy({ id: term });
+      product = await this.productRepository.find({
+        where: {
+          id: term,
+          sucursal_id: { company_id: { id: company_id } }
+        }
+      });
     } else if( isNumberString( term ) ){
-      product = await this.productRepository.findBy({ codigoBarra: term })
+      product = await this.productRepository.find({
+        where: {
+          codigoBarra: term,
+          sucursal_id: { company_id: { id: company_id } }
+        }
+      })
     }else{
-      product = await this.productRepository.findBy({ nombre: ILike(`%${ term }%`), })
+      product = await this.productRepository.find({
+        relations: { sucursal_id: true },
+        where: {
+          nombre: ILike(`%${ term }%`),
+          sucursal_id: { company_id: { id: company_id } }
+        }
+      })
     }
 
     if ( !product ) 

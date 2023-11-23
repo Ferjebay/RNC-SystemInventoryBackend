@@ -3,7 +3,7 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Customer } from './entities/customer.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
 import { Company } from 'src/companies/entities/company.entity';
 
@@ -32,9 +32,18 @@ export class CustomersService {
   }
 
   async findAll( estado: boolean, company_id: Company ) {
-    let option:any = { where: { company_id: { id: company_id } }, order: { created_at: "DESC" } }
+    let option:any = { 
+      where: { 
+        company_id: { id: company_id }, 
+        nombres: Not("CONSUMIDOR FINAL"),
+        isActive: null 
+      }, 
+      order: { 
+        created_at: "DESC"
+      } 
+    }
 
-    if ( estado ) option.where = { isActive: true };
+    if ( estado ) option.where.isActive = true;
 
     return await this.customerRepository.find( option );
   }

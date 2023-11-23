@@ -1,4 +1,4 @@
-import { Controller, Get, Headers, Request } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Post } from '@nestjs/common';
 import { FacturasService } from './facturas.service';
 
 @Controller('CE/facturas')
@@ -7,11 +7,17 @@ export class FacturasController {
 
   @Get('getNumFactura')
   getNumComprobante(
-    @Headers('Sucursal_id') sucursal_id: string,
-    @Headers() headers
+    @Headers('sucursal_id') sucursal_id: string,
   ) {
-    console.log(headers);
     return this.facturasService.getNumComprobante( sucursal_id );
   }
+
+  @Post('anularFactura')
+  anularFactura(
+    @Body('factura') factura: any
+  ) {
+    return this.facturasService.generarNotaCredito( factura );
+  }
+
 
 }

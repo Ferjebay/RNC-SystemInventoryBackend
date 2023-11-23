@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Param, Delete, ParseBoolPipe, DefaultValue
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
-import { FileFieldsInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { fileFilter } from './helpers/fileFilter.helper';
 import { fileNamer } from './helpers/fileNamer.helper';
@@ -24,7 +24,7 @@ export class CompaniesController {
       storage: diskStorage({ 
         destination: function (_, file, cb) {
           if(file.fieldname == 'logo')
-            cb(null, `./static/SRI/images`)
+            cb(null, './public/images')
           else
             cb(null, `./static/SRI/FIRMAS`)
         }, 
@@ -62,9 +62,9 @@ export class CompaniesController {
       storage: diskStorage({ 
         destination: function (_, file, cb) {
           if(file.fieldname == 'logo')
-            cb(null, `./static/SRI/images`)
+            cb(null, './public/images')
           else
-            cb(null, `./static/SRI/FIRMAS`)
+            cb(null, './static/SRI/FIRMAS')
         }, 
         filename: fileNamer 
       }) 
@@ -90,7 +90,6 @@ export class CompaniesController {
 
     return this.companiesService.update(id, updateCompanyDto);
   }
-
   
   @Patch(':id/:estado')
   setEstado(

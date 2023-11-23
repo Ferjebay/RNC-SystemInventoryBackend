@@ -29,6 +29,13 @@ export class CreateSucursalDto {
     @IsOptional()
     secuencia_factura_pruebas?: number;
 
+    @IsNumberString()
+    secuencia_nota_credito_produccion: number;
+
+    @IsOptional()
+    secuencia_nota_credito_pruebas?: number;
+
     @IsOptional()
     ambiente?: EnviromentType;
+
 }

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<factura id="comprobante" version="1.0.0">
+  <infoTributaria>
+    <ambiente>1</ambiente>
+    <tipoEmision>1</tipoEmision>
+    <razonSocial>FARMACIA TU AHORRO</razonSocial>
+    <ruc>1206708644001</ruc>
+    <claveAcceso>2011202301120670864400110010010000002420590633610</claveAcceso>
+    <codDoc>01</codDoc>
+    <estab>001</estab>
+    <ptoEmi>001</ptoEmi>
+    <secuencial>000000242</secuencial>
+    <dirMatriz>calle abc y xyz</dirMatriz>
+  </infoTributaria>
+  <infoFactura>
+    <fechaEmision>20/11/2023</fechaEmision>
+    <dirEstablecimiento>abcde</dirEstablecimiento>
+    <obligadoContabilidad>NO</obligadoContabilidad>
+    <tipoIdentificacionComprador>05</tipoIdentificacionComprador>
+    <razonSocialComprador>CLIENT FARMA TU AHORRO</razonSocialComprador>
+    <identificacionComprador>1230978172</identificacionComprador>
+    <direccionComprador>direccion client farma tu ahorro</direccionComprador>
+    <totalSinImpuestos>64.60</totalSinImpuestos>
+    <totalDescuento>3.4</totalDescuento>
+    <totalConImpuestos>
+      <totalImpuesto>
+        <codigo>2</codigo>
+        <codigoPorcentaje>0</codigoPorcentaje>
+        <baseImponible>64.59</baseImponible>
+        <tarifa>0</tarifa>
+        <valor>0.00</valor>
+      </totalImpuesto>
+    </totalConImpuestos>
+    <propina>0</propina>
+    <importeTotal>64.59</importeTotal>
+    <moneda>DOLAR</moneda>
+    <pagos>
+      <pago>
+        <formaPago>01</formaPago>
+        <total>64.59</total>
+      </pago>
+    </pagos>
+  </infoFactura>
+  <detalles>
+    <detalle>
+      <codigoPrincipal>12983782179</codigoPrincipal>
+      <descripcion>PRODUCTO DE TU AHORRI N1</descripcion>
+      <cantidad>2</cantidad>
+      <precioUnitario>34.00</precioUnitario>
+      <descuento>3.40</descuento>
+      <precioTotalSinImpuesto>64.60</precioTotalSinImpuesto>
+      <impuestos>
+        <impuesto>
+          <codigo>2</codigo>
+          <codigoPorcentaje>0</codigoPorcentaje>
+          <tarifa>0</tarifa>
+          <baseImponible>64.60</baseImponible>
+          <valor>0.00</valor>
+        </impuesto>
+      </impuestos>
+    </detalle>
+  </detalles>
+  <infoAdicional>
+    <campoAdicional nombre="Email">juan63sn@gmail.com</campoAdicional>
+  </infoAdicional>
+</factura>

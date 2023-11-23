@@ -37,7 +37,9 @@ export class BuysService {
           p.cantidad,
           p.v_total,
           buyCreated,
-          p.id
+          p.id,
+          p.descuento,
+          p.aplicaIva
         ));        
       })
       this.tablePivotRepository.save( pivot );
@@ -58,7 +60,7 @@ export class BuysService {
       select: { 
         user_id:     { fullName: true },
         sucursal_id: { nombre: true }, 
-        buyToProduct: { v_total: true, cantidad: true, product_id: true }
+        buyToProduct: { v_total: true, cantidad: true, product_id: true, descuento: true, iva: true }
       },
       where: { sucursal_id: { id: sucursal_id } }, 
       order: { created_at: "DESC" } 
@@ -115,13 +117,9 @@ export class BuysService {
   }
 
   async remove( id: string ) {
-    const buy = await this.findOne( id );
-    let msg: string; 
-
-    await this.buyRepository.remove( buy );
-    msg = 'Eliminado Exitosamente'
+    await this.buyRepository.update( id, { isActive: false })
     
-    return { ok: true, msg };
+    return { ok: true };
   }
 
   private handleDBExceptions( error: any ) {

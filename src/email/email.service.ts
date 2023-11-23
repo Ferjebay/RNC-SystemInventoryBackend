@@ -4,8 +4,8 @@ import { UpdateEmailDto } from './dto/update-email.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Email } from './entities/email.entity';
 import { Repository } from 'typeorm';
+import { Factura } from 'src/comprobantes-electronicos/plantillas/factura';
 const path = require('path');
-// import nodemailer from "nodemailer";
 var nodemailer = require('nodemailer');
 
 @Injectable()
@@ -50,26 +50,36 @@ export class EmailService {
     } 
   }
 
-  async sendComprobantes( client_email: string, clave_acceso: string, numComprobante: string, company_id: string ) {
-    const { host, usuario, puerto, password } = await this.findOne( company_id );
+  async sendComprobantes( clientFound, infoCompany, numComprobante = '', clave_acceso = '', comprobantes ) {
+    const { host, usuario, puerto, password } = await this.findOne( infoCompany.company_id.id );
 
     const config = {
       host,
       port: puerto,
-      tls: { rejectUnauthorized: false },
+      secure: puerto === 465 ? true : false,
+      greetingTimeout: 12000,
+      connectionTimeout: 12000,
+      dnsTimeout: 12000,
       auth: { user: usuario, pass: password }
     }
 
-    // const pathPDF = path.resolve(__dirname, `../assets/SRI/PDF/${ clave_acceso }.pdf`);
-    const pathXML = path.resolve(__dirname, `../../static/SRI/RED-NUEVA-CONEXION/Autorizados/${ clave_acceso }.xml`);
- 
-    const message = {
+    let message: any = {
       from: usuario,
-      to: client_email,
-      subject: `RED NUEVA CONEXIÓN - Factura Nro. ${ numComprobante }`,
-      text: "RED NUEVA CONEXION agradece su compra, acontinuación se adjunta su comprobante electronico",
-      attachments: [
-        { filename: clave_acceso +'.xml', path: pathXML }
+      to: clientFound.email
+    }
+
+    if (comprobantes.tipo == 'proforma') {
+      message.subject = `RED NUEVA CONEXIÓN - le envia su proforma`,
+      message.text    = "RED NUEVA CONEXION agradece su consulta :)",      
+      message.attachments = [
+        { filename: comprobantes.name, content: comprobantes.buffer }
+      ]      
+    }else{
+      message.subject = `RED NUEVA CONEXIÓN - Factura Nro. ${ numComprobante }`,
+      message.text    = "RED NUEVA CONEXION agradece su compra, acontinuación se adjunta su comprobante electronico",      
+      message.attachments = [
+        { filename: clave_acceso +'.xml', path: comprobantes.xml },
+        { filename: clave_acceso +'.pdf', content: comprobantes.pdf }
       ]
     }
 
@@ -79,6 +89,7 @@ export class EmailService {
         await transport.sendMail(message);
         return "Correo Enviado Exitosamente";      
     } catch (error) {
+      console.log( error );
       if ( error.code == 'EDNS' ) 
         throw new BadRequestException(`Error: getaddrinfo ENOTFOUND ${ host }`);        
       else
@@ -102,7 +113,6 @@ export class EmailService {
   }
 
   async update(id: string, updateEmailDto: UpdateEmailDto){
-    await this.findOne( id );
 
     const { email_client, puerto, ...rest } = updateEmailDto
 

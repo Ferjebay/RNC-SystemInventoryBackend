@@ -1,7 +1,9 @@
 import { User } from "src/auth/entities/user.entity";
 import { Customer } from "src/customers/entities/customer.entity";
 import { Email } from "src/email/entities/email.entity";
+import { Internet } from "src/internet/entities/internet.entity";
 import { Provider } from "src/providers/entities/provider.entity";
+import { Router } from "src/router/entities/router.entity";
 import { Sucursal } from "src/sucursal/entities/sucursal.entity";
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
@@ -19,6 +21,12 @@ export class Company {
 
     @OneToMany(() => Customer, (customer) => customer.company_id)
     customer: Customer[]
+
+    @OneToMany(() => Router, (router) => router.company_id)
+    router: Router[]
+
+    @OneToMany(() => Internet, (internet) => internet.company_id)
+    internet: Internet[]
 
     @OneToMany(() => Sucursal, (sucursal) => sucursal.company_id )
     sucursal: Sucursal[]
