@@ -1,4 +1,5 @@
 import { User } from "src/auth/entities/user.entity";
+import { CajaNap } from "src/caja-nap/entities/caja-nap.entity";
 import { Customer } from "src/customers/entities/customer.entity";
 import { Email } from "src/email/entities/email.entity";
 import { Internet } from "src/internet/entities/internet.entity";
@@ -24,6 +25,9 @@ export class Company {
 
     @OneToMany(() => Router, (router) => router.company_id)
     router: Router[]
+
+    @OneToMany(() => CajaNap, (cajaNap) => cajaNap.company_id)
+    cajaNap: CajaNap[]
 
     @OneToMany(() => Internet, (internet) => internet.company_id)
     internet: Internet[]

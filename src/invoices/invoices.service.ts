@@ -128,8 +128,6 @@ export class InvoicesService {
   }
 
   async update(id: string, updateInvoiceDto: UpdateInvoiceDto) {
-    // await this.findOne( id );
-
     try {
       await this.invoiceRepository.update( id, updateInvoiceDto );
 

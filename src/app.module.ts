@@ -21,6 +21,8 @@ import { EmailModule } from './email/email.module';
 import { MikrotikModule } from './mikrotik/mikrotik.module';
 import { RouterModule } from './router/router.module';
 import { InternetModule } from './internet/internet.module';
+import { CajaNapModule } from './caja-nap/caja-nap.module';
+import { PuertosModule } from './puertos/puertos.module';
 
 @Module({
   imports: [
@@ -62,7 +64,9 @@ import { InternetModule } from './internet/internet.module';
     EmailModule,
     MikrotikModule,
     RouterModule,
-    InternetModule
+    InternetModule,
+    CajaNapModule,
+    PuertosModule
   ],
   controllers: [AppController],
   providers: [AppService],

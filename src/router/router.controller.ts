@@ -16,7 +16,7 @@ export class RouterController {
     return this.routerService.create(createRouterDto, company_id);
   }
 
-  @Get()
+  @Get(':estado?')
   findAll(
     @Headers('company_id') company_id: Company,
     @Headers('rol_name') rol_name: string,
@@ -25,7 +25,7 @@ export class RouterController {
     return this.routerService.findAll( company_id, rol_name, estado );
   }
 
-  @Get(':id')
+  @Get('/find/:id')
   findOne(@Param('id') id: string) {
     return this.routerService.findOne(id, 'busqueda');
   }
