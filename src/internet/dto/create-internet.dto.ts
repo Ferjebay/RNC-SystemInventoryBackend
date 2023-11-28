@@ -11,8 +11,7 @@ export class CreateInternetDto {
     @IsString()
     nombre_plan: string;
 
-    @IsNotEmpty()
-    @IsString()
+    @IsOptional()
     descripcion: string;
 
     @IsNotEmpty()
@@ -38,8 +37,7 @@ export class CreateInternetDto {
     @IsNumber()
     prioridad: number
 
-    @IsNotEmpty()
-    @IsString()
+    @IsOptional()
     address_list: string;
 
 }

@@ -148,9 +148,11 @@ export class CompaniesService {
       throw new BadRequestException(`Category exists in the BD ${ JSON.stringify(error.keyValue) }`)
     if ( error.code === '23503' ) 
       throw new BadRequestException(`No es posbile borrar, este registro se encuentra en uso`)
+    if ( error.code === '23505' ) 
+      throw new BadRequestException(`error duplucidad ${ JSON.stringify(error.detail) }`)
     if ( error.response.statusCode === 400 ) 
       throw new BadRequestException(`La clave del certificado es incorrecta`)
 
-    throw new InternalServerErrorException("Can't create pokemon - check logs")
+    throw new InternalServerErrorException("error server - comunicarse con el admin")
   }
 }

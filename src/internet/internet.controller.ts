@@ -2,7 +2,6 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, DefaultValu
 import { InternetService } from './internet.service';
 import { CreateInternetDto } from './dto/create-internet.dto';
 import { UpdateInternetDto } from './dto/update-internet.dto';
-import { Company } from 'src/companies/entities/company.entity';
 import { Router } from 'src/router/entities/router.entity';
 
 @Controller('internet')

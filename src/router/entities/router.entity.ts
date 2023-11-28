@@ -1,5 +1,6 @@
 import { Company } from "src/companies/entities/company.entity";
 import { Internet } from "src/internet/entities/internet.entity";
+import { RedIpv4 } from "src/red-ipv4/entities/red-ipv4.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity('routers')
@@ -14,6 +15,9 @@ export class Router {
 
     @OneToMany(() => Internet, (internet) => internet.router_id)
     internet: Internet[]
+
+    @OneToMany(() => RedIpv4, (redIpv4) => redIpv4.router_id)
+    redes: RedIpv4[]
 
     @Column({ type: 'varchar', length: 100 })
     nombre: string;
