@@ -1,6 +1,11 @@
-import { IsNotEmpty, IsNumber, IsNumberString, IsOptional, IsString, isNumber } from "class-validator";
+import { IsNotEmpty, IsNumber, IsNumberString, IsOptional, IsString, IsUUID, isNumber } from "class-validator";
+import { Router } from "src/router/entities/router.entity";
 
 export class CreateInternetDto {
+
+    @IsNotEmpty()
+    @IsUUID()
+    router_id: Router;
 
     @IsNotEmpty()
     @IsString()

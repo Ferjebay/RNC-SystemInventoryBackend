@@ -3,6 +3,7 @@ import { InternetService } from './internet.service';
 import { CreateInternetDto } from './dto/create-internet.dto';
 import { UpdateInternetDto } from './dto/update-internet.dto';
 import { Company } from 'src/companies/entities/company.entity';
+import { Router } from 'src/router/entities/router.entity';
 
 @Controller('internet')
 export class InternetController {
@@ -10,21 +11,20 @@ export class InternetController {
 
   @Post()
   create(
-    @Headers('company_id') company_id: Company,
     @Body() createInternetDto: CreateInternetDto
   ){
-    return this.internetService.create(createInternetDto, company_id);
+    return this.internetService.create(createInternetDto);
   }
 
-  @Get()
+  @Get(':estado?')
   findAll(
-    @Headers('company_id') company_id: Company,
+    @Headers('router_id') router_id: Router,
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean 
   ){
-    return this.internetService.findAll( company_id, estado );
+    return this.internetService.findAll( router_id, estado );
   }
 
-  @Get(':id')
+  @Get('/find/:id')
   findOne(@Param('id') id: string) {
     return this.internetService.findOne(id);
   }

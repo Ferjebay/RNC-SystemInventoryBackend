@@ -12,7 +12,7 @@ export class RouterController {
   create(
     @Headers('company_id') company_id: Company,
     @Body() createRouterDto: CreateRouterDto
-  ) {
+  ){
     return this.routerService.create(createRouterDto, company_id);
   }
 

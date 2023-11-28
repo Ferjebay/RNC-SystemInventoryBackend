@@ -17,12 +17,10 @@ export class InternetService {
     private readonly internetRepository: Repository<Internet>
   ){}
 
-  async create(createInternetDto: CreateInternetDto, company_id: Company) {
+  async create(createInternetDto: CreateInternetDto) {
     try {
       const internet = this.internetRepository.create( createInternetDto );
 
-      internet.company_id = company_id;
-      
       await this.internetRepository.save( internet );
   
       return internet;      
@@ -31,13 +29,14 @@ export class InternetService {
     }
   }
 
-  async findAll( company_id, estado: boolean ) {
+  async findAll( router_id, estado: boolean ) {
     let option:any = { 
       order: { created_at: "DESC" }, 
       where: { 
-        isActive: null,
-        company_id: { id: company_id } 
-      }}
+        router_id: { id: router_id },
+        isActive: null
+      }
+    }
 
     if ( estado ) option.where.isActive = true; 
 

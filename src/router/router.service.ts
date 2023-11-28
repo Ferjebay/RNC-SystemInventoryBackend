@@ -49,10 +49,10 @@ export class RouterService {
   }
 
   async findOne(id: any, tipo: string) {
-    let router: Router;
+    let router: Router[];
     
     if ( isUUID(id) ) {
-      router = await this.routerRepository.findOne({
+      router = await this.routerRepository.find({
         where: [
           { company_id: { id } },
           { id }
@@ -60,9 +60,9 @@ export class RouterService {
       });
     }
 
-    if ( router && tipo == 'crear' ){
-      throw new BadRequestException(`Ya existe configuración de router en la empresa ${ router.company_id.nombre_comercial }`);
-    }
+    // if ( router.length > 0 && tipo == 'crear' ){
+    //   throw new BadRequestException(`Ya existe configuración de router en la empresa ${ router[0].company_id.nombre_comercial }`);
+    // }
 
     return router;
   }

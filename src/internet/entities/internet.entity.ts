@@ -1,4 +1,4 @@
-import { Company } from "src/companies/entities/company.entity";
+import { Router } from "src/router/entities/router.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity('internet')
@@ -7,9 +7,9 @@ export class Internet {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @ManyToOne(() => Company, (company) => company.internet, { eager: true })
-    @JoinColumn({ name: 'company_id' })
-    company_id: Company;
+    @ManyToOne(() => Router, (router) => router.internet, { eager: true })
+    @JoinColumn({ name: 'router_id' })
+    router_id: Router;
 
     @Column({ type: 'varchar', length: 100 })
     nombre_plan: string;

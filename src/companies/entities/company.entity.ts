@@ -29,9 +29,6 @@ export class Company {
     @OneToMany(() => CajaNap, (cajaNap) => cajaNap.company_id)
     cajaNap: CajaNap[]
 
-    @OneToMany(() => Internet, (internet) => internet.company_id)
-    internet: Internet[]
-
     @OneToMany(() => Sucursal, (sucursal) => sucursal.company_id )
     sucursal: Sucursal[]
 
