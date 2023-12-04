@@ -1,7 +1,6 @@
 import { Injectable, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { CreateInternetDto } from './dto/create-internet.dto';
 import { UpdateInternetDto } from './dto/update-internet.dto';
-import { Company } from 'src/companies/entities/company.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Internet } from './entities/internet.entity';
 import { Repository } from 'typeorm';

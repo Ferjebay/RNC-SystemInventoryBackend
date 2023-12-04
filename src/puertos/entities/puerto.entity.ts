@@ -1,5 +1,6 @@
 import { CajaNap } from "src/caja-nap/entities/caja-nap.entity";
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { ServicioCliente } from "src/customers/entities/ServicioCliente.entity";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity('puertos')
 export class Puerto {
@@ -15,6 +16,9 @@ export class Puerto {
     @ManyToOne(() => CajaNap, (cajaNap) => cajaNap.puertos, { onDelete: 'CASCADE'  })
     @JoinColumn({ name: 'cajaNap_id' })
     cajaNap_id: CajaNap;
+
+    @OneToMany(() => ServicioCliente, (servicioCliente) => servicioCliente.puerto_id)
+    plan_internet: ServicioCliente[]
 
     @Column({ type: 'int' })
     puerto: number;

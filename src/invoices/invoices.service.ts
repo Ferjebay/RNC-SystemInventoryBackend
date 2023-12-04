@@ -7,8 +7,6 @@ import { Not, Repository } from 'typeorm';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { FacturasService } from 'src/comprobantes-electronicos/facturas/facturas.service';
 import { InvoiceToProduct } from './entities/invoiceToProduct.entity';
-const fs = require('fs');
-const path = require('path');
 
 @Injectable()
 export class InvoicesService {

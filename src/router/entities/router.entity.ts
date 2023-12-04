@@ -1,4 +1,6 @@
+import { CajaNap } from "src/caja-nap/entities/caja-nap.entity";
 import { Company } from "src/companies/entities/company.entity";
+import { ServicioCliente } from "src/customers/entities/ServicioCliente.entity";
 import { Internet } from "src/internet/entities/internet.entity";
 import { RedIpv4 } from "src/red-ipv4/entities/red-ipv4.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
@@ -15,6 +17,12 @@ export class Router {
 
     @OneToMany(() => Internet, (internet) => internet.router_id)
     internet: Internet[]
+
+    @OneToMany(() => ServicioCliente, (servicioCliente) => servicioCliente.router_id)
+    plan_internet: ServicioCliente[]
+
+    @OneToMany(() => CajaNap, (cajaNap) => cajaNap.router_id)
+    cajaNap: CajaNap[]
 
     @OneToMany(() => RedIpv4, (redIpv4) => redIpv4.router_id)
     redes: RedIpv4[]

@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, DefaultValu
 import { CajaNapService } from './caja-nap.service';
 import { CreateCajaNapDto } from './dto/create-caja-nap.dto';
 import { UpdateCajaNapDto } from './dto/update-caja-nap.dto';
-import { Company } from 'src/companies/entities/company.entity';
+import { Router } from 'src/router/entities/router.entity';
 
 @Controller('caja-nap')
 export class CajaNapController {
@@ -10,18 +10,17 @@ export class CajaNapController {
 
   @Post()
   create(
-    @Headers('company_id') company_id: Company,
     @Body() createCajaNapDto: CreateCajaNapDto
   ) {
-    return this.cajaNapService.create(createCajaNapDto, company_id);
+    return this.cajaNapService.create( createCajaNapDto );
   }
 
   @Get()
   findAll(
-    @Headers('company_id') company_id: Company,
+    @Headers('router_id') router_id: Router,
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean 
   ){
-    return this.cajaNapService.findAll( company_id, estado  );
+    return this.cajaNapService.findAll( router_id, estado  );
   }
 
   @Get(':id')

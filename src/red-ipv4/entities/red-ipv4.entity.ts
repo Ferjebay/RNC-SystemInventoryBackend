@@ -1,5 +1,6 @@
+import { ServicioCliente } from "src/customers/entities/ServicioCliente.entity";
 import { Router } from "src/router/entities/router.entity";
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity('redes-ipv4')
 export class RedIpv4 {
@@ -11,10 +12,13 @@ export class RedIpv4 {
     @JoinColumn({ name: 'router_id' })
     router_id: Router;
 
+    @OneToMany(() => ServicioCliente, (servicioCliente) => servicioCliente.red_id)
+    plan_internet: ServicioCliente[]
+
     @Column({ type: 'varchar', length: 100 })
     nombre: string;
 
-    @Column({ type: 'varchar', length: 18 })
+    @Column({ type: 'varchar', length: 18, unique: true })
     red: string;
 
     @Column({ type: 'varchar', length: 70 })

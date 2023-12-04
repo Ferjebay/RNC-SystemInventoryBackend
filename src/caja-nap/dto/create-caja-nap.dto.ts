@@ -1,6 +1,11 @@
-import { IsNotEmpty, IsOptional, IsString } from "class-validator";
+import { IsNotEmpty, IsOptional, IsString, IsUUID } from "class-validator";
+import { Router } from "src/router/entities/router.entity";
 
 export class CreateCajaNapDto {
+
+    @IsNotEmpty()
+    @IsUUID()
+    router_id: Router;
 
     @IsNotEmpty()
     @IsString()

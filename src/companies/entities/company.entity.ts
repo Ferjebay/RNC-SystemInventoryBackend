@@ -24,10 +24,7 @@ export class Company {
     customer: Customer[]
 
     @OneToMany(() => Router, (router) => router.company_id)
-    router: Router[]
-
-    @OneToMany(() => CajaNap, (cajaNap) => cajaNap.company_id)
-    cajaNap: CajaNap[]
+    router: Router[];
 
     @OneToMany(() => Sucursal, (sucursal) => sucursal.company_id )
     sucursal: Sucursal[]

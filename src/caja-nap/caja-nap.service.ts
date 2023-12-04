@@ -4,7 +4,6 @@ import { UpdateCajaNapDto } from './dto/update-caja-nap.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CajaNap } from './entities/caja-nap.entity';
 import { Repository } from 'typeorm';
-import { Company } from 'src/companies/entities/company.entity';
 import { Puerto } from 'src/puertos/entities/puerto.entity';
 import { isUUID } from 'class-validator';
 
@@ -20,13 +19,11 @@ export class CajaNapService {
     private readonly puertoRepository: Repository<Puerto>,
   ){}
 
-  async create(createCajaNapDto: CreateCajaNapDto, company_id: Company) {
+  async create( createCajaNapDto: CreateCajaNapDto ) {
     try {
       const { puertos, ...rest } = createCajaNapDto
       const cajaNap = this.cajaNapRepository.create( rest );
 
-      cajaNap.company_id = company_id;
-      
       const cajaNapCreated = await this.cajaNapRepository.save( cajaNap );
 
       const puertosArray: Array<Puerto> = []; 
@@ -43,12 +40,12 @@ export class CajaNapService {
     }
   }
 
-  async findAll( company_id, estado: boolean ) {
+  async findAll( router_id, estado: boolean ) {
     let option:any = { 
       order: { created_at: "DESC" }, 
       where: { 
-        isActive: null,
-        company_id: { id: company_id } 
+        router_id: { id: router_id },
+        isActive: null
       }}
 
     if ( estado ) option.where.isActive = true; 

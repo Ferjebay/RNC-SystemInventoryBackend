@@ -3,6 +3,7 @@ import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Company } from 'src/companies/entities/company.entity';
+import { Router } from 'src/router/entities/router.entity';
 
 @Controller('customers')
 export class CustomersController {
@@ -27,6 +28,11 @@ export class CustomersController {
   @Get('/find/:term')
   findOne(@Param('term') term: string) {
     return this.customersService.findOne( term );
+  }
+
+  @Get('/get-ips/:router_id')
+  getIpsUtilizadas(@Param('router_id') router_id: Router) {
+    return this.customersService.getIpsUtilizadas( router_id );
   }
 
   @Patch(':id')

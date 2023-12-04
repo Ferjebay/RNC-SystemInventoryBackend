@@ -3,9 +3,12 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Customer } from './entities/customer.entity';
-import { Not, Repository } from 'typeorm';
+import { DataSource, Not, Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
 import { Company } from 'src/companies/entities/company.entity';
+import { FacturaCliente } from './entities/Facturacion.entity';
+import { ServicioCliente } from './entities/ServicioCliente.entity';
+import { Router } from 'src/router/entities/router.entity';
 
 @Injectable()
 export class CustomersService {
@@ -14,19 +17,46 @@ export class CustomersService {
 
   constructor(
     @InjectRepository( Customer )
-    private readonly customerRepository: Repository<Customer>
+    private readonly customerRepository: Repository<Customer>,    
+    @InjectRepository( ServicioCliente )
+    private readonly servicioRepository: Repository<ServicioCliente>,    
+    private readonly dataSource: DataSource,
   ){}
 
   async create(createCustomerDto: CreateCustomerDto, company_id: Company) {
+   const queryRunner = this.dataSource.createQueryRunner();
+   await queryRunner.connect();
+   await queryRunner.startTransaction();
     try {
-      const customer = this.customerRepository.create( createCustomerDto );
-
-      customer.company_id = company_id;
+      const customer = this.customerRepository.create( createCustomerDto.cliente );
+      customer.company_id = company_id;      
+      const customerCreated = await queryRunner.manager.save( Customer, customer );
       
-      await this.customerRepository.save( customer );
+      //crear datos de facturacion
+      let facturacion = new FacturaCliente();
+      facturacion = { ...createCustomerDto.facturacion, customer: customerCreated };
+      await queryRunner.manager.save( FacturaCliente, facturacion );
+      
+      //crear servicios del internet
+      let servicioCliente: any = {}
+      if( Object.entries( createCustomerDto.servicio.caja_id ).length === 0 || !isUUID(createCustomerDto.servicio['puerto_id']) ){
+        const { caja_id, puerto_id, ...rest } = createCustomerDto.servicio
+        servicioCliente = { ...rest }
+      }else{
+        servicioCliente = createCustomerDto.servicio;
+      }
+      
+      let servicio = new ServicioCliente();
+      servicio = { ...servicioCliente, customer: customerCreated };
+      await queryRunner.manager.save( ServicioCliente, servicio );
+
+      await queryRunner.commitTransaction();
+      await queryRunner.release();
   
-      return customer;      
+      return customerCreated;      
     } catch (error) {
+      await queryRunner.rollbackTransaction();
+      await queryRunner.release();
       this.handleDBExceptions( error )
     }
   }
@@ -46,6 +76,13 @@ export class CustomersService {
     if ( estado ) option.where.isActive = true;
 
     return await this.customerRepository.find( option );
+  }
+
+  async getIpsUtilizadas( id: any ) {
+    return await this.servicioRepository.find({ 
+      where: { router_id: { id } },
+      select: { ipv4: true } 
+    });
   }
 
   async findOne(term: string) {
@@ -72,7 +109,7 @@ export class CustomersService {
     await this.findOne( id );
 
     try {
-      await this.customerRepository.update( id, updateCustomerDto );
+      // await this.customerRepository.update( id, updateCustomerDto );
 
       return {
         ok: true,
@@ -103,7 +140,6 @@ export class CustomersService {
     
     return { ok: true, msg };
   }
-
   
   private handleDBExceptions( error: any ) {
     if ( error.code === '23505' )
