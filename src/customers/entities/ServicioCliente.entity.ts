@@ -1,10 +1,12 @@
-import { Column, Entity, JoinColumn, ManyToOne,  PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne,  OneToMany,  PrimaryGeneratedColumn } from "typeorm";
 import { Customer } from "./customer.entity";
 import { Router } from "src/router/entities/router.entity";
 import { Internet } from "src/internet/entities/internet.entity";
 import { RedIpv4 } from "src/red-ipv4/entities/red-ipv4.entity";
 import { CajaNap } from "src/caja-nap/entities/caja-nap.entity";
 import { Puerto } from "src/puertos/entities/puerto.entity";
+import { FacturaCliente } from "./Facturacion.entity";
+import { Pago } from "src/pagos/entities/pago.entity";
 
 @Entity('servicios-clientes')
 export class ServicioCliente {
@@ -12,9 +14,16 @@ export class ServicioCliente {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
+    @OneToMany(() => Pago, (pago) => pago.servicio)
+    pago: Pago[];
+
     @ManyToOne(() => Customer, (customer) => customer.planInternet)
     @JoinColumn({ name: 'customer_id' })
     customer: Customer;
+
+    @ManyToOne(() => FacturaCliente, ( facturaCliente ) => facturaCliente.servicio_id, { eager: true })
+    @JoinColumn({ name: 'factura_id' })
+    factura_id: FacturaCliente;
 
     @ManyToOne(() => Router, (router) => router.plan_internet, { eager: true })
     @JoinColumn({ name: 'router_id' })
@@ -53,4 +62,7 @@ export class ServicioCliente {
 
     @Column({ type: 'varchar', length: 20, nullable: true })
     ipv4: string;
+
+    @Column({ type: 'bool', default: true })
+    isActive: boolean;
 }

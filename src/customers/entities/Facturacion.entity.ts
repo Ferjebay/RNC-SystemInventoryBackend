@@ -1,5 +1,6 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Customer } from "./customer.entity";
+import { ServicioCliente } from "./ServicioCliente.entity";
 
 @Entity('factura-clientes')
 export class FacturaCliente {
@@ -10,6 +11,9 @@ export class FacturaCliente {
     @ManyToOne(() => Customer, (customer) => customer.facturaCliente)
     @JoinColumn({ name: 'customer_id' })
     customer: Customer
+
+    @OneToMany(() => ServicioCliente, ( servicioCliente ) => servicioCliente.factura_id)
+    servicio_id?: ServicioCliente[];
 
     @Column({ type: 'varchar', length: 70 })
     tipo: string;

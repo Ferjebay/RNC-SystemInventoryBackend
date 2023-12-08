@@ -35,7 +35,7 @@ export class CustomersService {
       //crear datos de facturacion
       let facturacion = new FacturaCliente();
       facturacion = { ...createCustomerDto.facturacion, customer: customerCreated };
-      await queryRunner.manager.save( FacturaCliente, facturacion );
+      const facturaCreated = await queryRunner.manager.save( FacturaCliente, facturacion );
       
       //crear servicios del internet
       let servicioCliente: any = {}
@@ -47,7 +47,7 @@ export class CustomersService {
       }
       
       let servicio = new ServicioCliente();
-      servicio = { ...servicioCliente, customer: customerCreated };
+      servicio = { ...servicioCliente, customer: customerCreated, factura_id: facturaCreated };
       await queryRunner.manager.save( ServicioCliente, servicio );
 
       await queryRunner.commitTransaction();

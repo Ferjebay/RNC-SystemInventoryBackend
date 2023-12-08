@@ -24,6 +24,7 @@ import { InternetModule } from './internet/internet.module';
 import { CajaNapModule } from './caja-nap/caja-nap.module';
 import { PuertosModule } from './puertos/puertos.module';
 import { RedIpv4Module } from './red-ipv4/red-ipv4.module';
+import { PagosModule } from './pagos/pagos.module';
 
 @Module({
   imports: [
@@ -68,7 +69,8 @@ import { RedIpv4Module } from './red-ipv4/red-ipv4.module';
     InternetModule,
     CajaNapModule,
     PuertosModule,
-    RedIpv4Module
+    RedIpv4Module,
+    PagosModule
   ],
   controllers: [AppController],
   providers: [AppService],
