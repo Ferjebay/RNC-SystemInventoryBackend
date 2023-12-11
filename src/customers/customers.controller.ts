@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, DefaultValuePipe, ParseBoolPipe, ParseUUIDPipe, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, DefaultValuePipe, ParseBoolPipe, ParseUUIDPipe, Headers, Put } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -41,6 +41,22 @@ export class CustomersController {
     @Body() updateCustomerDto: UpdateCustomerDto
   ) {
     return this.customersService.update(id, updateCustomerDto);
+  }
+
+  @Put('/actualizarDatosFactura/:id')
+  actualizarDatosFactura(
+    @Param('id', ParseUUIDPipe) id: string, 
+    @Body() datosFacturacion: any
+  ){
+    return this.customersService.actualizarDatosFactura(id, datosFacturacion);
+  }
+
+  @Put('/actualizarDatosPersonales/:id')
+  actualizarDatosPersonales(
+    @Param('id', ParseUUIDPipe) id: string, 
+    @Body() datosFactura: any
+  ){
+    return this.customersService.actualizarDatosPersonales(datosFactura, '');
   }
 
   @Patch(':id/:estado')

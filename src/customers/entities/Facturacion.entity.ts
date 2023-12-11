@@ -27,6 +27,9 @@ export class FacturaCliente {
     @Column({ type: 'varchar', length: 25 })
     tipo_impuesto: string;
 
+    @Column({ type: 'varchar', length: 10, nullable: true })
+    tipo_comprobante: string;
+
     @Column({ type: 'varchar', length: 10 })
     dia_gracia: string
 

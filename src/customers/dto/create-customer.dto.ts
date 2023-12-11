@@ -56,6 +56,10 @@ class Factura {
 
   @IsNotEmpty()
   @IsString()
+  tipo_comprobante: string
+
+  @IsNotEmpty()
+  @IsString()
   dia_gracia: string
 
   @IsNotEmpty()

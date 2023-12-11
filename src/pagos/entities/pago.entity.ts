@@ -20,8 +20,17 @@ export class Pago {
         detalle?: string 
     }[];
 
-    @Column({ type: 'varchar', length: 25 })
-    estado: string;
+    @Column({ type: 'varchar', length: 25, nullable: true })
+    estadoSRI: string;
+
+    @Column({ type: 'varchar', length: 25, nullable: true })
+    num_comprobante?: string;
+
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    clave_acceso?: string;
+
+    @Column({ type: 'varchar', length: 200, nullable: true })
+    respuestaSRI?: string;
 
     @CreateDateColumn()
     created_at?: Date;

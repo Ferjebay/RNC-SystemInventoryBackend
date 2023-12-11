@@ -229,7 +229,13 @@ export class Proforma {
 
       const content = this.plantilla( datosFactura, clientFound[0], infoCompany[0], pathImage );
   
-      const browser = await puppeteer.launch({ headless: true })
+      let browser;
+      if (process.env.SISTEMA == 'linux') {
+        browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: [ '--disable-gpu', '--disable-setuid-sandbox', '--no-sandbox', '--no-zygote' ] });        
+      }else{
+        browser = await puppeteer.launch({ headless: true })
+      }
+
       const page = await browser.newPage()
   
       await page.setContent(content);

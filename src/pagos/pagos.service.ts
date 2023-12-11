@@ -38,7 +38,6 @@ export class PagosService {
 
   async update(id: string, updatePagoDto: UpdatePagoDto) {
     try {
-      console.log(updatePagoDto.pagos);
       await this.pagoRepository.update( id, updatePagoDto );
 
       return {

@@ -1,13 +1,14 @@
 import { Injectable, forwardRef, Inject } from '@nestjs/common';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { CustomersService } from '../../customers/customers.service';
 import { InvoicesService } from 'src/invoices/invoices.service';
 import { EmailService } from 'src/email/email.service';
 import { MessagesWsService } from 'src/messages-ws/messages-ws.service';
 import { Proforma } from '../plantillas/proforma';
 import { Factura } from '../plantillas/factura';
+import { Pago } from 'src/pagos/entities/pago.entity';
 const axios = require('axios');
 const moment = require('moment');
 const builder = require("xmlbuilder");
@@ -26,7 +27,8 @@ export class FacturasService {
     private invoiceService: InvoicesService,
     private readonly customerService: CustomersService,
     private readonly emailService: EmailService,
-    private readonly messageWsService: MessagesWsService
+    private readonly messageWsService: MessagesWsService,
+    private readonly dataSource: DataSource
   ){}
 
   calcularDigitoVerificadorMod11( clave ){
@@ -108,7 +110,7 @@ export class FacturasService {
     return `${claveAcceso + digitoVerificador}`;
   }
 
-  async generarNotaCredito( datosFactura ){   
+  async generarNotaCredito( datosFactura, entity: string = 'Invoice' ){   
     
     const infoCompany = await this.sucursalRepository.find({
       relations: { company_id: true },
@@ -231,7 +233,7 @@ export class FacturasService {
     
     const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }`);
 
-    const java = process.env.JAVA_PATH;
+    const java = process.env.SISTEMA == 'linux' ? process.env.JAVA_PATH_LINUX : process.env.JAVA_PATH_WINDOWS;
     const pathCertificado = path.resolve(__dirname, `../../../static/SRI/FIRMAS/${ infoCompany[0].company_id.archivo_certificado }`);
 
     try {
@@ -258,7 +260,7 @@ export class FacturasService {
 
     let recibida;
     try {
-      recibida = await this.recepcionComprobantesOffline( nombreComercial, claveAcceso, datosFactura.id, 'nota_credito', host, pathXML,   datosFactura.user_id.id, xml );
+      recibida = await this.recepcionComprobantesOffline( nombreComercial, claveAcceso, datosFactura.id, 'nota_credito', host, pathXML, datosFactura.user_id.id, xml, entity );
     } catch (error) {
       return { ok: false }
     }
@@ -267,7 +269,7 @@ export class FacturasService {
       setTimeout(async () => {
         let autorizado;
         try {
-          autorizado = this.autorizacionComprobantesOffline( host, claveAcceso, datosFactura.id, datosFactura.user_id.id, nombreComercial, 'nota_credito', datosFactura.numero_comprobante);                    
+          autorizado = this.autorizacionComprobantesOffline( host, claveAcceso, datosFactura.id, datosFactura.user_id.id, nombreComercial, 'nota_credito', datosFactura.numero_comprobante, entity);                    
         } catch (error) {
           return { ok: false }
         }
@@ -291,12 +293,22 @@ export class FacturasService {
     } 
   }
 
-  recepcionComprobantesOffline( nombreComercial, claveAcceso, invoice_id, tipo, host, pathXML, user_id, xml ){
+  recepcionComprobantesOffline( 
+    nombreComercial, 
+    claveAcceso, 
+    entity_id, 
+    tipo, 
+    host, 
+    pathXML, 
+    user_id, 
+    xml,
+    entity
+  ){
     return new Promise(async (resolve, reject) => {
       let signedXml = null;
-
+      
       try {
-          const xmlOut = await fs.readFileSync(`${ pathXML }/${ tipo == 'nota_credito' ? 'notasCreditos' : 'facturas' }/Firmados/${ claveAcceso }.xml`);
+        const xmlOut = await fs.readFileSync(`${ pathXML }/${ tipo == 'nota_credito' ? 'notasCreditos' : 'facturas' }/Firmados/${ claveAcceso }.xml`);
           signedXml = xmlOut.toString('base64');
       } catch (err) {
           console.log('error firma: ', err)
@@ -326,7 +338,19 @@ export class FacturasService {
         resp = await axios(config);
       } catch (err) {
         console.log('error axio:', err)
-        await this.invoiceService.update( invoice_id, { estadoSRI: `ERROR ENVIO RECEPCION ${ tipo == 'nota_credito' ? '- ANULACION' : ''}` } );
+
+        
+        if ( entity == 'Pagos' ){
+          const queryRunner = this.dataSource.createQueryRunner();
+          await queryRunner.connect()
+          await queryRunner.manager.update(Pago, entity_id, { 
+            estadoSRI: `ERROR ENVIO RECEPCION ${ tipo == 'nota_credito' ? '- ANULACION' : ''}` 
+          })
+          await queryRunner.release()
+        }else{
+          await this.invoiceService.update( entity_id, { estadoSRI: `ERROR ENVIO RECEPCION ${ tipo == 'nota_credito' ? '- ANULACION' : ''}` } );
+        }
+
         this.messageWsService.updateStateInvoice( user_id );
         return reject( false );
       }
@@ -338,7 +362,18 @@ export class FacturasService {
 
         const estado = jObj['soap:Envelope']['soap:Body']['ns2:validarComprobanteResponse']['RespuestaRecepcionComprobante']['estado'];
 
-        await this.invoiceService.update( invoice_id, { estadoSRI: `${ tipo == 'nota_credito' ? 'ANULACION -' : '' } ${ estado }` } )
+        if ( entity == 'Pagos' ){
+          const queryRunner = this.dataSource.createQueryRunner();
+          await queryRunner.connect()
+          await queryRunner.manager.update(Pago, entity_id, { 
+            estadoSRI: `${ tipo == 'nota_credito' ? 'ANULACION -' : '' } ${ estado }` 
+          })
+          await queryRunner.release()
+        }else{
+          await this.invoiceService.update( entity_id, 
+            { estadoSRI: `${ tipo == 'nota_credito' ? 'ANULACION -' : '' } ${ estado }` } 
+          )
+        }
         
         if ('DEVUELTA' === estado) {
             const comprobantes = jObj['soap:Envelope']['soap:Body']['ns2:validarComprobanteResponse']['RespuestaRecepcionComprobante']['comprobantes'];
@@ -358,18 +393,28 @@ export class FacturasService {
             const infoAdicional = mensaje?.informacionAdicional || 'NO HAY INFO ADICIONAL'
 
             const respuestaSRI = `MENSAJE: ${ mensaje.mensaje } - INFOADICIONAL: ${ infoAdicional }`
-            
-            await this.invoiceService.update( invoice_id, { respuestaSRI } )
+
+            if ( entity == 'Pagos' ){
+              const queryRunner = this.dataSource.createQueryRunner();
+              await queryRunner.connect()
+              await queryRunner.manager.update(Pago, entity_id, { respuestaSRI })
+              await queryRunner.release()
+            }else{
+              await this.invoiceService.update( entity_id, { respuestaSRI } )
+            }
+
             this.messageWsService.updateStateInvoice( user_id );
             reject( false );
         }
+        
         resolve( true )
       }
     });
   }
 
-  autorizacionComprobantesOffline( host, accessKey, invoice_id, user_id, nombreComercial, tipo, numComprobante ){
+  autorizacionComprobantesOffline( host, accessKey, invoice_id, user_id, nombreComercial, tipo, numComprobante, entity ){
     return new Promise(async (resolve, reject) => { 
+      console.log(accessKey);
       var config = {
           method: 'post',
           url: host + '/comprobantes-electronicos-ws/AutorizacionComprobantesOffline?wsdl',
@@ -394,15 +439,26 @@ export class FacturasService {
         resp = await axios(config);
       } catch (err) {
         console.log('error axio:', err);
+
+        if ( entity == 'Pagos' ){
+          const queryRunner = this.dataSource.createQueryRunner();
+          await queryRunner.connect()
+          await queryRunner.manager.update(Pago, invoice_id, { 
+            estadoSRI: `ERROR ENVIO AUTORIZACION ${ tipo == 'nota_credito' ? '- ANULACION' : '' } :` 
+          })
+          await queryRunner.release()
+        }else{
+          await this.invoiceService.update( invoice_id, { 
+            estadoSRI: `ERROR ENVIO AUTORIZACION ${ tipo == 'nota_credito' ? '- ANULACION' : '' } :` 
+          });
+        }
         reject( false );
-        await this.invoiceService.update( invoice_id, { 
-          estadoSRI: `ERROR ENVIO AUTORIZACION ${ tipo == 'nota_credito' ? '- ANULACION' : '' } :` 
-        });
       }
   
       if (resp !== null && resp.status === 200) {
         const parser = new XMLParser();
         const jObj = parser.parse(resp.data);
+        console.log(resp.data);
   
         const autorizacion = jObj['soap:Envelope']['soap:Body']['ns2:autorizacionComprobanteResponse']['RespuestaAutorizacionComprobante']['autorizaciones']['autorizacion'];
   
@@ -426,12 +482,25 @@ export class FacturasService {
           await fs.mkdirSync(path.dirname(pathXML), {recursive: true, })
           await fs.writeFileSync(pathXML, resp.data, {flag: 'w+', encoding: 'utf-8'});
   
-          await this.invoiceService.update( invoice_id, { 
-            numero_comprobante: numComprobante, 
-            clave_acceso: accessKey, 
-            estadoSRI: estado.trim(), 
-            respuestaSRI  
-          });
+          if ( entity == 'Pagos' ){
+            const queryRunner = this.dataSource.createQueryRunner();
+            await queryRunner.connect()
+            await queryRunner.manager.update(Pago, invoice_id, { 
+              num_comprobante: numComprobante, 
+              clave_acceso: accessKey, 
+              estadoSRI: estado.trim(), 
+              respuestaSRI  
+            })
+            await queryRunner.release()
+          }else{
+            await this.invoiceService.update( invoice_id, { 
+              numero_comprobante: numComprobante, 
+              clave_acceso: accessKey, 
+              estadoSRI: estado.trim(), 
+              respuestaSRI  
+            });
+          }
+
   
           if ( estado == 'AUTORIZADO' || estado == 'ANULADO') resolve( true );
           else reject( false );
@@ -445,9 +514,15 @@ export class FacturasService {
     })    
   }
 
-  async generarFacturaElectronica( datosFactura, claveAcceso, sucursal_id: any, invoice_id: string = null){   
+  async generarFacturaElectronica( 
+    datosFactura, 
+    claveAcceso = '', 
+    sucursal_id: any, 
+    entity_id: string = null,
+    entity: string = 'Invoice'
+  ){   
 
-    if ( datosFactura.tipo == 'EMISION' ) 
+    if ( datosFactura.tipo == 'EMISION') 
       claveAcceso = await this.getClaveAcceso( sucursal_id );
 
     const clientFound = await this.customerService.findOne( datosFactura.customer_id );
@@ -502,59 +577,59 @@ export class FacturasService {
     });
     
     const infoFactura = {
-        fechaEmision:                 moment().format('DD/MM/YYYY'),
-        dirEstablecimiento:           infoCompany[0].direccion,
-        obligadoContabilidad:         infoCompany[0].company_id.obligado_contabilidad ? 'SI' : 'NO',
-        tipoIdentificacionComprador:  clientFound[0].tipo_documento,
-        razonSocialComprador:         clientFound[0].nombres,
-        identificacionComprador:      clientFound[0].numero_documento,
-        direccionComprador:           clientFound[0].direccion,
-        totalSinImpuestos:            ( datosFactura.subtotal - datosFactura.descuento ).toFixed(2),
-        totalDescuento:               datosFactura.descuento,
-        totalConImpuestos: { 
-          totalImpuesto: {
-            codigo: 2,
-            codigoPorcentaje: datosFactura.iva > 0 ? 2 : 0,
-            baseImponible: datosFactura.iva > 0 ? parseFloat(sumaPrecioTotalSinImpuesto.toString()).toFixed(2) : datosFactura.total,
-            tarifa: datosFactura.iva > 0 ? 12 : 0,
-            valor: datosFactura.iva ? datosFactura.iva : (0).toFixed(2)
-          }
-        },
-        propina: 0.00,
-        importeTotal: datosFactura.total,
-        moneda: 'DOLAR',
-        pagos: {
-          pago: {
-            formaPago: '01',
-            total: datosFactura.total
-          }
+      fechaEmision:                 moment().format('DD/MM/YYYY'),
+      dirEstablecimiento:           infoCompany[0].direccion,
+      obligadoContabilidad:         infoCompany[0].company_id.obligado_contabilidad ? 'SI' : 'NO',
+      tipoIdentificacionComprador:  clientFound[0].tipo_documento,
+      razonSocialComprador:         clientFound[0].nombres,
+      identificacionComprador:      clientFound[0].numero_documento,
+      direccionComprador:           clientFound[0].direccion,
+      totalSinImpuestos:            ( datosFactura.subtotal - datosFactura.descuento ).toFixed(2),
+      totalDescuento:               datosFactura.descuento,
+      totalConImpuestos: { 
+        totalImpuesto: {
+          codigo: 2,
+          codigoPorcentaje: datosFactura.iva > 0 ? 2 : 0,
+          baseImponible: datosFactura.iva > 0 ? parseFloat(sumaPrecioTotalSinImpuesto.toString()).toFixed(2) : datosFactura.total,
+          tarifa: datosFactura.iva > 0 ? 12 : 0,
+          valor: datosFactura.iva ? datosFactura.iva : (0).toFixed(2)
         }
+      },
+      propina: 0.00,
+      importeTotal: datosFactura.total,
+      moneda: 'DOLAR',
+      pagos: {
+        pago: {
+          formaPago: '01',
+          total: datosFactura.total
+        }
+      }
     };
 
     const detalle = []
   
     datosFactura.products.forEach((item) => {   
-        let subtotalSinDescuento = parseInt(item.cantidad) * parseFloat( item.pvp );      
-        let subtotalConDescuento = (subtotalSinDescuento * item.descuento) / 100;
-        let precioTotalSinImpuesto = (subtotalSinDescuento - subtotalConDescuento).toFixed(2);
+      let subtotalSinDescuento = parseInt(item.cantidad) * parseFloat( item.pvp );      
+      let subtotalConDescuento = (subtotalSinDescuento * item.descuento) / 100;
+      let precioTotalSinImpuesto = (subtotalSinDescuento - subtotalConDescuento).toFixed(2);
 
-        detalle.push({
-          codigoPrincipal: item.codigoBarra,
-          descripcion: item.nombre,
-          cantidad: item.cantidad, 
-          precioUnitario: parseFloat(item.pvp).toFixed(2),
-          descuento: parseFloat(subtotalConDescuento.toString()).toFixed(2),
-          precioTotalSinImpuesto: precioTotalSinImpuesto,
-          impuestos: {
-            impuesto: {
-              codigo: 2,
-              codigoPorcentaje: item.aplicaIva ? 2 : 0,
-              tarifa: item.aplicaIva ? 12 : 0,
-              baseImponible: precioTotalSinImpuesto,
-              valor: item.aplicaIva ? ( parseFloat(precioTotalSinImpuesto) * 0.12).toFixed(2) : (0).toFixed(2) 
-            }
+      detalle.push({
+        codigoPrincipal: item.codigoBarra,
+        descripcion: item.nombre,
+        cantidad: item.cantidad, 
+        precioUnitario: parseFloat(item.pvp).toFixed(2),
+        descuento: parseFloat(subtotalConDescuento.toString()).toFixed(2),
+        precioTotalSinImpuesto: precioTotalSinImpuesto,
+        impuestos: {
+          impuesto: {
+            codigo: 2,
+            codigoPorcentaje: item.aplicaIva ? 2 : 0,
+            tarifa: item.aplicaIva ? 12 : 0,
+            baseImponible: precioTotalSinImpuesto,
+            valor: item.aplicaIva ? ( parseFloat(precioTotalSinImpuesto) * 0.12).toFixed(2) : (0).toFixed(2) 
           }
-        })       
+        }
+      })       
     });
 
     const campoAdicional = [{
@@ -589,26 +664,24 @@ export class FacturasService {
       await fs.writeFileSync(`${ pathXML }/facturas/Generados/${ claveAcceso }.xml`, xml, {flag: 'w+', encoding: 'utf-8'})
 
       await fs.mkdirSync(path.dirname(`${ pathXML }/facturas/Firmados/${ claveAcceso }.xml`), {recursive: true})
-      await fs.writeFileSync(`${ pathXML }/facturas/Firmados/${ claveAcceso }.xml`, "", {flag: 'w+', encoding: 'utf-8'})
     } catch (err) {
       return console.log(err)
     }
     
     //------------------------------------- Firmar XML------------------------------------
     const cmd = java + ' -jar "' + path.resolve('static/resource/jar/firmaxml1 (1).jar') + '" "' + `${ pathXML }/facturas/Generados/${ claveAcceso }.xml` + '" "' + pathCertificado + '" "' + infoCompany[0].company_id.clave_certificado + '" "' + `${ pathXML }/facturas/Firmados/${ claveAcceso }.xml` + '"';
-
+    
     try {
       await execSync(cmd)
     } catch (err) {
       return console.log('error firma: ', err)
     }
     //------------------------------------------------------------------------------------
-
     let host = ( ambiente === 'PRUEBA') ? 'https://celcer.sri.gob.ec' : 'https://cel.sri.gob.ec';
     
     let recibida;
     try {
-      recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, invoice_id, 'factura', host, pathXML, datosFactura.user_id, xml )      
+      recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity )      
     } catch (error) {
       return { ok: false }
     }
@@ -617,7 +690,7 @@ export class FacturasService {
     if( recibida ){
       setTimeout(async () => {
         try {
-          autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, invoice_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante)    
+          autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity)    
         } catch (error) {
           return { ok: false }
         }

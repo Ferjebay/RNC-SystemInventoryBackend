@@ -27,7 +27,7 @@ export class InvoicesService {
       const claveAcceso = await this.facturaService.getClaveAcceso( sucursal_id );
       const { numComprobante } = await this.facturaService.getNumComprobante( sucursal_id );
 
-      if (createInvoiceDto.tipo !== 'EMISION'){
+      if (createInvoiceDto.tipo !== 'EMISION'){ //chequear CA y Num_Compr cuando pasa de proforma a fact
         let invoiceEntity = new Invoice();
         invoiceEntity = { 
           ...createInvoiceDto,

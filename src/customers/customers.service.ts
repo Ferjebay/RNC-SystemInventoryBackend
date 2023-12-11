@@ -8,7 +8,6 @@ import { isUUID } from 'class-validator';
 import { Company } from 'src/companies/entities/company.entity';
 import { FacturaCliente } from './entities/Facturacion.entity';
 import { ServicioCliente } from './entities/ServicioCliente.entity';
-import { Router } from 'src/router/entities/router.entity';
 
 @Injectable()
 export class CustomersService {
@@ -20,7 +19,7 @@ export class CustomersService {
     private readonly customerRepository: Repository<Customer>,    
     @InjectRepository( ServicioCliente )
     private readonly servicioRepository: Repository<ServicioCliente>,    
-    private readonly dataSource: DataSource,
+    private readonly dataSource: DataSource
   ){}
 
   async create(createCustomerDto: CreateCustomerDto, company_id: Company) {
@@ -129,6 +128,34 @@ export class CustomersService {
       await this.customerRepository.update( id, { isActive: false })
 
     return { ok: true, msg: 'Actualizado Exitosamente' };
+  }
+
+  async actualizarDatosFactura( id, datosFacturacion ){
+    const queryRunner = this.dataSource.createQueryRunner();
+    
+    try {
+      await queryRunner.connect()
+      await queryRunner.manager.update(FacturaCliente, id, datosFacturacion)
+      const factura = await queryRunner.manager.findBy(FacturaCliente, { id })
+      await queryRunner.release()
+      return { factura, msg: "Datos de Facturación actualizados" };        
+    } catch (error) {
+      this.handleDBExceptions( error );
+      await queryRunner.release()
+    }
+  }
+
+  async actualizarDatosPersonales( id, datosClientes ){
+    try {
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect()
+      await queryRunner.manager.update(Customer, id, datosClientes)
+      const cliente = await queryRunner.manager.findBy(Customer, { id })
+      await queryRunner.release()
+      return { cliente, msg: "Datos del cliente actualizados" };        
+    } catch (error) {
+      this.handleDBExceptions( error );
+    }
   }
 
   async remove(id: string) {
