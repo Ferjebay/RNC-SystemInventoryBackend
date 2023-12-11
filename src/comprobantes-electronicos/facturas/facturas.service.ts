@@ -233,7 +233,7 @@ export class FacturasService {
     
     const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }`);
 
-    const java = process.env.SISTEMA == 'linux' ? process.env.JAVA_PATH_LINUX : process.env.JAVA_PATH_WINDOWS;
+    const java = process.env.JAVA_PATH;
     const pathCertificado = path.resolve(__dirname, `../../../static/SRI/FIRMAS/${ infoCompany[0].company_id.archivo_certificado }`);
 
     try {
