@@ -35,6 +35,6 @@ export class CreatePagoDto {
   pagos: Pago[];
 
   @IsOptional()
-  estado: string;
+  estadoSRI: string;
 
 }
