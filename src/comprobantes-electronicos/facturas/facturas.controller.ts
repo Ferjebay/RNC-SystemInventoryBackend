@@ -33,6 +33,11 @@ export class FacturasController {
     this.facturasService.reeenviarRecepcionComprobantesOffline(datosFactura);
   }
 
+  @Post('autorizacionComprobantesOffline')
+  async autorizacionComprobantesOffline( @Body() datosFactura: any ){
+    this.facturasService.reeenviarAutorizacionComprobantesOffline(datosFactura);
+  }
+
   @Post('anularFactura')
   anularFactura(
     @Body('factura') factura: any
