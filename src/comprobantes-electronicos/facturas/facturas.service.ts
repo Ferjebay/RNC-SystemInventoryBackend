@@ -333,12 +333,12 @@ export class FacturasService {
       };
 
       let resp = null;
+      console.log( config );
 
       try {
         resp = await axios(config);
       } catch (err) {
         console.log('error axio:', err)
-
         
         if ( entity == 'Pagos' ){
           const queryRunner = this.dataSource.createQueryRunner();
@@ -664,6 +664,7 @@ export class FacturasService {
       await fs.writeFileSync(`${ pathXML }/facturas/Generados/${ claveAcceso }.xml`, xml, {flag: 'w+', encoding: 'utf-8'})
 
       await fs.mkdirSync(path.dirname(`${ pathXML }/facturas/Firmados/${ claveAcceso }.xml`), {recursive: true})
+      await fs.writeFileSync(`${ pathXML }/facturas/Firmados/${ claveAcceso }.xml`, '', {flag: 'w+', encoding: 'utf-8'})
     } catch (err) {
       return console.log(err)
     }

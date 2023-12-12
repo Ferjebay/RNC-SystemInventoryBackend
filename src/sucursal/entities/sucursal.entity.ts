@@ -1,6 +1,7 @@
 import { Buy } from "src/buys/entities/buy.entity";
 import { Company } from "src/companies/entities/company.entity";
 import { Invoice } from "src/invoices/entities/invoice.entity";
+import { Pago } from "src/pagos/entities/pago.entity";
 import { Product } from "src/products/entities/product.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
@@ -25,6 +26,9 @@ export class Sucursal {
 
     @OneToMany(() => Product, (product) => product.sucursal_id)
     products: Product[];
+
+    @OneToMany(() => Pago, (pago) => pago.sucursal_id)
+    pagos: Pago[];
     //-----------------------------------------------
 
     @Column({ type: 'varchar', length: 100 })

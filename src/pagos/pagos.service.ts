@@ -5,6 +5,7 @@ import { Pago } from './entities/pago.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
+import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 
 @Injectable()
 export class PagosService {
@@ -36,9 +37,14 @@ export class PagosService {
     return pagos;
   }
 
-  async update(id: string, updatePagoDto: UpdatePagoDto) {
+  async update(id: string, updatePagoDto: UpdatePagoDto, sucursal_id: any) {
     try {
-      await this.pagoRepository.update( id, updatePagoDto );
+      let object = { ...updatePagoDto, sucursal_id: null }
+
+      if( sucursal_id !== '')
+        object.sucursal_id = sucursal_id;
+
+      await this.pagoRepository.update( id, object );
 
       return {
         ok: true,

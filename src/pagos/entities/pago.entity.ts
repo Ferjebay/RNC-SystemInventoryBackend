@@ -1,4 +1,5 @@
 import { ServicioCliente } from "src/customers/entities/ServicioCliente.entity";
+import { Sucursal } from "src/sucursal/entities/sucursal.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity('pagos')
@@ -10,6 +11,10 @@ export class Pago {
     @ManyToOne(() => ServicioCliente, ( servicioCliente ) => servicioCliente.pago, { eager: true })
     @JoinColumn({ name: 'servicio_id' })
     servicio?: ServicioCliente;
+
+    @ManyToOne(() => Sucursal, (sucursal) => sucursal.pagos, { nullable: true })
+    @JoinColumn({ name: 'sucursal_id' })
+    sucursal_id?: Sucursal;
 
     @Column({ type:'json', nullable: true, default: [] })
     pagos: { 
