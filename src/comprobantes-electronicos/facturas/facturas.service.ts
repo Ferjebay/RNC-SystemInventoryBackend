@@ -365,7 +365,8 @@ export class FacturasService {
         if ( entity == 'Pagos' ){
           const queryRunner = this.dataSource.createQueryRunner();
           await queryRunner.connect()
-          await queryRunner.manager.update(Pago, entity_id, { 
+          await queryRunner.manager.update(Pago, entity_id, {
+            clave_acceso: claveAcceso,
             estadoSRI: `${ tipo == 'nota_credito' ? 'ANULACION -' : '' } ${ estado }` 
           })
           await queryRunner.release()
@@ -412,9 +413,13 @@ export class FacturasService {
     });
   }
 
-  autorizacionComprobantesOffline( host, accessKey, invoice_id, user_id, nombreComercial, tipo, numComprobante, entity ){
+  autorizacionComprobantesOffline( 
+    host, accessKey, 
+    invoice_id, user_id, 
+    nombreComercial, tipo, 
+    numComprobante, entity 
+  ){
     return new Promise(async (resolve, reject) => { 
-      console.log(accessKey);
       var config = {
           method: 'post',
           url: host + '/comprobantes-electronicos-ws/AutorizacionComprobantesOffline?wsdl',
@@ -458,7 +463,6 @@ export class FacturasService {
       if (resp !== null && resp.status === 200) {
         const parser = new XMLParser();
         const jObj = parser.parse(resp.data);
-        console.log(resp.data);
   
         const autorizacion = jObj['soap:Envelope']['soap:Body']['ns2:autorizacionComprobanteResponse']['RespuestaAutorizacionComprobante']['autorizaciones']['autorizacion'];
   

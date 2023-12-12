@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<factura id="comprobante" version="1.0.0">
+  <infoTributaria>
+    <ambiente>1</ambiente>
+    <tipoEmision>1</tipoEmision>
+    <razonSocial>RED NUEVA CONEXION</razonSocial>
+    <ruc>1206708644001</ruc>
+    <claveAcceso>1112202301120670864400110010010000002785476612714</claveAcceso>
+    <codDoc>01</codDoc>
+    <estab>001</estab>
+    <ptoEmi>001</ptoEmi>
+    <secuencial>000000278</secuencial>
+    <dirMatriz>nzbxnmbzxmbcmz</dirMatriz>
+  </infoTributaria>
+  <infoFactura>
+    <fechaEmision>11/12/2023</fechaEmision>
+    <dirEstablecimiento>calle xyz y mnlvv</dirEstablecimiento>
+    <obligadoContabilidad>NO</obligadoContabilidad>
+    <tipoIdentificacionComprador>05</tipoIdentificacionComprador>
+    <razonSocialComprador>LISBETH DAYANA BAÑOS GALEAS</razonSocialComprador>
+    <identificacionComprador>1207486638</identificacionComprador>
+    <direccionComprador>ifjwoiefjo oifwjeoi</direccionComprador>
+    <totalSinImpuestos>25.00</totalSinImpuestos>
+    <totalDescuento>0</totalDescuento>
+    <totalConImpuestos>
+      <totalImpuesto>
+        <codigo>2</codigo>
+        <codigoPorcentaje>2</codigoPorcentaje>
+        <baseImponible>25.00</baseImponible>
+        <tarifa>12</tarifa>
+        <valor>3</valor>
+      </totalImpuesto>
+    </totalConImpuestos>
+    <propina>0</propina>
+    <importeTotal>25</importeTotal>
+    <moneda>DOLAR</moneda>
+    <pagos>
+      <pago>
+        <formaPago>01</formaPago>
+        <total>25</total>
+      </pago>
+    </pagos>
+  </infoFactura>
+  <detalles>
+    <detalle>
+      <codigoPrincipal>f84cbb31</codigoPrincipal>
+      <descripcion>SERVICIO DE INTERNET</descripcion>
+      <cantidad>1</cantidad>
+      <precioUnitario>25.00</precioUnitario>
+      <descuento>0.00</descuento>
+      <precioTotalSinImpuesto>25.00</precioTotalSinImpuesto>
+      <impuestos>
+        <impuesto>
+          <codigo>2</codigo>
+          <codigoPorcentaje>2</codigoPorcentaje>
+          <tarifa>12</tarifa>
+          <baseImponible>25.00</baseImponible>
+          <valor>3.00</valor>
+        </impuesto>
+      </impuestos>
+    </detalle>
+  </detalles>
+  <infoAdicional>
+    <campoAdicional nombre="Email">juan96saa@gmail.com</campoAdicional>
+  </infoAdicional>
+</factura>

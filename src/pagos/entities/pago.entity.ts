@@ -12,7 +12,7 @@ export class Pago {
     @JoinColumn({ name: 'servicio_id' })
     servicio?: ServicioCliente;
 
-    @ManyToOne(() => Sucursal, (sucursal) => sucursal.pagos, { nullable: true })
+    @ManyToOne(() => Sucursal, (sucursal) => sucursal.pagos, { nullable: true, eager: true })
     @JoinColumn({ name: 'sucursal_id' })
     sucursal_id?: Sucursal;
 

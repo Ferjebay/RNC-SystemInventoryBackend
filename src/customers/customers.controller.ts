@@ -56,7 +56,7 @@ export class CustomersController {
     @Param('id', ParseUUIDPipe) id: string, 
     @Body() datosFactura: any
   ){
-    return this.customersService.actualizarDatosPersonales(datosFactura, '');
+    return this.customersService.actualizarDatosPersonales(id, datosFactura);
   }
 
   @Patch(':id/:estado')
