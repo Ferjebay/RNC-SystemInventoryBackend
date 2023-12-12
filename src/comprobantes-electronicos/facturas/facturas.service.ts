@@ -1,4 +1,4 @@
-import { Injectable, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, forwardRef, Inject, BadRequestException } from '@nestjs/common';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
@@ -315,28 +315,28 @@ export class FacturasService {
       }
 
       var config = {
-          method: 'post',
-          url: host + '/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl',
-          headers: {
-              'Content-Type': 'text/xml',
-              'Accept': 'text/xml',
-              'SOAPAction': ''
-          },
-          data: '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ec="http://ec.gob.sri.ws.recepcion">' +
-              '<soapenv:Header/>' +
-              '<soapenv:Body>' +
-              '<ec:validarComprobante>' +
-              '<xml>' + signedXml + '</xml>' +
-              '</ec:validarComprobante>' +
-              '</soapenv:Body>' +
-              '</soapenv:Envelope>'
+        method: 'post',
+        url: host + '/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl',
+        headers: {
+            'Content-Type': 'text/xml',
+            'Accept': 'text/xml',
+            'SOAPAction': ''
+        },
+        data: '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ec="http://ec.gob.sri.ws.recepcion">' +
+            '<soapenv:Header/>' +
+            '<soapenv:Body>' +
+            '<ec:validarComprobante>' +
+            '<xml>' + signedXml + '</xml>' +
+            '</ec:validarComprobante>' +
+            '</soapenv:Body>' +
+            '</soapenv:Envelope>'
       };
 
       let resp = null;
-      console.log( config );
 
       try {
-        resp = await axios(config);
+        // resp = await axios(config);
+        throw new Error('Este es otro mensaje de error');
       } catch (err) {
         console.log('error axio:', err)
         
@@ -372,7 +372,9 @@ export class FacturasService {
           await queryRunner.release()
         }else{
           await this.invoiceService.update( entity_id, 
-            { estadoSRI: `${ tipo == 'nota_credito' ? 'ANULACION -' : '' } ${ estado }` } 
+            { clave_acceso: claveAcceso,
+              estadoSRI: `${ tipo == 'nota_credito' ? 'ANULACION -' : '' } ${ estado }` 
+            } 
           )
         }
         
@@ -504,7 +506,6 @@ export class FacturasService {
               respuestaSRI  
             });
           }
-
   
           if ( estado == 'AUTORIZADO' || estado == 'ANULADO') resolve( true );
           else reject( false );
@@ -528,9 +529,18 @@ export class FacturasService {
 
     if ( datosFactura.tipo == 'EMISION') 
       claveAcceso = await this.getClaveAcceso( sucursal_id );
-
+    
     const clientFound = await this.customerService.findOne( datosFactura.customer_id );
     const { numComprobante, ambiente } = await this.getNumComprobante( sucursal_id );
+
+    if ( entity == 'Pagos' ){
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect()
+      await queryRunner.manager.update(Pago, entity_id, { 
+        sucursal_id, clave_acceso: claveAcceso, num_comprobante: numComprobante 
+      })
+      await queryRunner.release()
+    }
       
     const infoCompany = await this.sucursalRepository.find({
       relations: { company_id: true },
@@ -749,5 +759,76 @@ export class FacturasService {
     const data = await proforma.generarProformaPDF(datosFactura, clientFound, infoCompany);
 
     this.emailService.sendComprobantes(clientFound[0], infoCompany[0], '', '', data);
+  }
+
+  async reeenviarRecepcionComprobantesOffline( datosFactura ){
+
+    const nombreComercial = datosFactura.company_name.split(' ').join('-');
+    let host = ( datosFactura.ambiente === 'PRUEBA') ? 'https://celcer.sri.gob.ec' : 'https://cel.sri.gob.ec';
+    const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }`);
+    const clientFound = await this.customerService.findOne( datosFactura.customer_id );
+    const infoCompany = await this.sucursalRepository.find({
+      relations: { company_id: true },
+      select: { direccion: true, ambiente: true,
+        company_id: { 
+          ruc: true, razon_social: true, direccion_matriz: true, 
+          obligado_contabilidad: true, nombre_comercial: true, clave_certificado: true, 
+          archivo_certificado: true, email: true, telefono: true, logo: true 
+        } 
+      },
+      where: { id: datosFactura.sucursal_id }
+    });
+
+    let xml;
+    fs.readFile(`${pathXML}/facturas/Generados/${datosFactura.clave_acceso}.xml`, 'utf-8', (err, data) => {
+      if(err) console.log('error: ', err);
+      else xml = data;      
+    });
+
+    let recibida;
+    try {    
+      recibida = await this.recepcionComprobantesOffline( 
+        nombreComercial, datosFactura.clave_acceso, 
+        datosFactura.pago_id, 'factura', 
+        host, pathXML, datosFactura.user_id, 
+        xml, 'Pagos'
+      );
+    } catch (error) {
+      return new BadRequestException("ERROR ENVIO RECEPCION");
+    }
+
+    let autorizado;
+    if( recibida ){
+      setTimeout(async () => {
+        try {
+          autorizado = await this.autorizacionComprobantesOffline( host, datosFactura.clave_acceso, datosFactura.pago_id, datosFactura.user_id, nombreComercial, 'factura', datosFactura.num_comprobante, 'Pagos')    
+        } catch (error) {
+          return { ok: false }
+        }
+
+        if( autorizado ) {
+          // ---------------------- AUMENTAR EL SECUENCIAL FACTURA -------------------
+          const secuencial = datosFactura.num_comprobante.split('-')[2];
+          let option: any = {};
+          
+          if ( datosFactura.ambiente == 'PRUEBA' ) 
+            option.secuencia_factura_pruebas = parseInt( secuencial ) + 1;
+          else
+            option.secuencia_factura_produccion = parseInt( secuencial ) + 1;
+          
+          const sucursal: any = datosFactura.sucursal_id;
+          await this.sucursalRepository.update( sucursal, option );
+          // --------------------------------------------------------------------------
+
+          const factura = new Factura();    
+          const pdfBuffer = await factura.generarFacturaPDF( datosFactura.clave_acceso, infoCompany[0], datosFactura.num_comprobante, clientFound[0], datosFactura);
+          const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ datosFactura.clave_acceso }.xml`);
+
+          const comprobantes = { xml: pathXML, pdf: pdfBuffer, tipo: 'factura' } 
+
+          this.emailService.sendComprobantes(clientFound[0], infoCompany[0], datosFactura.num_comprobante, datosFactura.clave_acceso, comprobantes);  
+        }
+      }, 2900)
+    } 
   }
 }

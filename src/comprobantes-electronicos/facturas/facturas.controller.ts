@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Headers, Post } from '@nestjs/common';
 import { FacturasService } from './facturas.service';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
+import { Factura } from '../plantillas/factura';
 
 @Controller('CE/facturas')
 export class FacturasController {
@@ -27,12 +28,15 @@ export class FacturasController {
     );
   }
 
+  @Post('recepcionComprobantesOffline')
+  async recepcionComprobantesOffline( @Body() datosFactura: any ){
+    this.facturasService.reeenviarRecepcionComprobantesOffline(datosFactura);
+  }
+
   @Post('anularFactura')
   anularFactura(
     @Body('factura') factura: any
   ) {
     return this.facturasService.generarNotaCredito( factura );
   }
-
-
 }
