@@ -442,8 +442,8 @@ export class FacturasService {
       let resp = null;
   
       try {
-        throw new Error('Este es otro mensaje de error');
-        //resp = await axios(config);
+        // throw new Error('Este es otro mensaje de error');
+        resp = await axios(config);
       } catch (err) {
         console.log('error axio:', err);
 
