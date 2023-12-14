@@ -11,6 +11,10 @@ class Pago {
   @IsString()
   fecha_abono: string;
 
+  @IsNotEmpty()
+  @IsString()
+  hora_abono: string;
+
   @IsOptional()
   detalle?: string;
 

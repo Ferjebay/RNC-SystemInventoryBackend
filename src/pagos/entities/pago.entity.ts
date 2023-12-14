@@ -21,6 +21,7 @@ export class Pago {
         forma_pago: string,
         valor: string; 
         fecha_abono: string, 
+        hora_abono: string, 
         n_transaccion: string, 
         detalle?: string 
     }[];
