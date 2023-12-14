@@ -8,6 +8,14 @@ class Pago {
   valor: string;
 
   @IsNotEmpty()
+  @IsNumberString()  
+  monto_pendiente: string;
+
+  @IsNotEmpty()
+  @IsNumberString()  
+  totalAbonado: string;
+
+  @IsNotEmpty()
   @IsString()
   fecha_abono: string;
 

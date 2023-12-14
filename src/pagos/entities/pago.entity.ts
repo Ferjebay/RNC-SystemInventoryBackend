@@ -20,6 +20,8 @@ export class Pago {
     pagos: { 
         forma_pago: string,
         valor: string; 
+        monto_pendiente: string; 
+        totalAbonado: string; 
         fecha_abono: string, 
         hora_abono: string, 
         n_transaccion: string, 
