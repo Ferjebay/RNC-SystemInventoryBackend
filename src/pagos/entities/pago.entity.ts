@@ -28,7 +28,7 @@ export class Pago {
         detalle?: string 
     }[];
 
-    @Column({ type: 'varchar', length: 25, nullable: true })
+    @Column({ type: 'varchar', length: 55, nullable: true })
     estadoSRI: string;
 
     @Column({ type: 'varchar', length: 25, nullable: true })
