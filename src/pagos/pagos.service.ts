@@ -29,7 +29,10 @@ export class PagosService {
     let pagos: Pago[];
 
     if ( isUUID(term) ) 
-      pagos = await this.pagoRepository.findBy({ servicio: { id: term } });
+      pagos = await this.pagoRepository.find({ 
+        where:{ servicio: { id: term } },
+        order: { created_at: "DESC" } 
+      });
 
     if ( pagos.length === 0 ) 
       throw new NotFoundException(`pagos with ${ term } not found`);

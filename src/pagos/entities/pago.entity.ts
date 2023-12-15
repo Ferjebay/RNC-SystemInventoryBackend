@@ -40,6 +40,9 @@ export class Pago {
     @Column({ type: 'varchar', length: 200, nullable: true })
     respuestaSRI?: string;
 
+    @Column({ type: 'date' })
+    dia_pago?: Date;
+
     @CreateDateColumn()
     created_at?: Date;
 
