@@ -725,10 +725,10 @@ export class FacturasService {
 
           if (clientFound[0].nombres !== 'CONSUMIDOR FINAL') {
             const factura = new Factura();    
-            const pdfBuffer = await factura.generarFacturaPDF( claveAcceso, infoCompany[0], numComprobante, clientFound[0], datosFactura);
+            const pathPDF = await factura.generarFacturaPDF( claveAcceso, infoCompany[0], numComprobante, clientFound[0], datosFactura);
             const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ claveAcceso }.xml`);
   
-            const comprobantes = { xml: pathXML, pdf: pdfBuffer, tipo: 'factura' } 
+            const comprobantes = { xml: pathXML, pdf: pathPDF, tipo: 'factura' } 
   
             this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);            
           }

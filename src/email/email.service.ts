@@ -79,7 +79,7 @@ export class EmailService {
       message.text    = "RED NUEVA CONEXION agradece su compra, acontinuación se adjunta su comprobante electronico",      
       message.attachments = [
         { filename: clave_acceso +'.xml', path: comprobantes.xml },
-        { filename: clave_acceso +'.pdf', content: comprobantes.pdf }
+        { filename: clave_acceso +'.pdf', path: comprobantes.pdf }
       ]
     }
 

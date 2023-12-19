@@ -1,5 +1,7 @@
 const puppeteer = require('puppeteer')
 const moment = require('moment');
+const { writeFile } = require('fs');
+const path = require('path');
 
 export class Factura {
 
@@ -352,7 +354,7 @@ export class Factura {
   
       await page.setContent(content);
   
-      const pdfBuffer = await page.pdf({
+      const pdf = await page.pdf({
         format: 'A4',
         printBackground: true,
         margin: {
@@ -365,6 +367,13 @@ export class Factura {
   
       await browser.close();
 
-      return pdfBuffer;
+      const pathPDF = path.resolve(__dirname, `../../../static/SRI/PDF/${ claveAcceso }.pdf`);
+
+      writeFile(pathPDF, pdf, {}, (err) => {
+          if(err) return console.error('error')
+          console.log('pdf creado')
+      });
+
+      return pathPDF;
     }
 }
