@@ -48,10 +48,6 @@ class Factura {
 
   @IsNotEmpty()
   @IsString()
-  crear_factura: string;
-
-  @IsNotEmpty()
-  @IsString()
   tipo_impuesto: string
 
   @IsNotEmpty()

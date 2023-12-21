@@ -9,6 +9,7 @@ import { MessagesWsService } from 'src/messages-ws/messages-ws.service';
 import { Proforma } from '../plantillas/proforma';
 import { Factura } from '../plantillas/factura';
 import { Pago } from 'src/pagos/entities/pago.entity';
+import { readFileSync } from 'fs';
 const axios = require('axios');
 const moment = require('moment');
 const builder = require("xmlbuilder");
@@ -48,6 +49,14 @@ export class FacturasService {
     else if (module11 === 10) return 1;
     
     return module11;
+  }
+
+  async getRide( claveAcceso ){
+
+    const pathPDF = path.resolve(__dirname, `../../../static/SRI/PDF/${ claveAcceso }.pdf`);
+
+    return await fs.readFileSync(pathPDF);
+
   }
 
   async getNumComprobante( sucursal_id: any, tipo: string = 'factura' ){
