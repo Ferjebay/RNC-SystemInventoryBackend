@@ -12,6 +12,8 @@ export class AppService {
     private readonly dataSource: DataSource
   ){}
 
+  //'*/1 * * * *'
+  // Este cron job se ejecutará a las 12:00 AM el primer día de cada mes.
   @Cron('0 0 1 * *')
   async handleCron( evitarPrimeraEjecucion ){
     let parametro = evitarPrimeraEjecucion
@@ -28,9 +30,32 @@ export class AppService {
         
         servicios.forEach( async (servicio, index) => {
           
-          const dia_pago = moment(date).add((servicio.factura_id.dia_pago - 1), 'days');        
-
-          await queryRunner.manager.save(Pago, { servicio: servicio, estadoSRI: 'NO PAGADO', dia_pago });
+          if( servicio.isActive ){
+            const proximo_pago = moment(date).add((servicio.factura_id.dia_pago - 1), 'days');        
+  
+            const pago = await queryRunner.manager.findOne(Pago, { 
+              where: { servicio: { id: servicio.id } },
+              order: { created_at: "DESC" }              
+            });
+  
+            if ( pago ) {
+              let ultimaFechaPago = new Date( pago.dia_pago );
+    
+              if ( date > ultimaFechaPago) {
+                await queryRunner.manager.save(Pago, { 
+                  servicio, 
+                  estadoSRI: 'NO PAGADO', 
+                  dia_pago: proximo_pago 
+                });
+              }            
+            }else{
+              await queryRunner.manager.save(Pago, { 
+                servicio, 
+                estadoSRI: 'NO PAGADO', 
+                dia_pago: proximo_pago 
+              });
+            }
+          }
   
           if ( ( index + 1 ) == servicios.length ) await queryRunner.release()          
         })        

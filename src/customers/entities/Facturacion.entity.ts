@@ -21,7 +21,6 @@ export class FacturaCliente {
     @Column({ type: 'int' })
     dia_pago: number;
 
-
     @Column({ type: 'varchar', length: 25 })
     tipo_impuesto: string;
 

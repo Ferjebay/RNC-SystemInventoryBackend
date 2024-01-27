@@ -7,7 +7,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { FacturasModule } from 'src/comprobantes-electronicos/facturas/facturas.module';
 import { InvoiceToProduct } from './entities/invoiceToProduct.entity';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
-import { MessagesWsModule } from 'src/messages-ws/messages-ws.module';
 
 @Module({
   controllers: [InvoicesController],

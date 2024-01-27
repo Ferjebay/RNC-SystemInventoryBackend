@@ -36,7 +36,7 @@ export class Router {
     @Column({ type: 'varchar', length: 70 })
     tipo_router: string;
 
-    @Column({ type: 'varchar', length: 110 })
+    @Column({ type: 'varchar', length: 110, nullable: true })
     password_api: string;
 
     @Column({ type: 'varchar', length: 80 })

@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsArray, IsEmail, IsNotEmpty, IsNumber, IsNumberString, IsObject, IsOptional, IsString, IsUUID, MaxLength, MinLength, ValidateNested } from "class-validator";
+import { IsArray, IsDate, IsDateString, IsEmail, IsNotEmpty, IsNumber, IsNumberString, IsObject, IsOptional, IsString, IsUUID, MaxLength, MinLength, ValidateNested } from "class-validator";
 import { FacturaCliente } from "../entities/Facturacion.entity";
 import { Router } from "src/router/entities/router.entity";
 import { Internet } from "src/internet/entities/internet.entity";
@@ -105,6 +105,10 @@ class Servicio {
   ipv4: string;
 
   @IsOptional()
+  @IsString()
+  indice: string;
+
+  @IsOptional()
   caja_id?: CajaNap;
 
   @IsOptional()
@@ -116,7 +120,7 @@ export class CreateCustomerDto {
     @IsObject()
     @ValidateNested()
     @Type(() => Cliente)
-    cliente: object;
+    cliente: Cliente;
 
     @IsObject()
     @ValidateNested()
@@ -127,5 +131,14 @@ export class CreateCustomerDto {
     @ValidateNested()
     @Type(() => Servicio)
     servicio: ServicioCliente;
-    
+
+    @IsObject()
+    route: any
+
+    @IsObject()
+    internet: any
+
+    @IsDateString()
+    fechaPago: Date;
+
 }

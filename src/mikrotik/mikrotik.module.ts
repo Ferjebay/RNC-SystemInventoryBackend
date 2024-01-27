@@ -4,6 +4,7 @@ import { MikrotikController } from './mikrotik.controller';
 
 @Module({
   controllers: [MikrotikController],
-  providers: [MikrotikService],
+  providers: [ MikrotikService ],
+  exports: [ MikrotikModule, MikrotikService ]
 })
 export class MikrotikModule {}

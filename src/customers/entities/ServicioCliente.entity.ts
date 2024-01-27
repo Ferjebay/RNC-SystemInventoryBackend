@@ -63,6 +63,9 @@ export class ServicioCliente {
     @Column({ type: 'varchar', length: 20, nullable: true })
     ipv4: string;
 
+    @Column({ type: 'varchar', length: 2, nullable: true })
+    indice?: string;
+
     @Column({ type: 'bool', default: true })
     isActive: boolean;
 }

@@ -14,7 +14,6 @@ export class CreateRouterDto {
     @IsString()
     tipo_router: string;
 
-    @IsNotEmpty()
     @IsString()
     password_api: string;
 

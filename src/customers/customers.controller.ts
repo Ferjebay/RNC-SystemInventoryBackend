@@ -59,6 +59,22 @@ export class CustomersController {
     return this.customersService.actualizarDatosPersonales(id, datosFactura);
   }
 
+  @Put('/actualizarDatosServicio/:id')
+  actualizarDatosServicio(
+    @Param('id', ParseUUIDPipe) id: string, 
+    @Body() datosServicio: any
+  ){
+    return this.customersService.actualizarDatosServicio(id, datosServicio);
+  }
+
+  @Put('/activeOrSuspendService/:id')
+  activeOrSuspendService(
+    @Param('id', ParseUUIDPipe) id: string, 
+    @Body() datosServicio: any
+  ){
+    return this.customersService.activeOrSuspendService(id, datosServicio);
+  }
+
   @Patch(':id/:estado')
   setEstado(
     @Param('id', ParseUUIDPipe) id: string, 

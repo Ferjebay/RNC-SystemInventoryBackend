@@ -4,8 +4,6 @@ import { UpdateEmailDto } from './dto/update-email.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Email } from './entities/email.entity';
 import { Repository } from 'typeorm';
-import { Factura } from 'src/comprobantes-electronicos/plantillas/factura';
-const path = require('path');
 var nodemailer = require('nodemailer');
 
 @Injectable()
@@ -31,7 +29,7 @@ export class EmailService {
       // tls: { rejectUnauthorized: false },
       auth: { user: usuario, pass: password }
     }
- 
+
     const message = {
       from: usuario,
       to: email_client,

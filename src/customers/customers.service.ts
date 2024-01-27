@@ -8,6 +8,8 @@ import { isUUID } from 'class-validator';
 import { Company } from 'src/companies/entities/company.entity';
 import { FacturaCliente } from './entities/Facturacion.entity';
 import { ServicioCliente } from './entities/ServicioCliente.entity';
+import { MikrotikService } from '../mikrotik/mikrotik.service';
+import { Pago } from 'src/pagos/entities/pago.entity';
 
 @Injectable()
 export class CustomersService {
@@ -19,7 +21,8 @@ export class CustomersService {
     private readonly customerRepository: Repository<Customer>,    
     @InjectRepository( ServicioCliente )
     private readonly servicioRepository: Repository<ServicioCliente>,    
-    private readonly dataSource: DataSource
+    private readonly dataSource: DataSource,
+    private readonly mikrotikService: MikrotikService
   ){}
 
   async create(createCustomerDto: CreateCustomerDto, company_id: Company) {
@@ -27,18 +30,28 @@ export class CustomersService {
    await queryRunner.connect();
    await queryRunner.startTransaction();
     try {
+
+      //Crear Cliente en el Mikrotik
+      // await this.mikrotikService.createClient( 
+      //   createCustomerDto.route, 
+      //   createCustomerDto.internet.detalles, 
+      //   createCustomerDto.servicio.ipv4, 
+      //   createCustomerDto.cliente.nombres 
+      // );
+
       const customer = this.customerRepository.create( createCustomerDto.cliente );
       customer.company_id = company_id;      
       const customerCreated = await queryRunner.manager.save( Customer, customer );
       
-      //crear datos de facturacion
+      // //crear datos de facturacion
       let facturacion = new FacturaCliente();
       facturacion = { ...createCustomerDto.facturacion, customer: customerCreated };
       const facturaCreated = await queryRunner.manager.save( FacturaCliente, facturacion );
       
-      //crear servicios del internet
+      // //crear servicios del internet
       let servicioCliente: any = {}
-      if( Object.entries( createCustomerDto.servicio.caja_id ).length === 0 || !isUUID(createCustomerDto.servicio['puerto_id']) ){
+      if( Object.entries( createCustomerDto.servicio.caja_id ).length === 0 
+          || !isUUID(createCustomerDto.servicio['puerto_id']) ){
         const { caja_id, puerto_id, ...rest } = createCustomerDto.servicio
         servicioCliente = { ...rest }
       }else{
@@ -49,6 +62,12 @@ export class CustomersService {
       servicio = { ...servicioCliente, customer: customerCreated, factura_id: facturaCreated };
       await queryRunner.manager.save( ServicioCliente, servicio );
 
+      await queryRunner.manager.save(Pago, { 
+        servicio, 
+        estadoSRI: 'NO PAGADO', 
+        dia_pago: createCustomerDto.fechaPago 
+      });
+
       await queryRunner.commitTransaction();
       await queryRunner.release();
   
@@ -56,7 +75,11 @@ export class CustomersService {
     } catch (error) {
       await queryRunner.rollbackTransaction();
       await queryRunner.release();
-      this.handleDBExceptions( error )
+
+      if ( error.type ) 
+        throw new BadRequestException(['Error al agregar cliente a mikrotik', error.error.message]);
+      else
+        this.handleDBExceptions( error )
     }
   }
 
@@ -155,6 +178,73 @@ export class CustomersService {
       return { cliente, msg: "Datos del cliente actualizados" };        
     } catch (error) {
       this.handleDBExceptions( error );
+    }
+  }
+
+  async actualizarDatosServicio( id, datosServicio ){
+    try {
+
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+
+      //Editar Cliente en el Mikrotik
+      // await this.mikrotikService.editClient( datosServicio );
+      
+      const objectServicio = {
+        router_id:          datosServicio.perfil_internet.router_id,
+        direccion:          datosServicio.direccion,
+        coordenadas:        datosServicio.coordenadas,
+        perfil_internet:    datosServicio.perfil_internet,
+        precio:             datosServicio.precio,
+        fecha_instalacion:  datosServicio.fecha_instalacion,
+        mac:                datosServicio.mac,
+        red_id:             datosServicio.red_id,
+        ipv4:               datosServicio.ipv4,
+        caja_id:            datosServicio.caja_id,
+        puerto_id:          datosServicio.puerto_id,
+        indice:             datosServicio.indice
+      }
+
+      let servicioCliente: any = {}
+      if( Object.entries( objectServicio.caja_id ).length === 0 
+          || !isUUID(objectServicio['puerto_id']) ){
+        const { caja_id, puerto_id, ...rest } = objectServicio
+        servicioCliente = { ...rest }
+      }else{
+        servicioCliente = objectServicio;
+      }
+
+      await queryRunner.manager.update(ServicioCliente, id, servicioCliente);
+      await queryRunner.release();
+
+      return { msg: "Servicio actualizado correctamente" };        
+    } catch (error) {
+      if ( error.type ) 
+        throw new BadRequestException(['Error al editar el cliente en mikrotik', error.error.message]);
+      else
+        this.handleDBExceptions( error )
+    }
+  }
+
+  async activeOrSuspendService( id, datosServicio ){
+    try {
+
+      const queryRunner = this.dataSource.createQueryRunner();
+      await queryRunner.connect();
+
+      // await this.mikrotikService.activeOrSuspendService( datosServicio );
+      
+      await queryRunner.manager.update(ServicioCliente, id, { 
+        isActive: datosServicio.estado == 'activar' ? true : false
+      });
+      await queryRunner.release();
+
+      return { msg: "Servicio actualizado correctamente" };        
+    } catch (error) {
+      if ( error.type ) 
+        throw new BadRequestException(['Error al editar el cliente en mikrotik', error.error.message]);
+      else
+        this.handleDBExceptions( error )
     }
   }
 
