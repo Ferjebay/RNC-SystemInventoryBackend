@@ -32,12 +32,12 @@ export class CustomersService {
     try {
 
       //Crear Cliente en el Mikrotik
-      // await this.mikrotikService.createClient( 
-      //   createCustomerDto.route, 
-      //   createCustomerDto.internet.detalles, 
-      //   createCustomerDto.servicio.ipv4, 
-      //   createCustomerDto.cliente.nombres 
-      // );
+      await this.mikrotikService.createClient( 
+        createCustomerDto.route, 
+        createCustomerDto.internet.detalles, 
+        createCustomerDto.servicio.ipv4, 
+        createCustomerDto.cliente.nombres 
+      );
 
       const customer = this.customerRepository.create( createCustomerDto.cliente );
       customer.company_id = company_id;      
@@ -188,7 +188,7 @@ export class CustomersService {
       await queryRunner.connect();
 
       //Editar Cliente en el Mikrotik
-      // await this.mikrotikService.editClient( datosServicio );
+      await this.mikrotikService.editClient( datosServicio );
       
       const objectServicio = {
         router_id:          datosServicio.perfil_internet.router_id,
@@ -232,7 +232,7 @@ export class CustomersService {
       const queryRunner = this.dataSource.createQueryRunner();
       await queryRunner.connect();
 
-      // await this.mikrotikService.activeOrSuspendService( datosServicio );
+      await this.mikrotikService.activeOrSuspendService( datosServicio );
       
       await queryRunner.manager.update(ServicioCliente, id, { 
         isActive: datosServicio.estado == 'activar' ? true : false
