@@ -1,3 +1,11 @@
+const axios = require('axios');
+const moment = require('moment');
+const builder = require("xmlbuilder");
+const fs = require("fs");
+const path = require('path');
+const { execSync } = require('node:child_process');
+const XMLParser = require("fast-xml-parser").XMLParser;
+
 import { Injectable, forwardRef, Inject, BadRequestException } from '@nestjs/common';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,14 +17,6 @@ import { MessagesWsService } from 'src/messages-ws/messages-ws.service';
 import { Proforma } from '../plantillas/proforma';
 import { Factura } from '../plantillas/factura';
 import { Pago } from 'src/pagos/entities/pago.entity';
-import { readFileSync } from 'fs';
-const axios = require('axios');
-const moment = require('moment');
-const builder = require("xmlbuilder");
-const fs = require("fs");
-const path = require('path');
-const { execSync } = require('node:child_process');
-const XMLParser = require("fast-xml-parser").XMLParser;
 
 @Injectable()
 export class FacturasService {
@@ -52,11 +52,9 @@ export class FacturasService {
   }
 
   async getRide( claveAcceso ){
-
     const pathPDF = path.resolve(__dirname, `../../../static/SRI/PDF/${ claveAcceso }.pdf`);
 
     return await fs.readFileSync(pathPDF);
-
   }
 
   async getNumComprobante( sucursal_id: any, tipo: string = 'factura' ){
@@ -471,26 +469,28 @@ export class FacturasService {
       }
   
       if (resp !== null && resp.status === 200) {
-        const parser = new XMLParser();
-        const jObj = parser.parse(resp.data);
-  
-        const autorizacion = jObj['soap:Envelope']['soap:Body']['ns2:autorizacionComprobanteResponse']['RespuestaAutorizacionComprobante']['autorizaciones']['autorizacion'];
-  
-        let respuestaSRI = '';
-        let estado = autorizacion['estado'];
-        let directorio = ('AUTORIZADO' === estado) ? 'Autorizados' : 'NoAutorizados' ;
-  
-        if ( estado !== 'AUTORIZADO' ) {
-          const mensaje = autorizacion.mensajes.mensaje;
-          const infoAdicional = mensaje?.informacionAdicional || 'NO HAY INFO ADICIONAL'; 
-          respuestaSRI = `MENSAJE: ${ mensaje.mensaje } - INFOADICIONAL: ${ infoAdicional }`
-        }
-        
-        this.messageWsService.updateStateInvoice( user_id );
 
-        if (tipo == 'nota_credito' && estado == 'AUTORIZADO') estado = 'ANULADO';
-  
         try {
+
+          const parser = new XMLParser();
+          const jObj = parser.parse(resp.data);
+    
+          const autorizacion = jObj['soap:Envelope']['soap:Body']['ns2:autorizacionComprobanteResponse']['RespuestaAutorizacionComprobante']['autorizaciones']['autorizacion'];
+    
+          let respuestaSRI = '';
+          let estado = autorizacion['estado'];
+          let directorio = ('AUTORIZADO' === estado) ? 'Autorizados' : 'NoAutorizados' ;
+    
+          if ( estado !== 'AUTORIZADO' ) {
+            const mensaje = autorizacion.mensajes.mensaje;
+            const infoAdicional = mensaje?.informacionAdicional || 'NO HAY INFO ADICIONAL'; 
+            respuestaSRI = `MENSAJE: ${ mensaje.mensaje } - INFOADICIONAL: ${ infoAdicional }`
+          }
+          
+          this.messageWsService.updateStateInvoice( user_id );
+
+          if (tipo == 'nota_credito' && estado == 'AUTORIZADO') estado = 'ANULADO';
+  
           const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/${ tipo == 'nota_credito' ? 'notasCreditos' : 'facturas' }/${ directorio }/${ accessKey }.xml`);
   
           await fs.mkdirSync(path.dirname(pathXML), {recursive: true, })
@@ -586,7 +586,7 @@ export class FacturasService {
       dirMatriz:    infoCompany[0].company_id.direccion_matriz
     };
 
-    //------ OBTENER LA SUMA DE TODOS LOS ARTICULOS QUE APLICAN IVA Y DESCUENTOS ------------
+    //------ OBTIENE LA SUMA DE TODOS LOS ARTICULOS QUE APLICAN IVA Y DESCUENTOS ------------
     let sumaPrecioTotalSinImpuesto = 0;      
 
     datosFactura.products.forEach((item: any) => {   
@@ -622,7 +622,7 @@ export class FacturasService {
       moneda: 'DOLAR',
       pagos: {
         pago: {
-          formaPago: '01',
+          formaPago: datosFactura.forma_pago,
           total: datosFactura.total
         }
       }
@@ -655,8 +655,10 @@ export class FacturasService {
     });
 
     const campoAdicional = [{
-      '@nombre': 'Email',
-      '#text': clientFound[0].nombres == 'CONSUMIDOR FINAL' ? 'abc@gmail.com' : clientFound[0].email
+      '@nombre': 'Descripcion',
+      '#text': datosFactura.descripcion.trim().length == 0 
+                ? 'Sin descripcion' 
+                : datosFactura.descripcion.trim()
     }];
 
     var obj = {
@@ -711,6 +713,19 @@ export class FacturasService {
 
     let autorizado;
     if( recibida ){
+      // ---------------------- AUMENTAR EL SECUENCIAL FACTURA -------------------
+      const secuencial = numComprobante.split('-')[2];
+      let option: any = {};
+      
+      if ( ambiente == 'PRUEBA' ) 
+        option.secuencia_factura_pruebas = parseInt( secuencial ) + 1;
+      else
+        option.secuencia_factura_produccion = parseInt( secuencial ) + 1;
+      
+      const sucursal: any = sucursal_id;
+      await this.sucursalRepository.update( sucursal, option );
+      // --------------------------------------------------------------------------
+
       setTimeout(async () => {
         try {
           autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity)    
@@ -719,19 +734,6 @@ export class FacturasService {
         }
 
         if( autorizado ) {
-          // ---------------------- AUMENTAR EL SECUENCIAL FACTURA -------------------
-          const secuencial = numComprobante.split('-')[2];
-          let option: any = {};
-          
-          if ( ambiente == 'PRUEBA' ) 
-            option.secuencia_factura_pruebas = parseInt( secuencial ) + 1;
-          else
-            option.secuencia_factura_produccion = parseInt( secuencial ) + 1;
-          
-          const sucursal: any = sucursal_id;
-          await this.sucursalRepository.update( sucursal, option );
-          // --------------------------------------------------------------------------
-
           if (clientFound[0].nombres !== 'CONSUMIDOR FINAL') {
             const factura = new Factura();    
             const pathPDF = await factura.generarFacturaPDF( claveAcceso, infoCompany[0], numComprobante, clientFound[0], datosFactura);

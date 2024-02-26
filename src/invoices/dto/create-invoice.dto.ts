@@ -21,6 +21,12 @@ export class CreateInvoiceDto {
     @MinLength(5)
     numero_comprobante: string;
 
+    @IsString()
+    forma_pago: string
+
+    @IsOptional()
+    descripcion: string
+
     @IsNumber()
     subtotal: number;
 

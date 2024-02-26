@@ -1,5 +1,6 @@
 import { Type } from "class-transformer";
-import { IsArray, IsNotEmpty, IsNumberString, IsObject, IsOptional, IsString, ValidateNested } from "class-validator";
+import { IsArray, IsNotEmpty, IsNumberString, IsObject, IsOptional, IsString, IsUUID, ValidateNested, isUUID } from "class-validator";
+import { ServicioCliente } from "src/customers/entities/ServicioCliente.entity";
 
 class Pago {
 
@@ -37,9 +38,13 @@ class Pago {
 
 export class CreatePagoDto {
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   forma_pago: string;
+
+  @IsOptional()
+  @IsString()
+  dia_pago: string;
 
   @IsArray()
   @ValidateNested()
@@ -49,4 +54,6 @@ export class CreatePagoDto {
   @IsOptional()
   estadoSRI: string;
 
+  @IsUUID()
+  servicio: ServicioCliente
 }

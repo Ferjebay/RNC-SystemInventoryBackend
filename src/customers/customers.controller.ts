@@ -1,6 +1,8 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, DefaultValuePipe, ParseBoolPipe, ParseUUIDPipe, Headers, Put } from '@nestjs/common';
 import { CustomersService } from './customers.service';
+import { CreateServicioDto } from './dto/create-servicio.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
+import { UpdateServicioDto } from './dto/update-servicio.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Company } from 'src/companies/entities/company.entity';
 import { Router } from 'src/router/entities/router.entity';
@@ -12,9 +14,17 @@ export class CustomersController {
   @Post()
   create(
     @Headers('company_id') company_id: Company,
-    @Body() createCustomerDto: CreateCustomerDto
+    @Body() createCustomerDto: CreateServicioDto
   ) {
     return this.customersService.create(createCustomerDto, company_id);
+  }
+
+  @Post('/create')
+  createCustomer(
+    @Headers('company_id') company_id: Company,
+    @Body() createCustomerDto: CreateCustomerDto
+  ) {
+    return this.customersService.createCustomer(createCustomerDto, company_id);
   }
 
   @Get(':estado?')

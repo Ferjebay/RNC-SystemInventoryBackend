@@ -40,6 +40,9 @@ export class Product {
     @Column({ type: 'int', default: 0 })
     descuento: number;
 
+    @Column({ type: 'varchar', nullable: true })
+    tipo: string;
+
     @Column({ type: 'bool', default: true })
     isActive: boolean;
 

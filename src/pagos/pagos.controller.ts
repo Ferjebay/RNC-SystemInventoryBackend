@@ -8,7 +8,7 @@ import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 export class PagosController {
   constructor(private readonly pagosService: PagosService) {}
 
-  @Post()
+  @Post('/create')
   create(@Body() createPagoDto: CreatePagoDto) {
     return this.pagosService.create(createPagoDto);
   }

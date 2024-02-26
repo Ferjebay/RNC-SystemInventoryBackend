@@ -1,4 +1,5 @@
 import { Injectable, Logger, BadRequestException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { CreateServicioDto } from './dto/create-servicio.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -25,7 +26,7 @@ export class CustomersService {
     private readonly mikrotikService: MikrotikService
   ){}
 
-  async create(createCustomerDto: CreateCustomerDto, company_id: Company) {
+  async create(CreateServicioDto: CreateServicioDto, company_id: Company) {
    const queryRunner = this.dataSource.createQueryRunner();
    await queryRunner.connect();
    await queryRunner.startTransaction();
@@ -33,29 +34,29 @@ export class CustomersService {
 
       //Crear Cliente en el Mikrotik
       await this.mikrotikService.createClient( 
-        createCustomerDto.route, 
-        createCustomerDto.internet.detalles, 
-        createCustomerDto.servicio.ipv4, 
-        createCustomerDto.cliente.nombres 
+        CreateServicioDto.route, 
+        CreateServicioDto.internet.detalles, 
+        CreateServicioDto.servicio.ipv4, 
+        CreateServicioDto.cliente.nombres 
       );
 
-      const customer = this.customerRepository.create( createCustomerDto.cliente );
+      const customer = this.customerRepository.create( CreateServicioDto.cliente );
       customer.company_id = company_id;      
       const customerCreated = await queryRunner.manager.save( Customer, customer );
       
       // //crear datos de facturacion
       let facturacion = new FacturaCliente();
-      facturacion = { ...createCustomerDto.facturacion, customer: customerCreated };
+      facturacion = { ...CreateServicioDto.facturacion, customer: customerCreated };
       const facturaCreated = await queryRunner.manager.save( FacturaCliente, facturacion );
       
       // //crear servicios del internet
       let servicioCliente: any = {}
-      if( Object.entries( createCustomerDto.servicio.caja_id ).length === 0 
-          || !isUUID(createCustomerDto.servicio['puerto_id']) ){
-        const { caja_id, puerto_id, ...rest } = createCustomerDto.servicio
+      if( Object.entries( CreateServicioDto.servicio.caja_id ).length === 0 
+          || !isUUID(CreateServicioDto.servicio['puerto_id']) ){
+        const { caja_id, puerto_id, ...rest } = CreateServicioDto.servicio
         servicioCliente = { ...rest }
       }else{
-        servicioCliente = createCustomerDto.servicio;
+        servicioCliente = CreateServicioDto.servicio;
       }
       
       let servicio = new ServicioCliente();
@@ -65,7 +66,7 @@ export class CustomersService {
       await queryRunner.manager.save(Pago, { 
         servicio, 
         estadoSRI: 'NO PAGADO', 
-        dia_pago: createCustomerDto.fechaPago 
+        dia_pago: CreateServicioDto.fechaPago 
       });
 
       await queryRunner.commitTransaction();
@@ -127,11 +128,11 @@ export class CustomersService {
     return customer;
   }
 
-  async update(id: string, updateCustomerDto: UpdateCustomerDto) {
+  async update(id: string, updateServicioDto: UpdateCustomerDto) {
     await this.findOne( id );
 
     try {
-      // await this.customerRepository.update( id, updateCustomerDto );
+      await this.customerRepository.update( id, updateServicioDto );
 
       return {
         ok: true,
@@ -141,6 +142,17 @@ export class CustomersService {
     } catch (error) {
       this.handleDBExceptions( error );
     }
+  }
+
+  async createCustomer( createCustomer: CreateCustomerDto, company_id ) {
+    const customer = await this.customerRepository.create({
+      ...createCustomer,
+      company_id
+    });
+
+    await this.customerRepository.save( customer );
+
+    return customer;
   }
 
   async setEstado(id: string, estado: boolean) {

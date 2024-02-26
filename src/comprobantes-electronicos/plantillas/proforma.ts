@@ -48,7 +48,7 @@ export class Proforma {
             <div class="col-5 pt-4 pb-2" 
               style="font-size: 9px;line-height: 15px;">
               <div class="d-flex justify-content-center">
-                <img src="${ pathImage }" width="60%">
+                <img src="${ pathImage }" style="max-width: 120px;height: auto;" class="rounded">
               </div>
               <div class="d-flex justify-content-center mt-1 fw-bolder">
                 ${ infoCompany.company_id.razon_social }

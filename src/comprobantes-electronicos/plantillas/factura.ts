@@ -7,7 +7,17 @@ export class Factura {
 
     plantilla( infoCompany, claveAcceso, numComprobante, cliente, datosFactura, pathImage ){
         const fechaEmision = moment().format('DD/MM/YYYY h:mm:ss a');
+        let forma_pago = '';
 
+        if ( datosFactura.forma_pago == '01' ) forma_pago = 'SIN UTILIZACION DEL SISTEMA FINANCIERO'
+        if ( datosFactura.forma_pago == '15' ) forma_pago = 'COMPENSACIÓN DE DEUDAS'
+        if ( datosFactura.forma_pago == '16' ) forma_pago = 'TARJETA DE DÉBITO'
+        if ( datosFactura.forma_pago == '17' ) forma_pago = 'DINERO ELECTRÓNICO'
+        if ( datosFactura.forma_pago == '18' ) forma_pago = 'TARJETA PREPAGO'
+        if ( datosFactura.forma_pago == '19' ) forma_pago = 'TARJETA DE CRÉDITO'
+        if ( datosFactura.forma_pago == '20' ) forma_pago = 'OTROS CON UTILIZACIÓN DEL SISTEMA FINANCIERO'
+        if ( datosFactura.forma_pago == '21' ) forma_pago = 'ENDOSO DE TÍTULOS'
+        
         let html = `<!DOCTYPE html>
         <html lang="en">
         <head>
@@ -32,7 +42,7 @@ export class Factura {
         
             <div class="col-6">
               <div class="mt-3 d-flex justify-content-center">
-                <img src="${ pathImage }" width="60%">
+                <img src="${ pathImage }" style="max-width: 200px;height: auto;" class="rounded">
               </div>
               <div class="mt-1 backColor pt-1" style="padding-bottom: 92px;">
                 <div style="padding-left: 13px">
@@ -59,9 +69,6 @@ export class Factura {
                   <label class="d-block">
                     <span class="fw-bolder">Obligado a llevar contabilidad:</span>
                     ${ infoCompany.company_id.obligado_contabilidad ? 'SI' : 'NO' }
-                  </label>
-                  <label class="d-block">
-                    <span class="fw-bolder">CONTRIBUYENTE RÉGIMEN RIMPE</span>            
                   </label>
                 </div>
               </div>
@@ -203,14 +210,9 @@ export class Factura {
                   style="height: 30px;padding-left: 25px;">
                   Información Adicional
                 </div>
-                <div class="col-12" 
-                  style="height: 30px;padding-left: 25px;">
-        
-                  <label class="fw-semibold pt-3">
-                    
-                  </label>
-                  <label style="padding-left: 14px;">
-                    
+                <div class="col-12" style="height: auto;padding-left: 25px;">
+                  <label style="padding-left: 14px;text-align: justify">
+                    ${ datosFactura.descripcion.trim() }
                   </label>
                 </div>
         
@@ -223,13 +225,13 @@ export class Factura {
                   style="height: 30px;padding-left: 25px;">
         
                   <label class="fw-semibold pt-3" 
-                    style="width: 55%;">
-                    Sin Utilización del Sistema Financiero 
+                    style="width: 58%;">
+                    ${ forma_pago }
                   </label>
                   <label style="width: 15%;text-align: center;">
                     $${ datosFactura.total.toFixed(2) }
                   </label>
-                  <label style="width: 27%;text-align: right;">
+                  <label style="width: 24%;text-align: right;">
                     0 días
                   </label>
                 </div>

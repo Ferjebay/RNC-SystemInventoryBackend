@@ -13,7 +13,7 @@ export class Puerto {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @ManyToOne(() => CajaNap, (cajaNap) => cajaNap.puertos, { onDelete: 'CASCADE'  })
+    @ManyToOne(() => CajaNap, (cajaNap) => cajaNap.puertos, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'cajaNap_id' })
     cajaNap_id: CajaNap;
 

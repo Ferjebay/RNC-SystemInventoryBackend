@@ -17,8 +17,16 @@ export class PagosService {
     private readonly pagoRepository: Repository<Pago>
   ){}
 
-  create(createPagoDto: CreatePagoDto) {
-    return 'This action adds a new pago';
+  async create(createPagoDto: CreatePagoDto) {
+    try {
+      const pago = this.pagoRepository.create( createPagoDto );
+
+      const pagoCreated = await this.pagoRepository.save( pago );
+  
+      return pagoCreated;      
+    } catch (error) {
+      this.handleDBExceptions( error )
+    }
   }
 
   findAll() {

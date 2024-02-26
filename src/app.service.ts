@@ -23,7 +23,7 @@ export class AppService {
       if (!parametro) { 
         var date = new Date();
 
-        const queryRunner = this.dataSource.createQueryRunner();
+        // const queryRunner = this.dataSource.createQueryRunner();
         await queryRunner.connect();
         
         const servicios = await queryRunner.manager.find(ServicioCliente)
