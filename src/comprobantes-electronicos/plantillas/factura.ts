@@ -92,7 +92,7 @@ export class Factura {
                     <label class="fw-bolder">
                       Número de Autorización:
                     </label>
-                    <label style="font-size: 12px;">
+                    <label style="font-size: 11px;">
                       ${ claveAcceso }
                     </label>  
                   </div>
