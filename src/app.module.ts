@@ -26,6 +26,7 @@ import { PuertosModule } from './puertos/puertos.module';
 import { RedIpv4Module } from './red-ipv4/red-ipv4.module';
 import { PagosModule } from './pagos/pagos.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { RolesAndPermisosModule } from './roles-and-permisos/roles-and-permisos.module';
 
 @Module({
   imports: [
@@ -73,7 +74,8 @@ import { ScheduleModule } from '@nestjs/schedule';
     CajaNapModule,
     PuertosModule,
     RedIpv4Module,
-    PagosModule
+    PagosModule,
+    RolesAndPermisosModule
   ],
   controllers: [AppController],
   providers: [AppService],

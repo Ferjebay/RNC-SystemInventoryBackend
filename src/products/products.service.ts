@@ -16,7 +16,6 @@ import {
   IPaginationOptions
 } from 'nestjs-typeorm-paginate';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
-import { Company } from 'src/companies/entities/company.entity';
 
 @Injectable()
 export class ProductsService {
