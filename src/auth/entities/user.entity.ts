@@ -33,9 +33,6 @@ export class User {
     @Column({ type: 'text', nullable: false })
     fullName: string;
     
-    // @Column({ type: 'text', unique: true })
-    // cedula: string;
-    
     @Column({ type: 'text' })
     celular: string;
 

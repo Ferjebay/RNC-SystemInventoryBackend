@@ -3,6 +3,7 @@ import { CajaNap } from "src/caja-nap/entities/caja-nap.entity";
 import { Customer } from "src/customers/entities/customer.entity";
 import { Email } from "src/email/entities/email.entity";
 import { Internet } from "src/internet/entities/internet.entity";
+import { Proforma } from "src/proforma/entities/proforma.entity";
 import { Provider } from "src/providers/entities/provider.entity";
 import { Router } from "src/router/entities/router.entity";
 import { Sucursal } from "src/sucursal/entities/sucursal.entity";
@@ -31,6 +32,9 @@ export class Company {
 
     @OneToMany(() => Email, (email) => email.company_id )
     emails: Email[]
+
+    @OneToMany(() => Proforma, (proforma) => proforma.company_id )
+    proforma: Proforma[]
 
     @Column({ type: 'varchar', length: 255 })
     razon_social: string;

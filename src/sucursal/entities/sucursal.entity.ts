@@ -13,7 +13,7 @@ export class Sucursal {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @ManyToOne(() => Company, (company) => company.sucursal, { eager: true })
+    @ManyToOne(() => Company, (company) => company.sucursal)
     @JoinColumn({ name: 'company_id' })
     company_id: Company;
 

@@ -751,7 +751,7 @@ export class FacturasService {
   async generarProforma(datosFactura, sucursal_id: any){   
     const clientFound = await this.customerService.findOne( datosFactura.customer_id );
     const infoCompany = await this.sucursalRepository.find({
-      relations: { company_id: true },
+      relations: { company_id: { proforma: true } },
       select: { 
         company_id: { 
           ruc: true, 
@@ -759,6 +759,7 @@ export class FacturasService {
           direccion_matriz: true, 
           nombre_comercial: true, 
           telefono: true,
+          email: true,
           logo: true 
         } 
       },

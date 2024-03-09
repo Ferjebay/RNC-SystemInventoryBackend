@@ -129,9 +129,10 @@ export class AuthService {
       throw new UnauthorizedException('Credentials not valid(password)')
 
     //Generar JWT
-    const { password: ps, ...restUser } = user;
+    const { password: ps, permisos, ...restUser } = user;
+    
     return {
-      ...user,
+      permisos: user.permisos,
       token: this.getJwtToken({ ...restUser })
     };    
 

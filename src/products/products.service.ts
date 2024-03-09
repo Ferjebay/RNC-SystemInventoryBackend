@@ -46,7 +46,7 @@ export class ProductsService {
         where: { sucursal_id: { id: sucursal_id } },
         order: { created_at: "DESC" }
       }
-    );
+    );          
   }
 
   async findOne(term: string, company_id: string = null) {

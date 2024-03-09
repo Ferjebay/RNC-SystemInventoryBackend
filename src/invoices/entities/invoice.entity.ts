@@ -31,6 +31,12 @@ export class Invoice {
     @Column({ type: 'varchar', length: 50 })
     numero_comprobante: string;
 
+    @Column({ type: 'text', nullable: true })
+    descripcion?: string;
+
+    @Column({ type: 'varchar', length: 100, nullable: true })
+    forma_pago?: string;    
+
     @Column({ type: "decimal", precision: 8, scale: 2 })
     subtotal: number;
     

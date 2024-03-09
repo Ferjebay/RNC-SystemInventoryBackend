@@ -6,8 +6,8 @@ const moment = require('moment');
 export class Proforma {
 
     plantilla( datosFactura, clientFound, infoCompany, pathImage ){
-        const fechaEmision = moment().format('DD/MM/YYYY h:mm:ss a');
-        const fechaVencimiento = moment().add(5, 'days').format('DD/MM/YYYY');
+        moment.locale('es'); 
+        const fechaEmision = moment().format('LLLL');
 
         let html = /*html*/ `<!DOCTYPE html>
         <html lang="en">
@@ -17,200 +17,294 @@ export class Proforma {
             <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
             <title>Document</title>
             <style>
-              .backColor{
-                background-color: #d5d7d9;
+              .lista{
+                font-size: 11px;
+                list-style: none;
+                text-align: right;
               }
-              .borderTrBottom{
-                padding-top: 5px;
-                padding-bottom: 5px;
-                border-bottom: 1px #dadae3 solid;
+              .img{
+                max-width: 173px;
+                min-width: 173px;
+                height: auto;
               }
-              
-              .tableProduct {
-                  border-collapse: collapse;
+              .column2{
+                font-size: 11px;
+                list-style: none;
+                text-align: center;
+                padding-left: 0;
+                margin-bottom: 0px;
               }
-              
-              .tableProduct,
-              .tableProduct th,
-              .tableProduct td {
-                  border: 1px solid #d3cbcb;
+              .column2Titulo{
+                font-size: 11px;
+                list-style: none;
+                text-align: left;
+                padding-left: 0;
+                margin-bottom: 0px;
               }
-              
-              .tableProduct th,
-              .tableProduct td {
-                  padding: 5px;
+              .cabecera{
+                color: white;
+                padding-left: 4px;
+              }
+              .column2 > li {
+                border: 1px solid #423b95;
+              }
+              .razon_social{
+                background-color: #423b95;
+                color: white;
+                padding-left: 10px;
+              }
+              .value_razon_social{
+                font-size: 11px;
+                text-align: center;
+                border: 1px solid #423b95;
+              }
+              .subtotal{
+                border-left: 1px solid #423b95;
+                border-bottom: 1px solid #423b95;
+                text-align: right;
+                padding-right: 10px;
+              }
+              .borderBottomClausulas{
+                border-bottom: 1px solid #423b95;
               }
             </style>
         </head>
-        <body style="font-size: 15px; color: black;">
-          <div class="row">
+        <body>
+          <div class="mx-4">
+            <div class="row mt-5">
+              <div class="col-6 d-flex align-items-center">
+                <img src="${ pathImage }" style="max-width: 175px;max-width: 175px;height: auto;" class="rounded">
+              </div>
+              <div class="col-6">
+                <ul class="lista">
+                  <li class="fw-bolder" style="font-size: 13px;">
+                    ${ infoCompany.company_id.razon_social }
+                  </li>
+                  <li>RUC: ${ infoCompany.company_id.ruc }</li>
+                  <li>${ infoCompany.company_id.direccion_matriz }</li>
+                  <li>Tel: ${ infoCompany.company_id.telefono }</li>
+                  <li>${ infoCompany.company_id.email }</li>
+                </ul>
+              </div>
         
-            <div class="col-5 pt-4 pb-2" 
-              style="font-size: 9px;line-height: 15px;">
-              <div class="d-flex justify-content-center">
-                <img src="${ pathImage }" style="max-width: 120px;height: auto;" class="rounded">
-              </div>
-              <div class="d-flex justify-content-center mt-1 fw-bolder">
-                ${ infoCompany.company_id.razon_social }
-              </div>
-              <div class="d-flex justify-content-center">
-                RUC - ${ infoCompany.company_id.ruc }
-              </div>
-              <div class="d-flex justify-content-center">
-                <div style="width: 65%;text-align: center;">
-                  ${ infoCompany.company_id.direccion_matriz }
-                </div>
-              </div>
-              <div class="d-flex justify-content-center">
-                Tel - ${ infoCompany.company_id.telefono }
-              </div>
-              <div class="d-flex justify-content-center">
-                Pueblo Viejo - Ecuador
-              </div>
-            </div>    
-            <div class="col-7 pt-4 pb-2 d-flex align-items-center">
-              <table style="text-align: end;border: 1px #dbdbdb solid;font-size: 11px;width: 100%">
-                <tr>
-                  <td class="fw-bolder"
-                   style="width: 29%;background-color: #d3d9df;padding-right: 10px;">
-                    Para
-                  </td>
-                  <td style="padding-right: 10px;">
-                  ${ clientFound.nombres }
-                  </td>
-                </tr>
-                <tr>
-                  <td class="fw-bolder"
-                    style="background-color: #d3d9df;padding-right: 10px;">
-                    R.U.C
-                  </td>
-                  <td style="padding-right: 10px;">
+              <div class="col-7">
+                <ul class="row" style="list-style: none;padding-left: 0px;">
+                  <li style="display: flex;padding-right: 0px;">
+                    <div class="col-5 column2Titulo razon_social">
+                      NOMBRE/RAZON SOCIAL:
+                    </div>
+                    <div class="col-7 value_razon_social">
+                    ${ clientFound.nombres }
+                    </div>
+                  </li>
+                  <li style="display: flex;padding-right: 0px;">
+                    <div class="col-3 column2Titulo razon_social">
+                      CÉDULA/RUC:
+                    </div>
+                    <div class="col-3 value_razon_social" style="border-top: none;">
                     ${ clientFound.numero_documento }
-                  </td>
-                </tr>
-                <tr>
-                  <td class="fw-bolder"
-                   style="background-color: #d3d9df;padding-right: 10px;">
-                    Fecha Emisión
-                  </td>
-                  <td style="padding-right: 10px;">
-                    ${ fechaEmision }
-                  </td>
-                </tr>
-                <tr>
-                  <td class="fw-bolder"
-                  style="background-color: #d3d9df;padding-right: 10px;">
-                    Válido Hasta
-                  </td>
-                  <td style="padding-right: 10px;">
-                    ${ fechaVencimiento }
-                  </td>
-                </tr>
-              </table>
-            </div>    
+                    </div>
+                    <div class="col-3 column2Titulo razon_social">
+                      TELEFONO:
+                    </div>
+                    <div class="col-3 value_razon_social" style="border-top: none;">
+                    ${ clientFound.celular }
+                    </div>
+                  </li>
+                  <li style="display: flex;padding-right: 0px;">
+                    <div class="col-3 column2Titulo razon_social">
+                      DIRECCIÓN:
+                    </div>
+                    <div class="col-9 value_razon_social" style="border-top: none;">
+                    ${ clientFound.direccion }
+                    </div>
+                  </li>
+                </ul>
+              </div>
         
-            <div class="col-12 pb-1 mt-2 text-center fw-semibold fs-5" style="font-size: 13px;">
-              FACTURA PROFORMA
-            </div>
-        
-            <div class="col-12 pt-1 pb-2 mt-1" 
-              style="font-size: 11px;">
-              <table class="tableProduct" style="width: 100%;">
-                <thead style="background-color: #d3d9df;">
-                  <tr>
-                    <th class="text-center" style="width: 5.2%;">
-                      Item
-                    </th>
-                    <th class="text-center" style="width: 14.2%;">
-                      Producto
-                    </th>
-                    <th class="text-center" style="width: 44.2%;">
-                      Descripción
-                    </th>
-                    <th class="text-center" style="width: 8.2%;">
-                      Cantidad
-                    </th>
-                    <th class="text-center" style="width: 10.2%;">
-                      Impto. Cargo
-                    </th>
-                    <th class="text-center" style="width: 8.2%;">
-                      Vr. Unitario 
-                    </th>
-                    <th class="text-center" style="width: 9.2%;">
-                      Vr. total
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>`
-                
-              datosFactura.products.forEach((product, index) => {
-                html += `
-                  <tr class="text-center">
-                    <td>${ index + 1 }</td>
-                    <td>${ product.codigoBarra }</td>
-                    <td>${ product.nombre }</td>
-                    <td>${ product.cantidad }</td>
-                    <td>12%</td>
-                    <td>${ product.pvp }</td>
-                    <td>${ product.v_total }</td>
-                  </tr>`                
-              });
-                
-                html +=`
-                </tbody>
-              </table>
-            </div>  
-            
-            <div class="col-7"></div>
-        
-            <div class="col-5" style="font-size: 12px;">
-              <div class="row" style="text-align: right;">
-                <div class="col-12 pb-2 d-flex justify-content-between">
-                  <label class="fw-bolder"
-                    style="padding-left: 50px;">
-                    Total Bruto:
-                  </label>
-                  <label class="pe-3" style="width: 46%;">
-                    $${ datosFactura.subtotal }
-                  </label>
-                </div>
-                <div class="col-12 pb-2 d-flex justify-content-between">
-                  <label class="fw-bolder"
-                    style="padding-left: 50px;">
-                    Descuentos:
-                  </label>
-                  <label class="pe-3" style="width: 46%;">
-                    $${ datosFactura.descuento }
-                  </label>
-                </div>
-                <div class="col-12 pb-2 d-flex justify-content-between">
-                  <label class="fw-bolder"
-                    style="padding-left: 50px;">
-                    Subtotal: 
-                  </label>
-                  <label class="pe-3" style="width: 46%;">
-                    $${ datosFactura.subtotal - datosFactura.descuento }
-                  </label>
-                </div>
-                <div class="col-12 pb-1 d-flex justify-content-between">
-                  <label class="fw-bolder"
-                    style="padding-left: 50px;">
-                    Total IVA: 
-                  </label>
-                  <label class="pe-3" style="width: 46%;">
-                    $${ datosFactura.iva }
-                  </label>
-                </div>
-                <div class="col-12 py-1 backColor pb-1 d-flex justify-content-between fw-bold">
-                  <label style="padding-left: 50px;">
-                    Total a pagar: 
-                  </label>
-                  <label class="backColor pe-3" style="width: 46%;">
-                    $${ datosFactura.total } USD
-                  </label>
+              <div class="col-5">
+                <div class="row">
+                  <div class="col-3" style="padding-right: 0px;background-color: #423b95;padding-left: 2px;">
+                    <ul class="column2Titulo cabecera">
+                      <li>PROFORMA:</li>
+                      <li style="margin-top: 3px;margin-bottom: 3px;">FECHA:</li>
+                      <li>CORREO:</li>
+                    </ul>
+                  </div>
+                  <div class="col-9" style="padding-left: 0px;padding-right: 0px;">
+                    <ul class="column2">
+                      <li>2402011652</li>
+                      <li style="border-top: none;border-bottom: none;"> 
+                        ${ fechaEmision }
+                      </li>
+                      <li>
+                        ${ clientFound.email }
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
-            </div>
+        
+              <div class="col-12">
+                <ul class="row" style="list-style: none;padding-left: 0px;">
+                  <li style="display: flex;padding-right: 0px;">
+                    <div class="col-12 column2Titulo razon_social text-center">
+                      SERVICIOS / PRODUCTOS
+                    </div>
+                  </li>
+                  <li style="display: flex;padding-right: 0px;">
+                    <div class="col-2 column2Titulo razon_social text-center" style="background-color: #a96820;">
+                      CANTIDAD
+                    </div>
+                    <div class="col-6 column2Titulo razon_social text-center" style="background-color: #a96820;">
+                      DESCRIPCIÓN
+                    </div>
+                    <div class="col-2 column2Titulo razon_social text-center" style="background-color: #a96820;">
+                      PRECIO UNIT.
+                    </div>            
+                    <div class="col-2 column2Titulo razon_social text-center" style="background-color: #a96820;">
+                      TOTAL
+                    </div>            
+                  </li>
+        
+                  <li style="display: none;padding-right: 0px;"></li>`
+
+                  datosFactura.products.forEach((product, index) => {
+                    html += /*html*/ `<li style="display: flex;padding-right: 0px;">
+                    <div class="col-2 column2Titulo text-center" 
+                      style="border-left: 1px solid #423b95;border-bottom: 1px solid #423b95;">
+                      ${ product.cantidad }
+                    </div>
+                    <div class="col-6 column2Titulo text-center" 
+                      style="border-left: 1px solid #423b95;border-bottom: 1px solid #423b95;">
+                      ${ product.nombre }
+                    </div>
+                    <div class="col-2 column2Titulo subtotal">
+                      $${ product.pvp }
+                    </div>            
+                    <div class="col-2 column2Titulo text-end pe-2" 
+                      style="border-left: 1px solid #423b95;border-bottom: 1px solid #423b95;border-right: 1px solid #423b95;text-align: right">
+                      $${ product.v_total }
+                    </div>            
+                  </li>`
+                  })
+                  
+                  html += /*html*/ `<li style="display: flex;padding-right: 0px;">
+                    <div class="col-8 column2Titulo text-center" 
+                      style="border-left: 1px solid #423b95;border-bottom: 1px solid #423b95;background-color: #423b95;color: white;">
+                      OBSERVACIONES
+                    </div>
+                    <div class="col-2 column2Titulo subtotal" style="background-color: #423b95;color: white;">
+                      TOTAL BRUTO
+                    </div>            
+                    <div class="col-2 column2Titulo text-end pe-2" 
+                      style="border-left: 1px solid #423b95;border-bottom: 1px solid #423b95;border-right: 1px solid #423b95;background-color: #423b95;color: white;">
+                      $${ datosFactura.subtotal }
+                    </div>            
+                  </li>          
+                  <li style="display: flex;padding-right: 0px;">
+                    <div class="col-8 column2Titulo text-center" 
+                      style="border-left: 1px solid #423b95;">
+                      ${ datosFactura.descripcion.length == 0 ? 'Sin observaciones' : datosFactura.descripcion }
+                    </div>
+                    <div class="col-2 column2Titulo subtotal" style="background-color: #423b95;color: white;">
+                      DESCUENTOS
+                    </div>            
+                    <div class="col-2 column2Titulo text-end pe-2" 
+                      style="border-left: 1px solid #423b95;border-bottom: 1px solid #423b95;border-right: 1px solid #423b95;background-color: #423b95;color: white;">
+                      $${ datosFactura.descuento }
+                    </div>            
+                  </li>          
+                  <li style="display: flex;padding-right: 0px;">
+                    <div class="col-8 column2Titulo text-center" 
+                      style="border-left: 1px solid #423b95;">
+                    </div>
+                    <div class="col-2 column2Titulo subtotal" style="background-color: #423b95;color: white;">
+                      SUBTOTAL
+                    </div>            
+                    <div class="col-2 column2Titulo text-end pe-2" 
+                      style="border-left: 1px solid #423b95;border-bottom: 1px solid #423b95;border-right: 1px solid #423b95;background-color: #423b95;color: white;">
+                      $${ datosFactura.subtotal - datosFactura.descuento }
+                    </div>            
+                  </li>          
+                  <li style="display: flex;padding-right: 0px;">
+                    <div class="col-8 column2Titulo text-center" 
+                      style="border-left: 1px solid #423b95;">
+                    </div>
+                    <div class="col-2 column2Titulo subtotal" style="background-color: #423b95;color: white;">
+                      IVA(12%)
+                    </div>            
+                    <div class="col-2 column2Titulo text-end pe-2" 
+                      style="border-left: 1px solid #423b95;border-bottom: 1px solid #423b95;border-right: 1px solid #423b95;background-color: #423b95;color: white;">
+                      $${ datosFactura.iva }
+                    </div>            
+                  </li>          
+                  <li style="display: flex;padding-right: 0px;">
+                    <div class="col-8 column2Titulo text-center" 
+                      style="border-left: 1px solid #423b95;border-bottom: 1px solid #423b95;">
+                    </div>
+                    <div class="col-2 column2Titulo subtotal" style="background-color: #423b95;color: white;">
+                      TOTAL
+                    </div>            
+                    <div class="col-2 column2Titulo text-end pe-2" 
+                      style="border-left: 1px solid #423b95;border-bottom: 1px solid #423b95;border-right: 1px solid #423b95;background-color: #423b95;color: white;">
+                      $${ datosFactura.total }
+                    </div>            
+                  </li>          
+                  
+                  <li style="display: flex;padding-right: 0px;margin-top: 15px;">
+                    <div class="col-12 column2Titulo razon_social text-center">
+                      CLAUSULAS DE LA PROPUESTA
+                    </div>
+                  </li> `
+
+                  
+                  infoCompany.company_id.proforma[0].clausulas.forEach((clausula, index) => {
+                    html += /*html*/ `
+                    <li style="display: flex;padding-right: 0px;">
+                      <div class="${ ( index + 1 ) == infoCompany.company_id.proforma[0].clausulas.length ? 'borderBottomClausulas' : '' } col-4 column2Titulo text-left fw-bolder"
+                        style="padding-left: 10px;border-left: 1px solid #423b95;">
+                        ${ clausula.nombre }:
+                      </div>
+                      <div class="${ ( index + 1 ) == infoCompany.company_id.proforma[0].clausulas.length ? 'borderBottomClausulas' : '' } col-8 column2Titulo text-left" 
+                      style="border-right: 1px solid #423b95;">
+                        ${ clausula.descripcion }
+                      </div>          
+                    </li>`
+                  })
+
+                  html += /*html*/ `
+        
+                  <li style="display: flex;padding-right: 0px;margin-top: 15px;">
+                    <div class="col-12 column2Titulo razon_social text-center">
+                      ACEPTACIÓN DE LA PROPUESTA
+                    </div>
+                  </li>
+                  <li style="display: flex;padding-right: 0px;">
+                    <div class="col-12 column2Titulo text-left pa-2" 
+                      style="padding: 8px;border: 1px solid #423b95;font-family: none;line-height: 16px;
+                      font-size: 12px;">
+                      ${ infoCompany.company_id.proforma[0].aceptacion_proforma }
+                    </div>       
+                  </li>
+        
+                </ul>
+
+                <div class="row mt-1">
+                  <div class="col-6">
+                    <label style="font-size: 12px;" class="fw-bolder">
+                      ${ infoCompany.company_id.razon_social }:
+                    </label>
+                  </div>
+                  <div class="col-6">
+                    <label style="font-size: 12px;" class="fw-bolder">
+                      CLIENTE :
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+            </div>    
           </div>
         </body>
         </html>`
@@ -225,7 +319,7 @@ export class Proforma {
         imageName = 'default.jpg'
       else imageName =  infoCompany[0].company_id.logo
 
-      const pathImage = `${process.env.HOST_API}/images/${ imageName }`;
+      const pathImage = `${process.env.HOST_API}/images/${ imageName }`;      
 
       const content = this.plantilla( datosFactura, clientFound[0], infoCompany[0], pathImage );
   

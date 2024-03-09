@@ -52,18 +52,21 @@ export class SucursalService {
     
     if ( isUUID(term) ) {
       if ( modelo == 'sucursal' ) {
-        sucursal = await this.sucursalRepository.findBy({ id: term });        
+        sucursal = await this.sucursalRepository.find({ 
+          where: { id: term },
+          relations: ['company_id']
+        });        
       }else{
-        sucursal = await this.sucursalRepository.findBy({
-          company_id: { id: term }
+        sucursal = await this.sucursalRepository.find({ 
+          where: { company_id: { id: term } },
+          relations: ['company_id']
         });        
       } 
     } else {
       const queryBuilder = this.sucursalRepository.createQueryBuilder('est'); 
       sucursal = await queryBuilder
-        .where('UPPER(nombre) =:nombre', {
-          nombre: term.toUpperCase()
-        })
+        .leftJoinAndSelect('est.company_id', 'company')
+        .where('UPPER(nombre) =:nombre', { nombre: term.toUpperCase() })
         .getMany();
     }
 
