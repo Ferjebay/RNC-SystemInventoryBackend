@@ -41,7 +41,7 @@ export class AuthService {
 
       await this.userRepository.save( user );
       delete user.password
-      
+
       return user;
 
     } catch (error) {
@@ -53,20 +53,20 @@ export class AuthService {
     let user: User[];
 
     if ( isUUID(term) ) {
-      user = await this.userRepository.find({ 
+      user = await this.userRepository.find({
         relations: { company: true },
         where: { id: term }
       });
     } else {
-      const queryBuilder = this.userRepository.createQueryBuilder('user'); 
+      const queryBuilder = this.userRepository.createQueryBuilder('user');
       user = await queryBuilder
         .where('UPPER(usuario) =:usuario', {
           usuario: term.toUpperCase()
-        })        
+        })
         .getMany();
     }
 
-    if ( user.length === 0 ) 
+    if ( user.length === 0 )
       throw new NotFoundException(`user with ${ term } not found`);
 
     return user;
@@ -74,8 +74,8 @@ export class AuthService {
 
   async update(id: string, updateUserDto: UpdateUserDto) {
     await this.findOne( id );
-    
-    if ( updateUserDto.password ) 
+
+    if ( updateUserDto.password )
       updateUserDto.password = bcrypt.hashSync( updateUserDto.password, 10 )
 
     try {
@@ -84,7 +84,7 @@ export class AuthService {
       return {
         ok: true,
         msg: "Registro actualizado exitosamente"
-      };      
+      };
 
     } catch (error) {
       this.handleDBExceptions( error );
@@ -98,7 +98,7 @@ export class AuthService {
       if ( estado ) option.where = { isActive: true };
 
       return this.userRepository.find( option );
-      
+
     } catch (error) {
       this.handleDBErros( error )
     }
@@ -108,54 +108,54 @@ export class AuthService {
 
     const { email, password } = loginUserDto;
     const user = await this.userRepository.findOne({
-      where:  { email },   
+      where:  { email },
       relations: { company: { sucursal: true } },
-      select: { 
-        email: true, 
-        password: true, 
-        id: true, 
+      select: {
+        email: true,
+        password: true,
+        id: true,
         permisos: true,
         fullName: true,
-        company: { id: true, sucursal: { id: true } },
+        company: { id: true, razon_social: true, sucursal: { id: true } },
         sucursales: true,
         roles: true
       }
     })
 
-    if ( !user ) 
+    if ( !user )
       throw new UnauthorizedException('Credentials not valid(email)')
-    
-    if ( !bcrypt.compareSync( password, user.password) ) 
+
+    if ( !bcrypt.compareSync( password, user.password) )
       throw new UnauthorizedException('Credentials not valid(password)')
 
     //Generar JWT
     const { password: ps, permisos, ...restUser } = user;
-    
+
     return {
       permisos: user.permisos,
       token: this.getJwtToken({ ...restUser })
-    };    
+    };
 
   }
 
   private getJwtToken( payload: JwtPayload ){
     return this.jwtService.sign( payload );
   }
-  
+
   async remove(id: string) {
     const user = await this.findOne( id );
-    let msg: string; 
+    let msg: string;
 
     await this.userRepository.remove( user );
     msg = 'Eliminado Exitosamente'
-    
+
     return { ok: true, msg };
   }
 
   private handleDBErros( error: any ){
-    if ( error.code === '23505' ) 
-       throw new BadRequestException( error.detail ) 
-    
+    if ( error.code === '23505' )
+       throw new BadRequestException( error.detail )
+
     console.log( error );
 
     throw new InternalServerErrorException('Please check logs error');
@@ -164,7 +164,7 @@ export class AuthService {
   private handleDBExceptions( error: any ) {
     if ( error.code === '23505' )
       throw new BadRequestException(error.detail);
-    
+
     this.logger.error(error)
     throw new InternalServerErrorException('Unexpected error, check server logs');
   }

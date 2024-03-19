@@ -3,10 +3,13 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Invoice } from './entities/invoice.entity';
-import { Not, Repository } from 'typeorm';
+import { Between, Not, Repository } from 'typeorm';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { FacturasService } from 'src/comprobantes-electronicos/facturas/facturas.service';
 import { InvoiceToProduct } from './entities/invoiceToProduct.entity';
+const path = require('path');
+const AdmZip = require('adm-zip');
+const fs = require('fs');
 
 @Injectable()
 export class InvoicesService {
@@ -29,7 +32,7 @@ export class InvoicesService {
 
       if (createInvoiceDto.tipo !== 'EMISION'){
         let invoiceEntity = new Invoice();
-        invoiceEntity = { 
+        invoiceEntity = {
           ...createInvoiceDto,
           sucursal_id,
           clave_acceso: claveAcceso,
@@ -37,8 +40,8 @@ export class InvoicesService {
           estadoSRI: createInvoiceDto.tipo == 'PROFORMA' ? 'PROFORMA' : 'PENDIENTE'
         }
         invoiceCreated = await this.invoiceRepository.save( invoiceEntity );
-        
-        const pivot: Array<InvoiceToProduct> = [];      
+
+        const pivot: Array<InvoiceToProduct> = [];
         createInvoiceDto.products.forEach( product => {
           pivot.push(new InvoiceToProduct(
             product.cantidad,
@@ -46,53 +49,75 @@ export class InvoicesService {
             product.descuento,
             invoiceCreated,
             product.id
-          ));        
+          ));
         })
-        this.tablePivotRepository.save( pivot );  
+        this.tablePivotRepository.save( pivot );
       }else{
         await this.invoiceRepository.update( createInvoiceDto.id, { estadoSRI: "PENDIENTE" } );
         invoiceCreated.id = createInvoiceDto.id
-      } 
-      
+      }
+
       if (createInvoiceDto.tipo == 'FACTURA' || createInvoiceDto.tipo == 'EMISION') {
-        this.facturaService.generarFacturaElectronica( 
-          createInvoiceDto, 
+        this.facturaService.generarFacturaElectronica(
+          createInvoiceDto,
           claveAcceso,
           sucursal_id,
           invoiceCreated.id
-        )        
+        )
       }else{
         this.facturaService.generarProforma(
           createInvoiceDto,
           sucursal_id
         );
       }
-  
-      return { ok: true };      
+
+      return { ok: true };
     } catch (error) {
       this.handleDBExceptions( error )
     }
   }
 
-  async findAll( estado: boolean, tipo: string, sucursal_id: Sucursal ) {
-    let option: any = { 
-      relations: { 
+  async findAll( estado: boolean, tipo: string, sucursal_id: Sucursal, desde, hasta ) {
+    return await this.getVentas(estado, tipo, sucursal_id, desde, hasta);
+  }
+
+  async getVentas(estado: boolean, tipo: string, sucursal_id: Sucursal, desde, hasta){
+    let inicio;
+    let fin;
+    if ( desde != "" && hasta == "" ) {
+      inicio = new Date( desde );
+      fin = new Date( desde );
+      fin.setHours(23, 59, 59, 999);
+    }
+    if ( desde == "" && hasta != "" ) {
+      inicio = new Date( hasta );
+      fin = new Date( hasta );
+      fin.setHours(23, 59, 59, 999);
+    }
+    if ( desde != "" && hasta != "" ) {
+      inicio = new Date( desde );
+      fin = new Date( hasta );
+      fin.setHours(23, 59, 59, 999);
+    }
+
+    let option: any = {
+      relations: {
         user_id: true,
         sucursal_id: true,
         customer_id: true,
         invoiceToProduct: { product_id: true }
-      }, 
-      select: { 
-        customer_id: { nombres: true, id: true, tipo_documento: true, numero_documento: true }, 
-        sucursal_id: { id: true, nombre: true, ambiente: true, direccion: true }, 
+      },
+      select: {
+        customer_id: { nombres: true, id: true, tipo_documento: true, numero_documento: true },
+        sucursal_id: { id: true, nombre: true, ambiente: true, direccion: true },
         user_id:     { fullName: true, id: true },
         invoiceToProduct: { v_total: true, cantidad: true, product_id: true, descuento: true }
       },
       order: { created_at: "DESC" },
       where: {
-        sucursal_id: { id: sucursal_id },
-        estadoSRI: null,
-        isActive: null
+        created_at: ( desde != "" || hasta != "" ) ?
+                    Between( inicio, fin )
+                    : null
       }
     }
 
@@ -105,21 +130,45 @@ export class InvoicesService {
     return await this.invoiceRepository.find( option );
   }
 
-  async findOne(id: string) {
-    const invoice = await this.invoiceRepository.findOne({
-      where:  { id },   
-      relations: { 
-        customer_id: true, 
-        invoiceToProduct: { product_id: true },
-        sucursal_id: { company_id: true }
-      },
-      select: { 
-        customer_id: { id: true },
-        sucursal_id: { id: true, company_id: { id: true } } 
+  async downloadComprobantes( estado: boolean, sucursal_id: Sucursal, desde, hasta ) {
+
+    const ventas = await this.getVentas(estado, 'FACTURAS', sucursal_id, desde, hasta);
+
+    const comprobantes = ventas.map( venta => {
+      let pathComprobante = path.resolve(__dirname, `../../static/SRI/PDF/${ venta.clave_acceso }.pdf`);
+      return pathComprobante;
+    })
+
+    // Crea una nueva instancia de AdmZip
+    const zip = new AdmZip();
+
+    // Agregar cada archivo al archivo ZIP
+    comprobantes.forEach(filePath => {
+      if (fs.existsSync(filePath)) { // Verificar si el archivo existe
+        zip.addLocalFile(filePath); // Agregar archivo al ZIP
+      } else {
+        console.warn(`El archivo "${filePath}" no existe.`);
       }
     });
 
-    if ( !invoice ) 
+    return zip.toBuffer();
+  }
+
+  async findOne(id: string) {
+    const invoice = await this.invoiceRepository.findOne({
+      where:  { id },
+      relations: {
+        customer_id: true,
+        invoiceToProduct: { product_id: true },
+        sucursal_id: { company_id: true }
+      },
+      select: {
+        customer_id: { id: true },
+        sucursal_id: { id: true, company_id: { id: true } }
+      }
+    });
+
+    if ( !invoice )
       throw new NotFoundException(`No se encontro la factura/proforma`);
 
     return invoice;
@@ -132,7 +181,7 @@ export class InvoicesService {
       return {
         ok: true,
         msg: "Registro actualizado exitosamente"
-      };      
+      };
 
     } catch (error) {
       this.handleDBExceptions( error );
@@ -146,7 +195,7 @@ export class InvoicesService {
   private handleDBExceptions( error: any ) {
     if ( error.code === '23505' )
       throw new BadRequestException(error.detail);
-    
+
     this.logger.error(error)
     throw new InternalServerErrorException('Unexpected error, check server logs');
   }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query, DefaultValuePipe, ParseUUIDPipe, ParseBoolPipe, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query, DefaultValuePipe, ParseUUIDPipe, ParseBoolPipe, Headers, Res } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -6,6 +6,7 @@ import { Product } from './entities/product.entity';
 import { Pagination } from 'nestjs-typeorm-paginate';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { Company } from 'src/companies/entities/company.entity';
+import { Response } from 'express';
 
 @Controller('products')
 export class ProductsController {
@@ -32,8 +33,19 @@ export class ProductsController {
       limit,
       route: `${ process.env.HOST_API }/products`,
     }, sucursal_id);
-    
   }
+
+  @Post('/download-products-excel/')
+  async downloadProductsToExcel(
+    @Body('sucursal_id') sucursal_id: string,
+    @Res() res: Response  
+  ){
+    const file = await this.productsService.downloadProductsToExcel( sucursal_id );
+    res.setHeader('Content-Disposition', 'attachment; filename=ejemplo.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  
+    res.send( file );
+  }   
 
   @Get(':term')
   findOne(

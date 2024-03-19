@@ -18,7 +18,7 @@ export class Factura {
         if ( datosFactura.forma_pago == '20' ) forma_pago = 'OTROS CON UTILIZACIÓN DEL SISTEMA FINANCIERO'
         if ( datosFactura.forma_pago == '21' ) forma_pago = 'ENDOSO DE TÍTULOS'
         
-        let html = `<!DOCTYPE html>
+        let html = /*html*/ `<!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<factura id="comprobante" version="1.0.0">
+  <infoTributaria>
+    <ambiente>1</ambiente>
+    <tipoEmision>1</tipoEmision>
+    <razonSocial>RED NUEVA CONEXION</razonSocial>
+    <ruc>1206708644001</ruc>
+    <claveAcceso>1203202401120670864400110010010000005019410774310</claveAcceso>
+    <codDoc>01</codDoc>
+    <estab>001</estab>
+    <ptoEmi>001</ptoEmi>
+    <secuencial>000000501</secuencial>
+    <dirMatriz>XYZ Y ABC</dirMatriz>
+  </infoTributaria>
+  <infoFactura>
+    <fechaEmision>12/03/2024</fechaEmision>
+    <dirEstablecimiento>pueblo viejo</dirEstablecimiento>
+    <obligadoContabilidad>NO</obligadoContabilidad>
+    <tipoIdentificacionComprador>05</tipoIdentificacionComprador>
+    <razonSocialComprador>LEIDY JUNCO PERALTA</razonSocialComprador>
+    <identificacionComprador>1207488376</identificacionComprador>
+    <direccionComprador>27 de mayo</direccionComprador>
+    <totalSinImpuestos>380.00</totalSinImpuestos>
+    <totalDescuento>20</totalDescuento>
+    <totalConImpuestos>
+      <totalImpuesto>
+        <codigo>2</codigo>
+        <codigoPorcentaje>2</codigoPorcentaje>
+        <baseImponible>380.00</baseImponible>
+        <tarifa>12</tarifa>
+        <valor>45.6</valor>
+      </totalImpuesto>
+    </totalConImpuestos>
+    <propina>0</propina>
+    <importeTotal>425.6</importeTotal>
+    <moneda>DOLAR</moneda>
+    <pagos>
+      <pago>
+        <formaPago>20</formaPago>
+        <total>425.6</total>
+      </pago>
+    </pagos>
+  </infoFactura>
+  <detalles>
+    <detalle>
+      <codigoPrincipal>1235621</codigoPrincipal>
+      <descripcion>LAPTOP GAMER</descripcion>
+      <cantidad>1</cantidad>
+      <precioUnitario>400.00</precioUnitario>
+      <descuento>20.00</descuento>
+      <precioTotalSinImpuesto>380.00</precioTotalSinImpuesto>
+      <impuestos>
+        <impuesto>
+          <codigo>2</codigo>
+          <codigoPorcentaje>2</codigoPorcentaje>
+          <tarifa>12</tarifa>
+          <baseImponible>380.00</baseImponible>
+          <valor>45.60</valor>
+        </impuesto>
+      </impuestos>
+    </detalle>
+  </detalles>
+  <infoAdicional>
+    <campoAdicional nombre="Descripcion">test descripcion</campoAdicional>
+  </infoAdicional>
+</factura>

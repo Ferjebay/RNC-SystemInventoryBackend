@@ -741,7 +741,22 @@ export class FacturasService {
   
             const comprobantes = { xml: pathXML, pdf: pathPDF, tipo: 'factura' } 
   
-            this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);            
+            await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);         
+            
+            //Enviar mensaje or whatsApp
+            try {
+              await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
+                cliente: clientFound[0].nombres,
+                number: clientFound[0].celular,
+                urlPDF: pathPDF,
+                urlXML: pathXML,
+                clave_acceso: claveAcceso,
+                num_comprobante: numComprobante
+              });              
+            } catch (error) {
+              console.log( error );
+            }        
+
           }
         }
       }, 2900)
@@ -886,6 +901,7 @@ export class FacturasService {
 
     const comprobantes = { xml: pathXML, pdf: pdfBuffer, tipo: 'factura' } 
 
-    this.emailService.sendComprobantes(clientFound[0], infoCompany[0], datosFactura.num_comprobante, datosFactura.clave_acceso, comprobantes);  
+    this.emailService.sendComprobantes(clientFound[0], infoCompany[0], datosFactura.num_comprobante, datosFactura.clave_acceso, comprobantes); 
+    
   }
 }

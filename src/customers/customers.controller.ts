@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, DefaultValuePipe, ParseBoolPipe, ParseUUIDPipe, Headers, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, DefaultValuePipe, ParseBoolPipe, ParseUUIDPipe, Headers, Put, Res } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CreateServicioDto } from './dto/create-servicio.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -6,6 +6,7 @@ import { UpdateServicioDto } from './dto/update-servicio.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Company } from 'src/companies/entities/company.entity';
 import { Router } from 'src/router/entities/router.entity';
+import { Response } from 'express';
 
 @Controller('customers')
 export class CustomersController {
@@ -17,6 +18,18 @@ export class CustomersController {
     @Body() createCustomerDto: CreateServicioDto
   ) {
     return this.customersService.create(createCustomerDto, company_id);
+  }
+
+  @Post('/download-clients-excel/')
+  async downloadClientsToExcel(
+    @Headers('company_id') company_id: Company,
+    @Res() res: Response  
+  ){
+    const file = await this.customersService.downloadClientsToExcel( company_id );
+    res.setHeader('Content-Disposition', 'attachment; filename=ejemplo.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  
+    res.send( file );
   }
 
   @Post('/create')

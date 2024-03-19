@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ServicioCliente } from 'src/customers/entities/ServicioCliente.entity';
-import { Customer } from 'src/customers/entities/customer.entity';
 import { Router } from 'src/router/entities/router.entity';
 import { DataSource } from 'typeorm';
 const RouterOSAPI = require("node-routeros").RouterOSAPI;

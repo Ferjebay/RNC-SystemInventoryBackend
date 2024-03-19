@@ -11,6 +11,8 @@ import { FacturaCliente } from './entities/Facturacion.entity';
 import { ServicioCliente } from './entities/ServicioCliente.entity';
 import { MikrotikService } from '../mikrotik/mikrotik.service';
 import { Pago } from 'src/pagos/entities/pago.entity';
+const ExcelJS = require('exceljs');
+const path = require('path');
 
 @Injectable()
 export class CustomersService {
@@ -84,6 +86,41 @@ export class CustomersService {
     }
   }
 
+  async downloadClientsToExcel( company_id ){
+    const customers = await this.customerRepository.find({ 
+      where: { company_id: { id: company_id } } 
+    });
+
+    const pathPlantilla = path.resolve(__dirname, `../../static/resource/clientes_plantilla.xlsx`);
+
+    const workbook = new ExcelJS.Workbook();
+
+    try {
+      await workbook.xlsx.readFile(pathPlantilla)
+
+      const worksheet  = workbook.getWorksheet('Hoja1');
+
+      for (const [index, customer] of customers.entries()) {
+
+        let tipo_documento = '';
+        if ( customer.tipo_documento == '04' ) tipo_documento = 'RUC'
+        if ( customer.tipo_documento == '05' ) tipo_documento = 'Cedula'
+        if ( customer.tipo_documento == '06' ) tipo_documento = 'Pasaporte'
+
+        worksheet.getCell(`A${ index + 2 }`).value = customer.nombres.toUpperCase();
+        worksheet.getCell(`B${ index + 2 }`).value = tipo_documento;
+        worksheet.getCell(`C${ index + 2 }`).value = customer.numero_documento;
+        worksheet.getCell(`D${ index + 2 }`).value = customer.email;
+        worksheet.getCell(`E${ index + 2 }`).value = customer.celular;
+        worksheet.getCell(`F${ index + 2 }`).value = customer.direccion;
+      }
+
+      return workbook.xlsx.writeBuffer();
+    } catch (error) {
+      console.error('Error al cargar o guardar la plantilla:', error);
+    }
+  }
+
   async findAll( estado: boolean, company_id: Company ) {
     let option:any = { 
       where: { 
@@ -145,14 +182,19 @@ export class CustomersService {
   }
 
   async createCustomer( createCustomer: CreateCustomerDto, company_id ) {
-    const customer = await this.customerRepository.create({
-      ...createCustomer,
-      company_id
-    });
-
-    await this.customerRepository.save( customer );
-
-    return customer;
+    try {
+      const customer = await this.customerRepository.create({
+        ...createCustomer,
+        company_id
+      });
+  
+      await this.customerRepository.save( customer );
+  
+      return customer;
+      
+    } catch (error) {
+      this.handleDBExceptions( error );
+    }
   }
 
   async setEstado(id: string, estado: boolean) {
@@ -261,18 +303,27 @@ export class CustomersService {
   }
 
   async remove(id: string) {
-    const customer = await this.findOne( id );
-    let msg: string; 
-
-    await this.customerRepository.remove( customer );
-    msg = 'Eliminado Exitosamente'
-    
-    return { ok: true, msg };
+    try {
+      const customer = await this.findOne( id );
+      let msg: string; 
+  
+      await this.customerRepository.remove( customer );
+      msg = 'Eliminado Exitosamente'
+      
+      return { ok: true, msg };      
+    } catch (error) {
+      this.handleDBExceptions( error );
+    }
   }
   
   private handleDBExceptions( error: any ) {
     if ( error.code === '23505' )
       throw new BadRequestException(error.detail);
+    if ( error.code === '23503' )
+      throw new BadRequestException({
+        detail: error.detail,
+        code: '23503'
+      });
     
     this.logger.error(error)
     throw new InternalServerErrorException('Unexpected error, check server logs');
