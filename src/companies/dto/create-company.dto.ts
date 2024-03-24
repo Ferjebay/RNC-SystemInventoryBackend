@@ -37,6 +37,10 @@ export class CreateCompanyDto {
     @MinLength(5)
     telefono: string;
 
+    @IsNotEmpty()
+    @IsString()
+    iva: string;
+
     @IsOptional()
     logo?: any;
 

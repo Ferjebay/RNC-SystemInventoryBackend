@@ -82,8 +82,7 @@ export class InvoicesService {
   }
 
   async getVentas(estado: boolean, tipo: string, sucursal_id: Sucursal, desde, hasta){
-    let inicio;
-    let fin;
+    let inicio, fin;
     if ( desde != "" && hasta == "" ) {
       inicio = new Date( desde );
       fin = new Date( desde );
@@ -115,13 +114,13 @@ export class InvoicesService {
       },
       order: { created_at: "DESC" },
       where: {
-        created_at: ( desde != "" || hasta != "" ) ?
-                    Between( inicio, fin )
-                    : null
+        created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null
       }
     }
 
     if ( tipo == 'PROFORMA' ) option.where.estadoSRI = tipo;
+    if ( tipo == 'ANULADO' ) option.where.estadoSRI = tipo;
+    if ( tipo == 'AUTORIZADO' ) option.where.estadoSRI = tipo;
     if ( tipo == 'TODOS' ) option.where.estadoSRI = null;
     if ( tipo == 'FACTURAS' ) option.where.estadoSRI = Not("PROFORMA");
 
@@ -152,6 +151,29 @@ export class InvoicesService {
     });
 
     return zip.toBuffer();
+  }
+
+  async downloadRideXml( clave_acceso: string, tipo_documento: string, razon_social: string ) {
+
+    const nombreComercial = razon_social.split(' ').join('-');
+
+    try {
+
+      let ruta;
+      if ( tipo_documento == 'xml' )
+        ruta = path.resolve(__dirname, `../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ clave_acceso }.xml`);
+
+      if ( tipo_documento == 'ride' )
+        ruta = path.resolve(__dirname, `../../static/SRI/PDF/${ clave_acceso }.pdf`);
+
+      const file = await fs.readFileSync(ruta);
+
+      return file;
+
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('No se encontro el archivo');
+    }
   }
 
   async findOne(id: string) {

@@ -15,9 +15,9 @@ export class FacturasController {
   }
 
   @Post('/getRide/:clave_acceso')
-  async getRide( 
+  async getRide(
     @Param('clave_acceso') clave_acceso: string,
-    @Res() res: Response  
+    @Res() res: Response
   ){
     const file = await this.facturasService.getRide( clave_acceso );
 
@@ -32,12 +32,12 @@ export class FacturasController {
     @Headers('sucursal_id') sucursal_id: Sucursal,
     @Body() datosFactura: any
   ){
-    return this.facturasService.generarFacturaElectronica( 
-      datosFactura, 
-      '', 
-      sucursal_id, 
+    return this.facturasService.generarFacturaElectronica(
+      datosFactura,
+      '',
+      sucursal_id,
       datosFactura.pago_id,
-      datosFactura.entity 
+      datosFactura.entity
     );
   }
 
@@ -59,4 +59,5 @@ export class FacturasController {
   ) {
     return this.facturasService.generarNotaCredito( factura );
   }
+
 }

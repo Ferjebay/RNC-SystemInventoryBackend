@@ -1,9 +1,9 @@
-import { 
-  Controller, Get, 
-  Post, Body, 
-  Patch, Param, 
-  Delete, DefaultValuePipe, 
-  ParseBoolPipe, ParseUUIDPipe, Headers 
+import {
+  Controller, Get,
+  Post, Body,
+  Patch, Param,
+  Delete, DefaultValuePipe,
+  ParseBoolPipe, ParseUUIDPipe, Headers
 } from '@nestjs/common';
 import { BuysService } from './buys.service';
 import { CreateBuyDto } from './dto/create-buy.dto';
@@ -24,10 +24,13 @@ export class BuysController {
 
   @Get(':estado?')
   findAll(
+    @Headers('tipo') tipo: string | boolean,
     @Headers('sucursal_id') sucursal_id: Sucursal,
-    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean 
+    @Headers('desde') desde: string,
+    @Headers('hasta') hasta: string,
+    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
-    return this.buysService.findAll( estado, sucursal_id );
+    return this.buysService.findAll( estado, sucursal_id, desde, hasta, tipo );
   }
 
   @Get('/find/:term')
@@ -37,7 +40,7 @@ export class BuysController {
 
   @Patch(':id')
   update(
-    @Param('id', ParseUUIDPipe) id: string, 
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateBuyDto: UpdateBuyDto
   ) {
     return this.buysService.update(id, updateBuyDto);
@@ -45,8 +48,8 @@ export class BuysController {
 
   @Patch(':id/:estado')
   setEstado(
-    @Param('id', ParseUUIDPipe) id: string, 
-    @Param('estado', ParseBoolPipe) estado: boolean, 
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('estado', ParseBoolPipe) estado: boolean,
   ){
     return this.buysService.setEstado(id, estado);
   }

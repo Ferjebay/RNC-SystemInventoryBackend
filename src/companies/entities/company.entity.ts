@@ -54,6 +54,9 @@ export class Company {
     @Column({ type: 'varchar', default: 15 })
     telefono: string;
 
+    @Column({ type: 'char', nullable: true })
+    iva: string;
+
     @Column({ type: 'text', nullable: true })
     logo?: string;
 
@@ -64,7 +67,7 @@ export class Company {
     clave_certificado: string;
 
     @Column({ type: 'varchar', default: null })
-    archivo_certificado: string;    
+    archivo_certificado: string;
 
     @Column({ type: 'bool', default: true })
     isActive: boolean;

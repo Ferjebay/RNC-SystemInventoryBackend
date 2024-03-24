@@ -8,11 +8,6 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { JwtService } from "@nestjs/jwt";
 import { isUUID } from 'class-validator';
 import { UpdateUserDto } from './dto/edit-user.dto';
-import { CompaniesService } from 'src/companies/companies.service';
-import { CreateCompanyDto } from 'src/companies/dto/create-company.dto';
-import { Company } from 'src/companies/entities/company.entity';
-import { SucursalService } from 'src/sucursal/sucursal.service';
-import { CreateSucursalDto } from 'src/sucursal/dto/create-sucursal.dto';
 
 @Injectable()
 export class AuthService {
@@ -23,21 +18,25 @@ export class AuthService {
     @InjectRepository( User )
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
-    private readonly companyService: CompaniesService,
-    private readonly sucursalService: SucursalService
   ){}
 
-  async create(createUserDto: CreateUserDto) {
-    const { password, ...userData } = createUserDto;
+  async create(createUserDto: CreateUserDto, files: any = null) {
+    const { password, foto_old, ...userData } = createUserDto;
 
     let infoUser = {
       ...userData,
-      roles: userData.roles,
-      password: bcrypt.hashSync( password, 10 )
+      password: bcrypt.hashSync( password, 10 ),
+      foto: files.foto[0].originalname,
+      roles: JSON.parse( userData.roles ),
+      sucursales: JSON.parse( userData.sucursales ),
+      horarios_dias: JSON.parse( userData.horarios_dias ),
+      horarios_time: JSON.parse( userData.horarios_time ),
+      permisos: JSON.parse( userData.permisos ),
+      isActive: JSON.parse( userData.isActive )
     }
 
     try {
-      const user = this.userRepository.create( infoUser );
+      const user = this.userRepository.create({ ...infoUser });
 
       await this.userRepository.save( user );
       delete user.password
@@ -72,14 +71,27 @@ export class AuthService {
     return user;
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UpdateUserDto, files: any = null) {
+    const { foto_old, ...rest } = updateUserDto;
+
     await this.findOne( id );
 
-    if ( updateUserDto.password )
-      updateUserDto.password = bcrypt.hashSync( updateUserDto.password, 10 )
+    if ( rest.password != 'undefined' )
+      rest.password = bcrypt.hashSync( rest.password, 10 )
+    else
+      delete rest.password;
 
     try {
-      await this.userRepository.update( id, updateUserDto );
+      await this.userRepository.update( id, {
+        ...rest,
+        roles: JSON.parse( rest.roles ),
+        sucursales: JSON.parse( rest.sucursales ),
+        horarios_dias: JSON.parse( rest.horarios_dias ),
+        horarios_time: JSON.parse( rest.horarios_time ),
+        permisos: JSON.parse( rest.permisos ),
+        isActive: JSON.parse( rest.isActive ),
+        foto: ( files && files.foto != null ) ? files.foto[0].originalname : foto_old
+      });
 
       return {
         ok: true,
@@ -116,9 +128,10 @@ export class AuthService {
         id: true,
         permisos: true,
         fullName: true,
-        company: { id: true, razon_social: true, sucursal: { id: true } },
+        company: { id: true, nombre_comercial: true, sucursal: { id: true } },
         sucursales: true,
-        roles: true
+        roles: true,
+        foto: true
       }
     })
 

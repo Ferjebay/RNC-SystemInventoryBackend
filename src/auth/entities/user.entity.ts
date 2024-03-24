@@ -30,9 +30,12 @@ export class User {
     @Column({ type: 'text', nullable: false })
     usuario: string;
 
+    @Column({ type: 'text', nullable: true })
+    foto?: string;
+
     @Column({ type: 'text', nullable: false })
     fullName: string;
-    
+
     @Column({ type: 'text' })
     celular: string;
 

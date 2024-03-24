@@ -28,18 +28,24 @@ export class Invoice {
     @Column({ type: 'varchar', length: 50, unique: true })
     clave_acceso: string;
 
+    @Column({ type: 'varchar', length: 50, unique: true, nullable: true })
+    clave_acceso_nota_credito?: string;
+
     @Column({ type: 'varchar', length: 50 })
     numero_comprobante: string;
 
     @Column({ type: 'text', nullable: true })
     descripcion?: string;
 
+    @Column({ type: 'varchar', length: 2, nullable: true })
+    porcentaje_iva: number;
+
     @Column({ type: 'varchar', length: 100, nullable: true })
-    forma_pago?: string;    
+    forma_pago?: string;
 
     @Column({ type: "decimal", precision: 8, scale: 2 })
     subtotal: number;
-    
+
     @Column({ type: "decimal", precision: 8, scale: 2 })
     descuento: number;
 
@@ -48,10 +54,10 @@ export class Invoice {
 
     @Column({ type: "decimal", precision: 8, scale: 2 })
     total: number;
-    
+
     @Column({ type: 'varchar', nullable: true })
     estadoSRI?: string;
-    
+
     @Column({ type: 'varchar', nullable: true })
     respuestaSRI?: string;
 

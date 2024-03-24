@@ -19,15 +19,20 @@ export class MessagesWsService {
       this.connectedClients[userId] = {
         socket: client
       };
+
     }
 
     updateStateInvoice( user_id ){
-      this.connectedClients[user_id].socket.emit('updateStateInvoice');
+      try {
+        this.connectedClients[user_id].socket.emit('updateStateInvoice');
+      } catch (error) {
+        console.log(error);
+      }
     }
 
     //VALIDAR ESTO XQ BORRARIA TODOS LOS USUARIOS Y NO ES ASI
     private checkUserConnection( userId: string ){
-      for (const userId of Object.keys ( this.connectedClients)){
+      for (const userId of Object.keys(this.connectedClients)){
         const connectedClient = this.connectedClients[userId];
         connectedClient.socket.disconnect();
       }

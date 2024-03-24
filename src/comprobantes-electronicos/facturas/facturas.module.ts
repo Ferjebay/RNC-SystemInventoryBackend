@@ -6,6 +6,7 @@ import { CustomersModule } from 'src/customers/customers.module';
 import { InvoicesModule } from 'src/invoices/invoices.module';
 import { EmailModule } from 'src/email/email.module';
 import { MessagesWsModule } from '../../messages-ws/messages-ws.module';
+import { CompaniesModule } from 'src/companies/companies.module';
 
 @Module({
   controllers: [FacturasController],

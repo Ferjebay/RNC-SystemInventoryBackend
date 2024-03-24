@@ -3,7 +3,7 @@ import { CreateBuyDto } from './dto/create-buy.dto';
 import { UpdateBuyDto } from './dto/update-buy.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Buy } from './entities/buy.entity';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { BuyToProduct } from './entities/buyToProduct.entity';
@@ -22,16 +22,16 @@ export class BuysService {
 
   async create(createBuyDto: CreateBuyDto, sucursal_id: Sucursal) {
     try {
-      
+
       let buyEntity = new Buy();
       buyEntity = {
         ...createBuyDto,
         sucursal_id
       }
-      
+
       const buyCreated = await this.buyRepository.save( buyEntity );
 
-      const pivot: Array<BuyToProduct> = [];      
+      const pivot: Array<BuyToProduct> = [];
       createBuyDto.products.forEach( p => {
         pivot.push(new BuyToProduct(
           p.cantidad,
@@ -40,35 +40,61 @@ export class BuysService {
           p.id,
           p.descuento,
           p.aplicaIva
-        ));        
+        ));
       })
       this.tablePivotRepository.save( pivot );
-  
-      return buyCreated;      
+
+      return buyCreated;
     } catch (error) {
       this.handleDBExceptions( error )
     }
   }
 
-  async findAll( estado: boolean, sucursal_id: Sucursal ) {
-    let option:any = { 
-      relations: {         
-        buyToProduct: { product_id: true },
-        sucursal_id: true,
-        user_id: true
-      }, 
-      select: { 
-        user_id:     { fullName: true },
-        sucursal_id: { nombre: true }, 
-        buyToProduct: { v_total: true, cantidad: true, product_id: true, descuento: true, iva: true }
-      },
-      where: { sucursal_id: { id: sucursal_id } }, 
-      order: { created_at: "DESC" } 
+  async findAll( estado: boolean, sucursal_id: Sucursal, desde: string, hasta: string, tipo: string | boolean ) {
+    try {
+      let inicio, fin;
+      if ( desde != "" && hasta == "" ) {
+        inicio = new Date( desde );
+        fin = new Date( desde );
+        fin.setHours(23, 59, 59, 999);
+      }
+      if ( desde == "" && hasta != "" ) {
+        inicio = new Date( hasta );
+        fin = new Date( hasta );
+        fin.setHours(23, 59, 59, 999);
+      }
+      if ( desde != "" && hasta != "" ) {
+        inicio = new Date( desde );
+        fin = new Date( hasta );
+        fin.setHours(23, 59, 59, 999);
+      }
+
+      let option:any = {
+        relations: {
+          buyToProduct: { product_id: true },
+          sucursal_id: true,
+          user_id: true
+        },
+        select: {
+          user_id:     { fullName: true },
+          sucursal_id: { nombre: true },
+          buyToProduct: { v_total: true, cantidad: true, product_id: true, descuento: true, iva: true }
+        },
+        where: {
+          sucursal_id: { id: sucursal_id },
+          created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null
+        },
+        order: { created_at: "DESC" }
+      }
+
+      if ( tipo == 'TODOS' ) option.where.isActive = null;
+      if ( tipo == 'Aceptados' ) option.where.isActive = true;
+      if ( tipo == 'Anulados' ) option.where.isActive = false;
+
+      return await this.buyRepository.find( option );
+    } catch (error) {
+      console.log( error );
     }
-
-    if ( estado ) option.where = { isActive: true };
-
-    return await this.buyRepository.find( option );
   }
 
   async findOne(term: string) {
@@ -77,15 +103,15 @@ export class BuysService {
     if ( isUUID(term) ) {
       buy = await this.buyRepository.findBy({ id: term });
     } else {
-      const queryBuilder = this.buyRepository.createQueryBuilder('buy'); 
+      const queryBuilder = this.buyRepository.createQueryBuilder('buy');
       buy = await queryBuilder
         .where('UPPER(descripcion) =:descripcion', {
           descripcion: term.toUpperCase()
-        })        
+        })
         .getMany();
     }
 
-    if ( buy.length === 0 ) 
+    if ( buy.length === 0 )
       throw new NotFoundException(`buy with ${ term } not found`);
 
     return buy;
@@ -100,7 +126,7 @@ export class BuysService {
       return {
         ok: true,
         msg: "Registro actualizado exitosamente"
-      };      
+      };
 
     } catch (error) {
       this.handleDBExceptions( error );
@@ -108,7 +134,7 @@ export class BuysService {
   }
 
   async setEstado(id: string, estado: boolean) {
-    if ( estado ) 
+    if ( estado )
       await this.buyRepository.update( id, { isActive: true })
     else
       await this.buyRepository.update( id, { isActive: false })
@@ -118,14 +144,14 @@ export class BuysService {
 
   async remove( id: string ) {
     await this.buyRepository.update( id, { isActive: false })
-    
+
     return { ok: true };
   }
 
   private handleDBExceptions( error: any ) {
     if ( error.code === '23505' )
       throw new BadRequestException(error.detail);
-    
+
     this.logger.error(error)
     throw new InternalServerErrorException('Unexpected error, check server logs');
   }

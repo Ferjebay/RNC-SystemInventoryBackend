@@ -26,15 +26,15 @@ export class Buy {
     @JoinColumn({ name: 'user_id' })
     user_id: User;
 
-    @Column({ type: 'varchar', length: 50, unique: true })
+    @Column({ type: 'varchar', length: 50 })
     numero_comprobante: string;
 
-    @Column({ type: 'varchar', length: 50, unique: true })
+    @Column({ type: 'varchar', length: 50 })
     descripcion: string;
 
     @Column({ type: "decimal", precision: 8, scale: 2, default: 0 })
     subtotal: number;
-    
+
     @Column({ type: "decimal", precision: 8, scale: 2 })
     descuento: number;
 

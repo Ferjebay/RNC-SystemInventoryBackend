@@ -44,6 +44,25 @@ export class InvoicesController {
     res.send( file );
   }
 
+  @Post('/download-ride-xml')
+  async downloadRideXml(
+    @Body('clave_acceso') clave_acceso: string,
+    @Body('tipo_documento') tipo_documento: string,
+    @Body('razon_social') razon_social: string,
+    @Res() res: Response
+  ) {
+    const file = await this.invoicesService.downloadRideXml( clave_acceso, tipo_documento, razon_social );
+
+    if ( tipo_documento == 'ride' )
+      res.setHeader('Content-Type', 'application/pdf');
+    else
+      res.setHeader('Content-Type', 'application/xml');
+
+    res.setHeader('Content-Disposition', `attachment; filename="comprobante.${ tipo_documento == 'ride' ? 'pdf' : 'xml' }"`);
+
+    res.send( file );
+  }
+
   @Get('/filterInvoice/:id')
   findOne(@Param('id') id: string) {
     return this.invoicesService.findOne(id);

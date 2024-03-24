@@ -5,7 +5,7 @@ const path = require('path');
 
 export class Factura {
 
-    plantilla( infoCompany, claveAcceso, numComprobante, cliente, datosFactura, pathImage ){
+    plantilla( infoCompany, claveAcceso, numComprobante, cliente, datosFactura, pathImage, iva ){
         const fechaEmision = moment().format('DD/MM/YYYY h:mm:ss a');
         let forma_pago = '';
 
@@ -17,7 +17,7 @@ export class Factura {
         if ( datosFactura.forma_pago == '19' ) forma_pago = 'TARJETA DE CRÉDITO'
         if ( datosFactura.forma_pago == '20' ) forma_pago = 'OTROS CON UTILIZACIÓN DEL SISTEMA FINANCIERO'
         if ( datosFactura.forma_pago == '21' ) forma_pago = 'ENDOSO DE TÍTULOS'
-        
+
         let html = /*html*/ `<!DOCTYPE html>
         <html lang="en">
         <head>
@@ -39,68 +39,68 @@ export class Factura {
         </head>
         <body style="font-size: 15px; color: black;">
           <div class="row">
-        
+
             <div class="col-6">
               <div class="mt-3 d-flex justify-content-center">
                 <img src="${ pathImage }" style="max-width: 200px;height: auto;" class="rounded">
               </div>
-              <div class="mt-1 backColor pt-1" style="padding-bottom: 92px;">
+              <div class="mt-1 backColor pt-1" style="padding-bottom: 50px;">
                 <div style="padding-left: 13px">
-                  <label class="d-block">
+                  <label class="d-block pt-3">
                     <span class="fw-bolder">Emisor:</span>
                     ${ infoCompany.company_id.razon_social }
                   </label>
-                  <label class="d-block">
+                  <label class="d-block pt-2">
                     <span class="fw-bolder">RUC:</span>
                     ${ infoCompany.company_id.ruc }
                   </label>
-                  <label class="d-block">
+                  <label class="d-block pt-2">
                     <span class="fw-bolder">Matriz:</span>
                     ${ infoCompany.company_id.direccion_matriz }
                   </label>
-                  <label class="d-block">
+                  <label class="d-block pt-2">
                     <span class="fw-bolder">Correo:</span>
                     ${ infoCompany.company_id.email }
                   </label>
-                  <label class="d-block">
+                  <label class="d-block pt-2">
                     <span class="fw-bolder">Teléfono:</span>
                     ${ infoCompany.company_id.telefono }
                   </label>
-                  <label class="d-block">
+                  <label class="d-block pt-2">
                     <span class="fw-bolder">Obligado a llevar contabilidad:</span>
                     ${ infoCompany.company_id.obligado_contabilidad ? 'SI' : 'NO' }
                   </label>
                 </div>
               </div>
             </div>
-        
+
             <div class="col-6">
               <div class="row">
-        
+
                 <div class="col-12 backColor" style="height: 30px;">
                 </div>
-        
+
                 <div class="col-12 d-flex align-items-center
-                  justify-content-between fw-bold" 
+                  justify-content-between fw-bold"
                   style="height: 30px;">
                   <label>FACTURA</label>
                   <label>No. ${ numComprobante }</label>
                 </div>
-        
+
                 <div class="mt-1 backColor py-3">
                   <div>
                     <label class="fw-bolder">
                       Número de Autorización:
                     </label>
-                    <label style="font-size: 11px;">
+                    <label style="font-size: 13px;width: 100%;word-wrap: break-word;">
                       ${ claveAcceso }
-                    </label>  
+                    </label>
                   </div>
                   <div class="mt-3">
                     <label class="fw-bolder d-block">
                       Fecha y hora de Autorización:
                     </label>
-                    <label>${ fechaEmision }</label>            
+                    <label>${ fechaEmision }</label>
                   </div>
                   <div class="mt-3">
                     <label class="d-block">
@@ -112,17 +112,17 @@ export class Factura {
                     <label class="d-block">
                       <span class="fw-bolder">
                         Clave de Acceso:
-                      </span> 
+                      </span>
                       <div class="d-flex justify-content-center">
                         <svg id="barcode"></svg>
                       </div>
                     </label>
                   </div>
                 </div>
-        
+
               </div>
             </div>
-        
+
             <div class="col-12 pb-3 backColor">
               <div class="row" style="padding-left: 13px;padding-right: 13px;">
                 <div class="col-12 d-flex justify-content-between">
@@ -157,7 +157,7 @@ export class Factura {
                 </div>
               </div>
             </div>
-        
+
             <div class="col-12 pt-5 pb-4" style="padding-top: 15px !important;">
               <table style="width: 100%;font-size: 13px;">
                 <thead class="backColor">
@@ -196,36 +196,43 @@ export class Factura {
                       <td></td>
                       <td>$${ item.pvp }</td>
                       <td>${ item.descuento }%</td>
-                      <td>$${ item.v_total }</td>
+                      <td>$${
+                        Math.trunc((parseFloat(item.pvp) * parseInt(item.cantidad)) * 100) / 100
+                        }
+                      </td>
                   </tr>`
               })
-                  
+
               html += `
                 </tbody>
               </table>
-            </div>             
+            </div>
             <div class="col-6">
-              <div class="row">        
-                <div class="col-12 backColor fs-6 fw-medium" 
+              <div class="row">
+                <div class="col-12 backColor fs-6 fw-medium"
                   style="height: 30px;padding-left: 25px;">
                   Información Adicional
                 </div>
                 <div class="col-12" style="height: auto;padding-left: 25px;">
                   <label style="padding-left: 14px;text-align: justify">
-                    ${ datosFactura.descripcion.trim() }
+                    ${
+                      datosFactura.descripcion.trim().length == 0
+                      ? 'No hay información adicional'
+                      : datosFactura.descripcion.trim()
+                    }
                   </label>
                 </div>
-        
-                <div class="col-12 backColor fs-6 fw-medium mt-4" 
+
+                <div class="col-12 backColor fs-6 fw-medium mt-4"
                   style="height: 30px;padding-left: 25px;">
                   Formas de pago
                 </div>
-        
-                <div class="col-12" 
+
+                <div class="col-12"
                   style="height: 30px;padding-left: 25px;">
-        
-                  <label class="fw-semibold pt-3" 
-                    style="width: 58%;">
+
+                  <label class="fw-semibold pt-3"
+                    style="width: 58%;font-size:12px">
                     ${ forma_pago }
                   </label>
                   <label style="width: 15%;text-align: center;">
@@ -237,7 +244,7 @@ export class Factura {
                 </div>
               </div>
             </div>
-        
+
             <div class="col-6">
               <div class="row" style="text-align: right;font-size: 14px;">
                 <div class="col-12 pb-1 d-flex justify-content-between">
@@ -250,15 +257,15 @@ export class Factura {
                 </div>
                 <div class="col-12 pb-1 d-flex justify-content-between">
                   <label style="padding-left: 50px;">
-                    Subtotal 12%:
+                    Subtotal ${ iva }%:
                   </label>
                   <label class="backColor pe-3" style="width: 32%;">
-                    $${ datosFactura.subtotal.toFixed(2) }  
+                    $${ datosFactura.subtotal.toFixed(2) }
                   </label>
                 </div>
                 <div class="col-12 pb-1 d-flex justify-content-between">
                   <label style="padding-left: 50px;">
-                    Subtotal 0%: 
+                    Subtotal 0%:
                   </label>
                   <label class="backColor pe-3" style="width: 32%;">
                     $0.00
@@ -290,7 +297,7 @@ export class Factura {
                 </div>
                 <div class="col-12 pb-1 d-flex justify-content-between">
                   <label style="padding-left: 50px;">
-                    IVA 12%:
+                    IVA ${ iva }%:
                   </label>
                   <label class="backColor pe-3" style="width: 32%;">
                   $${ datosFactura.iva.toFixed(2) }
@@ -313,11 +320,11 @@ export class Factura {
                   </label>
                 </div>
               </div>
-            </div>        
+            </div>
           </div>
           <script>
-            JsBarcode("#barcode", 
-              '${ claveAcceso }', 
+            JsBarcode("#barcode",
+              '${ claveAcceso }',
               {
                 format: "CODE128",
                 height: 70,
@@ -334,28 +341,28 @@ export class Factura {
 
     async generarFacturaPDF( ...data ){
 
-      const [ claveAcceso, infoCompany, numComprobante, client, datosFactura ] = data;
+      const [ claveAcceso, infoCompany, numComprobante, client, datosFactura, iva ] = data;
 
       let imageName;
-      if(infoCompany.company_id.logo == null || infoCompany.company_id.logo == 'null') 
+      if(infoCompany.company_id.logo == null || infoCompany.company_id.logo == 'null')
         imageName = 'default.jpg'
       else imageName =  infoCompany.company_id.logo
 
       const pathImage = `${process.env.HOST_API}/images/${ imageName }`;
 
-      const content = this.plantilla( infoCompany, claveAcceso, numComprobante, client, datosFactura, pathImage );
-  
+      const content = this.plantilla( infoCompany, claveAcceso, numComprobante, client, datosFactura, pathImage, iva );
+
       let browser;
       if (process.env.SISTEMA == 'linux') {
-        browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: [ '--disable-gpu', '--disable-setuid-sandbox', '--no-sandbox', '--no-zygote' ] });        
+        browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: [ '--disable-gpu', '--disable-setuid-sandbox', '--no-sandbox', '--no-zygote' ] });
       }else{
         browser = await puppeteer.launch({ headless: true })
       }
 
       const page = await browser.newPage()
-  
+
       await page.setContent(content);
-  
+
       const pdf = await page.pdf({
         format: 'A4',
         printBackground: true,
@@ -366,7 +373,7 @@ export class Factura {
           bottom: '0px'
         }
       })
-  
+
       await browser.close();
 
       const pathPDF = path.resolve(__dirname, `../../../static/SRI/PDF/${ claveAcceso }.pdf`);

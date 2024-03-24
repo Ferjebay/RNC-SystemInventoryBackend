@@ -1,4 +1,5 @@
-import { IsArray, IsBoolean, IsEmail, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength } from "class-validator";
+import { Transform } from "class-transformer";
+import { IsArray, IsBoolean, IsBooleanString, IsEmail, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength } from "class-validator";
 import { Company } from "src/companies/entities/company.entity";
 
 
@@ -8,9 +9,8 @@ export class CreateUserDto {
     @IsNotEmpty()
     company: Company;
 
-    @IsArray()
-    @IsString({ each: true })
-    sucursales: string[];
+    @IsString()
+    sucursales: string;
 
     @IsString()
     @IsEmail()
@@ -46,30 +46,33 @@ export class CreateUserDto {
     facebook?: string;
 
     @IsOptional()
+    foto?: any;
+
+    @IsOptional()
+    foto_old?: string;
+
+    @IsOptional()
     @IsString()
     twitter?: string;
 
     // @IsArray()
-    @IsString({ each: true })
-    roles: string[];
+    @IsString()
+    roles: string;
 
-    @IsArray()
-    @IsString({ each: true })
-    permisos: string[];
-    
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    horarios_dias?: string[];
-    
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    horarios_time?: string[];
+    @IsString()
+    permisos: string;
 
-    @IsBoolean()
+    @IsOptional()
+    @IsString()
+    horarios_dias?: string;
+
+    @IsOptional()
+    @IsString()
+    horarios_time?: string;
+
+    @IsBooleanString()
     receiveSupportEmail: boolean;
 
-    @IsBoolean()
-    isActive: boolean;
+    @IsBooleanString()
+    isActive: string;
 }

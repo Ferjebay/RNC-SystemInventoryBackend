@@ -24,6 +24,9 @@ export class CreateInvoiceDto {
     @IsString()
     forma_pago: string
 
+    @IsNumber()
+    porcentaje_iva: number
+
     @IsOptional()
     descripcion: string
 
