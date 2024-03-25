@@ -55,6 +55,9 @@ export class CreateInvoiceDto {
     clave_acceso?: string;
 
     @IsOptional()
+    name_proforma?: string;
+
+    @IsOptional()
     respuestaSRI?: string;
 
 }

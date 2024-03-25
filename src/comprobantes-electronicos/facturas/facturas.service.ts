@@ -805,7 +805,7 @@ export class FacturasService {
     //------------------------------------------------------------------------------------
   }
 
-  async generarProforma(datosFactura, sucursal_id: any){
+  async generarProforma(datosFactura, sucursal_id: any, invoice_id){
     const clientFound = await this.customerService.findOne( datosFactura.customer_id );
     const infoCompany = await this.sucursalRepository.find({
       relations: { company_id: { proforma: true } },
@@ -826,7 +826,16 @@ export class FacturasService {
     const proforma = new Proforma()
     const data = await proforma.generarProformaPDF(datosFactura, clientFound, infoCompany);
 
-    this.emailService.sendComprobantes(clientFound[0], infoCompany[0], '', '', data);
+    await this.invoiceService.update( invoice_id, { name_proforma: data.name });
+
+    await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], '', '', data);
+    await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes-proforma`, {
+      urlPDF: data.buffer,
+      number: clientFound[0].celular,
+      cliente: clientFound[0].nombres,
+      empresa: infoCompany[0].company_id.nombre_comercial,
+      name_proforma: data.name
+    });
   }
 
   async reeenviarRecepcionComprobantesOffline( datosFactura ){
@@ -1002,5 +1011,103 @@ export class FacturasService {
       this.emailService.sendComprobantes(clientFound[0], infoCompany[0], datosFactura.num_comprobante, datosFactura.clave_acceso, comprobantes);
     }
 
+  }
+
+  async reenviarComprobantes( datosFactura ){
+    const {
+      clave_acceso,
+      numero_comprobante,
+      customer_id,
+      estadoSRI,
+      name_proforma,
+      sucursal_id } = datosFactura.factura;
+
+      let comprobantes;
+      let pathPDF;
+      let pathXML;
+      if (estadoSRI == 'PROFORMA') {
+        pathPDF = path.resolve(__dirname, `../../../static/SRI/PROFORMAS/${ name_proforma }`);
+
+        comprobantes = {  name: name_proforma, buffer: pathPDF, tipo: 'proforma' }
+      }else{
+        const nombreComercial = sucursal_id.company_id.nombre_comercial.split(' ').join('-');
+        pathPDF = path.resolve(__dirname, `../../../static/SRI/PDF/${ clave_acceso }.pdf`);
+        pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ clave_acceso }.xml`);
+
+        comprobantes = { xml: pathXML, pdf: pathPDF, tipo: 'factura' };
+      }
+
+      try {
+        if (datosFactura.tipo_envio == 'ambas') {
+          if (estadoSRI == 'PROFORMA') {
+            await this.emailService.sendComprobantes({ email: datosFactura.email}, sucursal_id, '', '', comprobantes);
+            await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes-proforma`, {
+              urlPDF: pathPDF,
+              number: datosFactura.telefono,
+              cliente: customer_id.nombres,
+              empresa: sucursal_id.company_id.nombre_comercial,
+              name_proforma: name_proforma
+            });
+          }else{
+            await this.emailService.sendComprobantes(
+              { email: datosFactura.email },
+              sucursal_id,
+              numero_comprobante,
+              clave_acceso,
+              comprobantes
+            );
+            await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
+              cliente: customer_id.nombres,
+              number: datosFactura.telefono,
+              urlPDF: pathPDF,
+              urlXML: pathXML,
+              clave_acceso: clave_acceso,
+              num_comprobante: numero_comprobante,
+              empresa: sucursal_id.company_id.nombre_comercial
+            });
+          }
+          return true;
+        }
+        if (datosFactura.tipo_envio == 'whatsapp') {
+          if (estadoSRI == 'PROFORMA') {
+            await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes-proforma`, {
+              urlPDF: pathPDF,
+              number: datosFactura.telefono,
+              cliente: customer_id.nombres,
+              empresa: sucursal_id.company_id.nombre_comercial,
+              name_proforma: name_proforma
+            });
+          }else{
+            await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
+              cliente: customer_id.nombres,
+              number: datosFactura.telefono,
+              urlPDF: pathPDF,
+              urlXML: pathXML,
+              clave_acceso: clave_acceso,
+              num_comprobante: numero_comprobante,
+              empresa: sucursal_id.company_id.nombre_comercial
+            });
+          }
+        }
+        if (datosFactura.tipo_envio == 'email') {
+          if (estadoSRI == 'PROFORMA') {
+            await this.emailService.sendComprobantes({ email: datosFactura.email}, sucursal_id, '', '', comprobantes);
+          }else{
+            await this.emailService.sendComprobantes(
+              { email: datosFactura.email },
+              sucursal_id,
+              numero_comprobante,
+              clave_acceso,
+              comprobantes
+            );
+          }
+        }
+      } catch (error) {
+        if(error.response.data == 'error ws'){
+          throw new BadRequestException('Fallo al enviar mensaje por WhatsApp');
+        }else{
+          throw new BadRequestException('Fallo al enviar mensaje por correo');
+        }
+      }
   }
 }

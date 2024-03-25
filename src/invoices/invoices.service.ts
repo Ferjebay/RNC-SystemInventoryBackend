@@ -67,7 +67,8 @@ export class InvoicesService {
       }else{
         this.facturaService.generarProforma(
           createInvoiceDto,
-          sucursal_id
+          sucursal_id,
+          invoiceCreated.id
         );
       }
 
@@ -102,7 +103,7 @@ export class InvoicesService {
     let option: any = {
       relations: {
         user_id: true,
-        sucursal_id: { company_id: true },
+        sucursal_id: { company_id: { proforma: true } },
         customer_id: true,
         invoiceToProduct: { product_id: true }
       },

@@ -18,7 +18,7 @@ export class EmailService {
 
   async testing(createEmailDto: CreateEmailDto) {
     const { host, usuario, puerto, password, email_client } = createEmailDto;
-    
+
     const config = {
       host,
       port: puerto,
@@ -38,14 +38,14 @@ export class EmailService {
     }
 
     const transport = nodemailer.createTransport(config);
-  
+
     try {
         await transport.sendMail(message);
-        return "Correo Enviado Exitosamente";      
+        return "Correo Enviado Exitosamente";
     } catch (error) {
       console.log( error );
-      throw new BadRequestException(error);        
-    } 
+      throw new BadRequestException(error);
+    }
   }
 
   async sendComprobantes( clientFound, infoCompany, numComprobante = '', clave_acceso = '', comprobantes ) {
@@ -68,13 +68,13 @@ export class EmailService {
 
     if (comprobantes.tipo == 'proforma') {
       message.subject = `RED NUEVA CONEXIÓN - le envia su proforma`,
-      message.text    = "RED NUEVA CONEXION agradece su consulta :)",      
+      message.text    = "RED NUEVA CONEXION agradece su consulta :)",
       message.attachments = [
-        { filename: comprobantes.name, content: comprobantes.buffer }
-      ]      
+        { filename: comprobantes.name, path: comprobantes.buffer }
+      ]
     }else{
       message.subject = `RED NUEVA CONEXIÓN - Factura Nro. ${ numComprobante }`,
-      message.text    = "RED NUEVA CONEXION agradece su compra, acontinuación se adjunta su comprobante electronico",      
+      message.text    = "RED NUEVA CONEXION agradece su compra, acontinuación se adjunta su comprobante electronico",
       message.attachments = [
         { filename: clave_acceso +'.xml', path: comprobantes.xml },
         { filename: clave_acceso +'.pdf', path: comprobantes.pdf }
@@ -85,14 +85,14 @@ export class EmailService {
 
     try {
         await transport.sendMail(message);
-        return "Correo Enviado Exitosamente";      
+        return "Correo Enviado Exitosamente";
     } catch (error) {
       console.log( error );
-      if ( error.code == 'EDNS' ) 
-        throw new BadRequestException(`Error: getaddrinfo ENOTFOUND ${ host }`);        
+      if ( error.code == 'EDNS' )
+        throw new BadRequestException(`Error: getaddrinfo ENOTFOUND ${ host }`);
       else
-        throw new BadRequestException('Fallo al enviar el correo');        
-    } 
+        throw new BadRequestException('Fallo al enviar el correo');
+    }
   }
 
   async findAll() {
@@ -104,7 +104,7 @@ export class EmailService {
 
     email = await this.emailRepository.findOneBy({ company_id: { id } });
 
-    if ( !email ) 
+    if ( !email )
       throw new NotFoundException('No se encontro algun registro');
 
     return email;
@@ -120,7 +120,7 @@ export class EmailService {
       return {
         ok: true,
         msg: "Cambios guardado exitosamente"
-      };      
+      };
 
     } catch (error) {
       this.handleDBExceptions( error );
@@ -130,7 +130,7 @@ export class EmailService {
   private handleDBExceptions( error: any ) {
     if ( error.code === '23505' )
       throw new BadRequestException(error.detail);
-    
+
     this.logger.error(error)
     throw new InternalServerErrorException('Unexpected error, check server logs');
   }
