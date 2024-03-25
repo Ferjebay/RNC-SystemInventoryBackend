@@ -102,12 +102,12 @@ export class InvoicesService {
     let option: any = {
       relations: {
         user_id: true,
-        sucursal_id: true,
+        sucursal_id: { company_id: true },
         customer_id: true,
         invoiceToProduct: { product_id: true }
       },
       select: {
-        customer_id: { nombres: true, id: true, tipo_documento: true, numero_documento: true },
+        customer_id: { nombres: true, id: true, tipo_documento: true, numero_documento: true, email: true },
         sucursal_id: { id: true, nombre: true, ambiente: true, direccion: true },
         user_id:     { fullName: true, id: true },
         invoiceToProduct: { v_total: true, cantidad: true, product_id: true, descuento: true }
