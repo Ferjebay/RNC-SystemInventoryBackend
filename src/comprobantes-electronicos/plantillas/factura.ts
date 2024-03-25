@@ -196,9 +196,8 @@ export class Factura {
                       <td></td>
                       <td>$${ item.pvp }</td>
                       <td>${ item.descuento }%</td>
-                      <td>$${
-                        Math.trunc((parseFloat(item.pvp) * parseInt(item.cantidad)) * 100) / 100
-                        }
+                      <td style="text-align: right">
+                      $${ (Math.trunc((parseFloat(item.pvp) * parseInt(item.cantidad)) * 100) / 100).toFixed(2) }
                       </td>
                   </tr>`
               })

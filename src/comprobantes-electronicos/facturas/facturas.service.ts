@@ -683,7 +683,7 @@ export class FacturasService {
             codigoPorcentaje: item.aplicaIva ? codigo_tarifa : 0,
             tarifa: item.aplicaIva ? datosFactura.porcentaje_iva : 0,
             baseImponible: precioTotalSinImpuesto,
-            valor: item.aplicaIva ? ( parseFloat(precioTotalSinImpuesto) * 0.12).toFixed(2) : (0).toFixed(2)
+            valor: item.aplicaIva ? ( (parseFloat(precioTotalSinImpuesto) * datosFactura.porcentaje_iva) / 100).toFixed(2) : (0).toFixed(2)
           }
         }
       })

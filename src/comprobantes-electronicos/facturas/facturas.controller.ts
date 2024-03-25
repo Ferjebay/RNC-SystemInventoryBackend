@@ -60,4 +60,11 @@ export class FacturasController {
     return this.facturasService.generarNotaCredito( factura );
   }
 
+  @Post('/reenviar-comprobantes')
+  reenviarComprobantes(
+    @Body('factura') factura: any
+  ) {
+    return this.facturasService.generarNotaCredito( factura );
+  }
+
 }
