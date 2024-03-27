@@ -10,22 +10,22 @@ export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
   @Post()
-  create(
+  async create(
     @Headers('sucursal_id') sucursal_id: Sucursal,
     @Body() createInvoiceDto: CreateInvoiceDto,
   ) {
-    return this.invoicesService.create(createInvoiceDto, sucursal_id);
+    return await this.invoicesService.create(createInvoiceDto, sucursal_id);
   }
 
   @Get(':estado?')
-  findAll(
+  async findAll(
     @Headers('tipo') tipo: string,
     @Headers('desde') desde: string,
     @Headers('hasta') hasta: string,
     @Headers('sucursal_id') sucursal_id: Sucursal,
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
-    return this.invoicesService.findAll( estado, tipo, sucursal_id, desde, hasta );
+    return await this.invoicesService.findAll( estado, tipo, sucursal_id, desde, hasta );
   }
 
   @Post('/download-comprobantes')
@@ -64,17 +64,17 @@ export class InvoicesController {
   }
 
   @Get('/filterInvoice/:id')
-  findOne(@Param('id') id: string) {
-    return this.invoicesService.findOne(id);
+  async findOne(@Param('id') id: string) {
+    return await this.invoicesService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateInvoiceDto: UpdateInvoiceDto) {
-    return this.invoicesService.update(id, updateInvoiceDto);
+  async update(@Param('id') id: string, @Body() updateInvoiceDto: UpdateInvoiceDto) {
+    return await this.invoicesService.update(id, updateInvoiceDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.invoicesService.remove(+id);
+  async remove(@Param('id') id: string) {
+    return await this.invoicesService.remove(+id);
   }
 }

@@ -32,32 +32,32 @@ export class CompaniesController {
       })
     }
   ))
-  create(
+  async create(
     @Body() createCompanyDto: CreateCompanyDto,
     @UploadedFiles() files: { archivo_certificado?: Express.Multer.File[], logo?: Express.Multer.File[] }
   ) {
-    return this.companiesService.create(createCompanyDto, files);
+    return await this.companiesService.create(createCompanyDto, files);
   }
 
   @Get(':estado?')
-  findAll(
+  async findAll(
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
-    return this.companiesService.findAll( estado );
+    return await this.companiesService.findAll( estado );
   }
 
   @Get('/get-iva/:empresa_id')
-  getIva(
+  async getIva(
     @Param('empresa_id') empresa_id: string
   ) {
-    return this.companiesService.getIva( empresa_id );
+    return await this.companiesService.getIva( empresa_id );
   }
 
   @Get('/find/:term')
-  findOne(
+  async findOne(
     @Param('term') term: string
   ) {
-    return this.companiesService.findOne( term );
+    return await this.companiesService.findOne( term );
   }
 
   @Post(':id')
@@ -77,7 +77,7 @@ export class CompaniesController {
       })
     }
   ))
-  updateCompany(
+  async updateCompany(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCompanyDto: UpdateCompanyDto,
     @UploadedFiles() files: { archivo_certificado?: Express.Multer.File[], logo?: Express.Multer.File[] }
@@ -87,27 +87,27 @@ export class CompaniesController {
           updateCompanyDto.archivo_certificado_old !== files.archivo_certificado[0].originalname) {
         const ruta = path.resolve(__dirname, `../../static/SRI/FIRMAS`);
 
-        if(fs.existsSync(`${ ruta }/${ updateCompanyDto.archivo_certificado_old }`))
-            fs.unlinkSync(`${ ruta }/${ updateCompanyDto.archivo_certificado_old }`)
+        if(await fs.existsSync(`${ ruta }/${ updateCompanyDto.archivo_certificado_old }`))
+            await fs.unlinkSync(`${ ruta }/${ updateCompanyDto.archivo_certificado_old }`)
       }
-      return this.companiesService.update(id, updateCompanyDto, files);
+      return await this.companiesService.update(id, updateCompanyDto, files);
     }else if(files.logo){
-      return this.companiesService.update(id, updateCompanyDto, files);
+      return await this.companiesService.update(id, updateCompanyDto, files);
     }
 
-    return this.companiesService.update(id, updateCompanyDto);
+    return await this.companiesService.update(id, updateCompanyDto);
   }
 
   @Patch(':id/:estado')
-  setEstado(
+  async setEstado(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('estado', ParseBoolPipe) estado: boolean,
     ) {
-    return this.companiesService.setEstado(id, estado);
+    return await this.companiesService.setEstado(id, estado);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.companiesService.remove( id );
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.companiesService.remove( id );
   }
 }

@@ -13,101 +13,101 @@ export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Post()
-  create(
+  async create(
     @Headers('company_id') company_id: Company,
     @Body() createCustomerDto: CreateServicioDto
   ) {
-    return this.customersService.create(createCustomerDto, company_id);
+    return await this.customersService.create(createCustomerDto, company_id);
   }
 
   @Post('/download-clients-excel/')
   async downloadClientsToExcel(
     @Headers('company_id') company_id: Company,
-    @Res() res: Response  
+    @Res() res: Response
   ){
     const file = await this.customersService.downloadClientsToExcel( company_id );
     res.setHeader('Content-Disposition', 'attachment; filename=ejemplo.xlsx');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  
+
     res.send( file );
   }
 
   @Post('/create')
-  createCustomer(
+  async createCustomer(
     @Headers('company_id') company_id: Company,
     @Body() createCustomerDto: CreateCustomerDto
   ) {
-    return this.customersService.createCustomer(createCustomerDto, company_id);
+    return await this.customersService.createCustomer(createCustomerDto, company_id);
   }
 
   @Get(':estado?')
-  findAll(
+  async findAll(
     @Headers('company_id') company_id: Company,
-    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean 
+    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
-    return this.customersService.findAll( estado, company_id );
+    return await this.customersService.findAll( estado, company_id );
   }
 
   @Get('/find/:term')
-  findOne(@Param('term') term: string) {
-    return this.customersService.findOne( term );
+  async findOne(@Param('term') term: string) {
+    return await this.customersService.findOne( term );
   }
 
   @Get('/get-ips/:router_id')
-  getIpsUtilizadas(@Param('router_id') router_id: Router) {
-    return this.customersService.getIpsUtilizadas( router_id );
+  async getIpsUtilizadas(@Param('router_id') router_id: Router) {
+    return await this.customersService.getIpsUtilizadas( router_id );
   }
 
   @Patch(':id')
-  update(
-    @Param('id', ParseUUIDPipe) id: string, 
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateCustomerDto: UpdateCustomerDto
   ) {
-    return this.customersService.update(id, updateCustomerDto);
+    return await this.customersService.update(id, updateCustomerDto);
   }
 
   @Put('/actualizarDatosFactura/:id')
-  actualizarDatosFactura(
-    @Param('id', ParseUUIDPipe) id: string, 
+  async actualizarDatosFactura(
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() datosFacturacion: any
   ){
-    return this.customersService.actualizarDatosFactura(id, datosFacturacion);
+    return await this.customersService.actualizarDatosFactura(id, datosFacturacion);
   }
 
   @Put('/actualizarDatosPersonales/:id')
-  actualizarDatosPersonales(
-    @Param('id', ParseUUIDPipe) id: string, 
+  async actualizarDatosPersonales(
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() datosFactura: any
   ){
-    return this.customersService.actualizarDatosPersonales(id, datosFactura);
+    return await this.customersService.actualizarDatosPersonales(id, datosFactura);
   }
 
   @Put('/actualizarDatosServicio/:id')
-  actualizarDatosServicio(
-    @Param('id', ParseUUIDPipe) id: string, 
+  async actualizarDatosServicio(
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() datosServicio: any
   ){
-    return this.customersService.actualizarDatosServicio(id, datosServicio);
+    return await this.customersService.actualizarDatosServicio(id, datosServicio);
   }
 
   @Put('/activeOrSuspendService/:id')
-  activeOrSuspendService(
-    @Param('id', ParseUUIDPipe) id: string, 
+  async activeOrSuspendService(
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() datosServicio: any
   ){
-    return this.customersService.activeOrSuspendService(id, datosServicio);
+    return await this.customersService.activeOrSuspendService(id, datosServicio);
   }
 
   @Patch(':id/:estado')
-  setEstado(
-    @Param('id', ParseUUIDPipe) id: string, 
-    @Param('estado', ParseBoolPipe) estado: boolean, 
+  async setEstado(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('estado', ParseBoolPipe) estado: boolean,
     ) {
-    return this.customersService.setEstado(id, estado);
+    return await this.customersService.setEstado(id, estado);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.customersService.remove( id );
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.customersService.remove( id );
   }
 }

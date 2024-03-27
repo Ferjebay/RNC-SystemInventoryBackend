@@ -109,7 +109,7 @@ export class AuthService {
 
       if ( estado ) option.where = { isActive: true };
 
-      return this.userRepository.find( option );
+      return await this.userRepository.find( option );
 
     } catch (error) {
       this.handleDBErros( error )

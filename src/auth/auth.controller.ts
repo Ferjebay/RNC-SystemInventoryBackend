@@ -25,21 +25,21 @@ export class AuthController {
       })
     }
   ))
-  createUser(
+  async createUser(
     @Body() createUserDto: CreateUserDto,
     @UploadedFiles() files: { foto?: Express.Multer.File[] }
   ) {
-    return this.authService.create(createUserDto, files);
+    return await this.authService.create(createUserDto, files);
   }
 
   @Get('/find/:term')
-  findOne(@Param('term') term: string) {
-    return this.authService.findOne( term );
+  async findOne(@Param('term') term: string) {
+    return await this.authService.findOne( term );
   }
 
   @Post('login')
-  loginUser(@Body() loginUserDto: LoginUserDto) {
-    return this.authService.login( loginUserDto );
+  async loginUser(@Body() loginUserDto: LoginUserDto) {
+    return await this.authService.login( loginUserDto );
   }
 
   @Patch('/edit/:id')
@@ -56,24 +56,24 @@ export class AuthController {
       })
     }
   ))
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateUserDto: UpdateUserDto,
     @UploadedFiles() files: { foto?: Express.Multer.File[] }
   ) {
-    return this.authService.update(id, updateUserDto, files);
+    return await this.authService.update(id, updateUserDto, files);
   }
 
   @Get('/users')
-  findAll(
+  async findAll(
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
-    return this.authService.findAll( estado );
+    return await this.authService.findAll( estado );
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.authService.remove( id );
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.authService.remove( id );
   }
 
 }

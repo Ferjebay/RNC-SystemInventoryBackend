@@ -11,6 +11,6 @@ export class DashboardController {
     @Body('modo') modo: string,
     @Body('mes') mes: string
   ){
-    return this.dashboardService.dataDashboard(company_id, modo, mes);
+    return await this.dashboardService.dataDashboard(company_id, modo, mes);
   }
 }

@@ -9,47 +9,47 @@ export class SucursalController {
   constructor(private readonly sucursalService: SucursalService) {}
 
   @Post()
-  create(
+  async create(
     @Headers('company_id') company_id: Company,
     @Body() createSucursalDto: CreateSucursalDto
     ) {
-    return this.sucursalService.create(createSucursalDto, company_id);
+    return await this.sucursalService.create(createSucursalDto, company_id);
   }
 
   @Get(':estado?')
-  findAll(
+  async findAll(
     @Headers('company_id') company_id: Company,
-    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean 
+    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
-    return this.sucursalService.findAll( estado, company_id );
+    return await this.sucursalService.findAll( estado, company_id );
   }
 
   @Get('/find/:term/:modelo?')
-  findOne(
+  async findOne(
     @Param('term') term: string,
     @Param('modelo', new DefaultValuePipe('sucursal')) modelo: string
   ) {
-    return this.sucursalService.findOne( term, modelo );
+    return await this.sucursalService.findOne( term, modelo );
   }
 
   @Patch(':id')
-  update(
-    @Param('id', ParseUUIDPipe) id: string, 
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateSucursalDto: UpdateSucursalDto
   ) {
-    return this.sucursalService.update( id, updateSucursalDto);
+    return await this.sucursalService.update( id, updateSucursalDto);
   }
 
   @Patch(':id/:estado')
-  setEstado(
-    @Param('id', ParseUUIDPipe) id: string, 
-    @Param('estado', ParseBoolPipe) estado: boolean, 
+  async setEstado(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('estado', ParseBoolPipe) estado: boolean,
     ) {
-    return this.sucursalService.setEstado(id, estado);
+    return await this.sucursalService.setEstado(id, estado);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.sucursalService.remove( id );
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.sucursalService.remove( id );
   }
 }

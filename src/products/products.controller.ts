@@ -28,7 +28,7 @@ export class ProductsController {
     @Query('busqueda' ) busqueda: string
   ): Promise<Pagination<Product>> {
 
-    return this.productsService.findAll({
+    return await this.productsService.findAll({
       page,
       limit,
       route: `${ process.env.HOST_API }/products`,
@@ -38,41 +38,41 @@ export class ProductsController {
   @Post('/download-products-excel/')
   async downloadProductsToExcel(
     @Body('sucursal_id') sucursal_id: string,
-    @Res() res: Response  
+    @Res() res: Response
   ){
     const file = await this.productsService.downloadProductsToExcel( sucursal_id );
     res.setHeader('Content-Disposition', 'attachment; filename=ejemplo.xlsx');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  
+
     res.send( file );
-  }   
+  }
 
   @Get(':term')
-  findOne(
+  async findOne(
     @Headers('company_id') company_id: string,
     @Param('term') term: string
   ) {
-    return this.productsService.findOne( term, company_id );
+    return await this.productsService.findOne( term, company_id );
   }
 
   @Patch(':id')
-  update(
-    @Param('id', ParseUUIDPipe) id: string, 
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProductDto: UpdateProductDto
   ) {
-    return this.productsService.update(id, updateProductDto);
+    return await this.productsService.update(id, updateProductDto);
   }
-  
+
   @Patch(':id/:estado')
-  setEstado(
-    @Param('id', ParseUUIDPipe) id: string, 
-    @Param('estado', ParseBoolPipe) estado: boolean, 
+  async setEstado(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('estado', ParseBoolPipe) estado: boolean,
     ) {
-    return this.productsService.setEstado(id, estado);
+    return await this.productsService.setEstado(id, estado);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.productsService.remove( id );
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.productsService.remove( id );
   }
 }

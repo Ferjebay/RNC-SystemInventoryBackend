@@ -15,49 +15,49 @@ export class BuysController {
   constructor(private readonly buysService: BuysService) {}
 
   @Post()
-  create(
+  async create(
     @Headers('sucursal_id') sucursal_id: Sucursal,
     @Body() createBuyDto: CreateBuyDto
   ) {
-    return this.buysService.create(createBuyDto, sucursal_id);
+    return await this.buysService.create(createBuyDto, sucursal_id);
   }
 
   @Get(':estado?')
-  findAll(
+  async findAll(
     @Headers('tipo') tipo: string | boolean,
     @Headers('sucursal_id') sucursal_id: Sucursal,
     @Headers('desde') desde: string,
     @Headers('hasta') hasta: string,
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
-    return this.buysService.findAll( estado, sucursal_id, desde, hasta, tipo );
+    return await this.buysService.findAll( estado, sucursal_id, desde, hasta, tipo );
   }
 
   @Get('/find/:term')
-  findOne(@Param('term') term: string) {
-    return this.buysService.findOne( term );
+  async findOne(@Param('term') term: string) {
+    return await this.buysService.findOne( term );
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateBuyDto: UpdateBuyDto
   ) {
-    return this.buysService.update(id, updateBuyDto);
+    return await this.buysService.update(id, updateBuyDto);
   }
 
   @Patch(':id/:estado')
-  setEstado(
+  async setEstado(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('estado', ParseBoolPipe) estado: boolean,
   ){
-    return this.buysService.setEstado(id, estado);
+    return await this.buysService.setEstado(id, estado);
   }
 
   @Delete(':id')
-  remove(
+  async remove(
     @Param('id', ParseUUIDPipe) id: string
   ) {
-    return this.buysService.remove( id );
+    return await this.buysService.remove( id );
   }
 }
