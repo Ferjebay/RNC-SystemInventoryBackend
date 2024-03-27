@@ -194,10 +194,10 @@ export class Factura {
                       <td>${ item.cantidad }</td>
                       <td>${ item.nombre }</td>
                       <td></td>
-                      <td>$${ item.pvp }</td>
+                      <td>${ item.pvp }</td>
                       <td>${ item.descuento }%</td>
                       <td style="text-align: right">
-                      $${ (Math.trunc((parseFloat(item.pvp) * parseInt(item.cantidad)) * 100) / 100).toFixed(2) }
+                      ${ (Math.trunc((parseFloat(item.pvp) * parseInt(item.cantidad)) * 100) / 100).toFixed(2) }
                       </td>
                   </tr>`
               })
@@ -235,7 +235,7 @@ export class Factura {
                     ${ forma_pago }
                   </label>
                   <label style="width: 15%;text-align: center;">
-                    $${ datosFactura.total.toFixed(2) }
+                    ${ datosFactura.total.toFixed(2) }
                   </label>
                   <label style="width: 24%;text-align: right;">
                     0 días
@@ -251,7 +251,7 @@ export class Factura {
                     Subtotal Sin Impuestos:
                   </label>
                   <label class="backColor pe-3" style="width: 32%;">
-                    $${ datosFactura.subtotal.toFixed(2) }
+                    ${ datosFactura.subtotal.toFixed(2) }
                   </label>
                 </div>
                 <div class="col-12 pb-1 d-flex justify-content-between">
@@ -259,7 +259,7 @@ export class Factura {
                     Subtotal ${ iva }%:
                   </label>
                   <label class="backColor pe-3" style="width: 32%;">
-                    $${ datosFactura.subtotal.toFixed(2) }
+                    ${ datosFactura.subtotal.toFixed(2) }
                   </label>
                 </div>
                 <div class="col-12 pb-1 d-flex justify-content-between">
@@ -267,7 +267,7 @@ export class Factura {
                     Subtotal 0%:
                   </label>
                   <label class="backColor pe-3" style="width: 32%;">
-                    $0.00
+                    0.00
                   </label>
                 </div>
                 <div class="col-12 pb-1 d-flex justify-content-between">
@@ -275,7 +275,7 @@ export class Factura {
                     Subtotal No Objeto IVA:
                   </label>
                   <label class="backColor pe-3" style="width: 32%;">
-                    $0.00
+                    0.00
                   </label>
                 </div>
                 <div class="col-12 pb-1 d-flex justify-content-between">
@@ -283,7 +283,7 @@ export class Factura {
                     Descuentos:
                   </label>
                   <label class="backColor pe-3" style="width: 32%;">
-                  $${ datosFactura.descuento.toFixed(2) }
+                  ${ datosFactura.descuento.toFixed(2) }
                   </label>
                 </div>
                 <div class="col-12 pb-1 d-flex justify-content-between">
@@ -291,7 +291,7 @@ export class Factura {
                     ICE:
                   </label>
                   <label class="backColor pe-3" style="width: 32%;">
-                    $0.00
+                    0.00
                   </label>
                 </div>
                 <div class="col-12 pb-1 d-flex justify-content-between">
@@ -299,7 +299,7 @@ export class Factura {
                     IVA ${ iva }%:
                   </label>
                   <label class="backColor pe-3" style="width: 32%;">
-                  $${ datosFactura.iva.toFixed(2) }
+                    ${ datosFactura.iva.toFixed(2) }
                   </label>
                 </div>
                 <div class="col-12 pb-1 d-flex justify-content-between">
@@ -307,7 +307,7 @@ export class Factura {
                     Servicio %:
                   </label>
                   <label class="backColor pe-3" style="width: 32%;">
-                    $0.00
+                    0.00
                   </label>
                 </div>
                 <div class="col-12 pb-1 d-flex justify-content-between">
@@ -315,7 +315,7 @@ export class Factura {
                     Valor Total:
                   </label>
                   <label class="backColor pe-3" style="width: 32%;">
-                  $${ datosFactura.total.toFixed(2) }
+                    ${ datosFactura.total.toFixed(2) }
                   </label>
                 </div>
               </div>

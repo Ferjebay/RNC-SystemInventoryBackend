@@ -536,8 +536,6 @@ export class FacturasService {
             await queryRunner.release()
           }else{
             await this.invoiceService.update( invoice_id, {
-              numero_comprobante: numComprobante,
-              clave_acceso: accessKey,
               estadoSRI: estado.trim(),
               respuestaSRI
             });

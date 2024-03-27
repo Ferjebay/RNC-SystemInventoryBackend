@@ -79,55 +79,63 @@ export class InvoicesService {
   }
 
   async findAll( estado: boolean, tipo: string, sucursal_id: Sucursal, desde, hasta ) {
-    return await this.getVentas(estado, tipo, sucursal_id, desde, hasta);
+    try {
+      return await this.getVentas(estado, tipo, sucursal_id, desde, hasta);
+    } catch (error) {
+      this.handleDBExceptions(error);
+    }
   }
 
   async getVentas(estado: boolean, tipo: string, sucursal_id: Sucursal, desde, hasta){
-    let inicio, fin;
-    if ( desde != "" && hasta == "" ) {
-      inicio = new Date( desde );
-      fin = new Date( desde );
-      fin.setHours(23, 59, 59, 999);
-    }
-    if ( desde == "" && hasta != "" ) {
-      inicio = new Date( hasta );
-      fin = new Date( hasta );
-      fin.setHours(23, 59, 59, 999);
-    }
-    if ( desde != "" && hasta != "" ) {
-      inicio = new Date( desde );
-      fin = new Date( hasta );
-      fin.setHours(23, 59, 59, 999);
-    }
-
-    let option: any = {
-      relations: {
-        user_id: true,
-        sucursal_id: { company_id: { proforma: true } },
-        customer_id: true,
-        invoiceToProduct: { product_id: true }
-      },
-      select: {
-        customer_id: { nombres: true, id: true, tipo_documento: true, numero_documento: true, email: true },
-        sucursal_id: { id: true, nombre: true, ambiente: true, direccion: true },
-        user_id:     { fullName: true, id: true },
-        invoiceToProduct: { v_total: true, cantidad: true, product_id: true, descuento: true }
-      },
-      order: { created_at: "DESC" },
-      where: {
-        created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null
+    try {
+      let inicio, fin;
+      if ( desde != "" && hasta == "" ) {
+        inicio = new Date( desde );
+        fin = new Date( desde );
+        fin.setHours(23, 59, 59, 999);
       }
+      if ( desde == "" && hasta != "" ) {
+        inicio = new Date( hasta );
+        fin = new Date( hasta );
+        fin.setHours(23, 59, 59, 999);
+      }
+      if ( desde != "" && hasta != "" ) {
+        inicio = new Date( desde );
+        fin = new Date( hasta );
+        fin.setHours(23, 59, 59, 999);
+      }
+
+      let option: any = {
+        relations: {
+          user_id: true,
+          sucursal_id: { company_id: { proforma: true } },
+          customer_id: true,
+          invoiceToProduct: { product_id: true }
+        },
+        select: {
+          customer_id: { nombres: true, id: true, tipo_documento: true, numero_documento: true, email: true },
+          sucursal_id: { id: true, nombre: true, ambiente: true, direccion: true },
+          user_id:     { fullName: true, id: true },
+          invoiceToProduct: { v_total: true, cantidad: true, product_id: true, descuento: true }
+        },
+        order: { created_at: "DESC" },
+        where: {
+          created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null
+        }
+      }
+
+      if ( tipo == 'PROFORMA' ) option.where.estadoSRI = tipo;
+      if ( tipo == 'ANULADO' ) option.where.estadoSRI = tipo;
+      if ( tipo == 'AUTORIZADO' ) option.where.estadoSRI = tipo;
+      if ( tipo == 'TODOS' ) option.where.estadoSRI = null;
+      if ( tipo == 'FACTURAS' ) option.where.estadoSRI = Not("PROFORMA");
+
+      if ( estado ) option.where.isActive = true ;
+
+      return await this.invoiceRepository.find( option );
+    } catch (error) {
+      this.handleDBExceptions(error)
     }
-
-    if ( tipo == 'PROFORMA' ) option.where.estadoSRI = tipo;
-    if ( tipo == 'ANULADO' ) option.where.estadoSRI = tipo;
-    if ( tipo == 'AUTORIZADO' ) option.where.estadoSRI = tipo;
-    if ( tipo == 'TODOS' ) option.where.estadoSRI = null;
-    if ( tipo == 'FACTURAS' ) option.where.estadoSRI = Not("PROFORMA");
-
-    if ( estado ) option.where.isActive = true ;
-
-    return await this.invoiceRepository.find( option );
   }
 
   async downloadComprobantes( estado: boolean, sucursal_id: Sucursal, desde, hasta ) {

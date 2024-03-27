@@ -117,7 +117,6 @@ export class AuthService {
   }
 
   async login(loginUserDto: LoginUserDto) {
-
     const { email, password } = loginUserDto;
     const user = await this.userRepository.findOne({
       where:  { email },
@@ -138,7 +137,7 @@ export class AuthService {
     if ( !user )
       throw new UnauthorizedException('Credentials not valid(email)')
 
-    if ( !bcrypt.compareSync( password, user.password) )
+    if ( !bcrypt.compareSync( password.trim(), user.password) )
       throw new UnauthorizedException('Credentials not valid(password)')
 
     //Generar JWT

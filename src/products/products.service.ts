@@ -1,8 +1,8 @@
-import { 
-  BadRequestException, 
-  Injectable, 
-  InternalServerErrorException, 
-  Logger, 
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
   NotFoundException } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -36,16 +36,16 @@ export class ProductsService {
       product.sucursal_id = sucursal_id;
 
       await this.productRepository.save( product );
-  
-      return product;      
+
+      return product;
     } catch (error) {
       this.handleDBExceptions( error )
     }
   }
 
   async downloadProductsToExcel( sucursal_id ){
-    const productos = await this.productRepository.find({ 
-      where: { sucursal_id: { id: sucursal_id } } 
+    const productos = await this.productRepository.find({
+      where: { sucursal_id: { id: sucursal_id } }
     });
 
     const pathPlantilla = path.resolve(__dirname, `../../static/resource/productos_plantilla.xlsx`);
@@ -77,11 +77,15 @@ export class ProductsService {
   }
 
   async findAll( options: IPaginationOptions, sucursal_id: string ): Promise<Pagination<Product>> {
-    return await paginate<Product>(this.productRepository, options, { 
-        where: { sucursal_id: { id: sucursal_id } },
-        order: { created_at: "DESC" }
-      }
-    );          
+    try {
+      return await paginate<Product>(this.productRepository, options, {
+          where: { sucursal_id: { id: sucursal_id } },
+          order: { created_at: "DESC" }
+        }
+      );
+    } catch (error) {
+      this.handleDBExceptions(error);
+    }
   }
 
   async findOne(term: string, company_id: string = null) {
@@ -111,7 +115,7 @@ export class ProductsService {
       })
     }
 
-    if ( !product ) 
+    if ( !product )
       throw new NotFoundException(`Product with ${ term } not found`);
 
     return product;
@@ -126,7 +130,7 @@ export class ProductsService {
       return {
         ok: true,
         msg: "Registro actualizado exitosamente"
-      };      
+      };
 
     } catch (error) {
       this.handleDBExceptions( error );
@@ -134,7 +138,7 @@ export class ProductsService {
   }
 
   async setEstado(id: string, estado: boolean) {
-    if ( estado ) 
+    if ( estado )
       await this.productRepository.update( id, { isActive: true })
     else
       await this.productRepository.update( id, { isActive: false })
@@ -145,12 +149,12 @@ export class ProductsService {
   async remove(id: string) {
     try {
       const user = await this.findOne( id );
-      let msg: string; 
-  
+      let msg: string;
+
       await this.productRepository.remove( user );
       msg = 'Eliminado Exitosamente'
-      
-      return { ok: true, msg };      
+
+      return { ok: true, msg };
     } catch (error) {
       this.handleDBExceptions( error );
     }
@@ -164,7 +168,7 @@ export class ProductsService {
         detail: error.detail,
         code: '23503'
       });
-    
+
     this.logger.error(error)
     throw new InternalServerErrorException('Unexpected error, check server logs');
   }

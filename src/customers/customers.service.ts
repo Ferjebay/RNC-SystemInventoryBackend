@@ -122,20 +122,24 @@ export class CustomersService {
   }
 
   async findAll( estado: boolean, company_id: Company ) {
-    let option:any = {
-      where: {
-        company_id: { id: company_id },
-        nombres: Not("CONSUMIDOR FINAL"),
-        isActive: null
-      },
-      order: {
-        created_at: "DESC"
+    try {
+      let option:any = {
+        where: {
+          company_id: { id: company_id },
+          nombres: Not("CONSUMIDOR FINAL"),
+          isActive: null
+        },
+        order: {
+          created_at: "DESC"
+        }
       }
+
+      if ( estado ) option.where.isActive = true;
+
+      return await this.customerRepository.find( option );
+    } catch (error) {
+      this.handleDBExceptions(error);
     }
-
-    if ( estado ) option.where.isActive = true;
-
-    return await this.customerRepository.find( option );
   }
 
   async getIpsUtilizadas( id: any ) {
