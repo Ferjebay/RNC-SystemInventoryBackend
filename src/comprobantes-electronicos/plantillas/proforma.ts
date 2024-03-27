@@ -325,7 +325,7 @@ export class Proforma {
 
       let browser;
       if (process.env.SISTEMA == 'linux') {
-        browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium-browser', args: [ '--disable-gpu', '--disable-setuid-sandbox', '--no-sandbox', '--no-zygote' ] });
+        browser = await puppeteer.launch({ executablePath: '/usr/bin/chromium', args: [ '--disable-gpu', '--disable-setuid-sandbox', '--no-sandbox', '--no-zygote' ] });
       }else{
         browser = await puppeteer.launch({ headless: true })
       }
