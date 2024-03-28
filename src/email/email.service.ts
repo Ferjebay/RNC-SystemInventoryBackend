@@ -67,14 +67,14 @@ export class EmailService {
     }
 
     if (comprobantes.tipo == 'proforma') {
-      message.subject = `RED NUEVA CONEXIÓN - le envia su proforma`,
-      message.text    = "RED NUEVA CONEXION agradece su consulta :)",
+      message.subject = `${infoCompany.company_id.razon_social} - le envia su proforma`,
+      message.text    = `${infoCompany.company_id.razon_social} agradece su consulta :)`,
       message.attachments = [
         { filename: comprobantes.name, path: comprobantes.buffer }
       ]
     }else{
-      message.subject = `RED NUEVA CONEXIÓN - Factura Nro. ${ numComprobante }`,
-      message.text    = "RED NUEVA CONEXION agradece su compra, acontinuación se adjunta su comprobante electronico",
+      message.subject = `${infoCompany.company_id.razon_social} - Factura Nro. ${ numComprobante }`,
+      message.text    = `${infoCompany.company_id.razon_social} agradece su compra, acontinuación se adjunta su comprobante electronico`,
       message.attachments = [
         { filename: clave_acceso +'.xml', path: comprobantes.xml },
         { filename: clave_acceso +'.pdf', path: comprobantes.pdf }
