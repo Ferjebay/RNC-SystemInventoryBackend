@@ -197,11 +197,11 @@ export class CustomersService {
       where: { email: email, company_id: { id: company_id } }
     });
 
-    if (existsEmail && !edit)
-      throw new BadRequestException(`Ya existe un cliente con este email: ${ email }`);
-    if (existsEmail && edit && client_id != existsEmail.id){
-      throw new BadRequestException(`Ya existe un cliente con este email: ${ email }`);
-    }
+    // if (existsEmail && !edit)
+    //   throw new BadRequestException(`Ya existe un cliente con este email: ${ email }`);
+    // if (existsEmail && edit && client_id != existsEmail.id){
+    //   throw new BadRequestException(`Ya existe un cliente con este email: ${ email }`);
+    // }
 
     const existsNumDoc = await this.customerRepository.findOne({
       where: { numero_documento: num_doc, company_id: { id: company_id } }
