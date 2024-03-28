@@ -28,7 +28,7 @@ export class Product {
     @Column({ type: 'varchar', length: 60 })
     nombre: string;
 
-    @Column({ type: "decimal", precision: 8, scale: 2, default: 0 })
+    @Column({ type: "decimal", nullable: true, precision: 8, scale: 2, default: 0 })
     precio_compra: number;
 
     @Column({ type: "decimal", precision: 8, scale: 2, default: 0 })
