@@ -1,14 +1,19 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Buy } from 'src/buys/entities/buy.entity';
 import { Customer } from 'src/customers/entities/customer.entity';
 import { Invoice } from 'src/invoices/entities/invoice.entity';
-import { Between, DataSource } from 'typeorm';
-
+import { Between, Repository } from 'typeorm';
 
 @Injectable()
 export class DashboardService {
   constructor(
-    private readonly dataSource: DataSource,
+    @InjectRepository( Customer )
+    private readonly customerRepository: Repository<Customer>,
+    @InjectRepository( Invoice )
+    private readonly invoiceRepository: Repository<Invoice>,
+    @InjectRepository( Buy )
+    private readonly buyRepository: Repository<Buy>,
   ){}
 
   async dataDashboard( company_id: string, modo: string, mes: string ){
@@ -20,11 +25,11 @@ export class DashboardService {
         fin.setHours(23, 59, 59, 999);
       }
 
-      const queryRunner = this.dataSource.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
+      const totalClientes = await this.customerRepository.count({
+        where: { company_id: { id: company_id } }
+      });
 
-      const invoices = await queryRunner.manager.find( Invoice, {
+      const invoices = await this.invoiceRepository.find({
         select: { total: true, estadoSRI: true },
         where: [
           {
@@ -40,18 +45,14 @@ export class DashboardService {
         ]
       });
 
-      const totalClientes = await queryRunner.manager.count( Customer, {
-        where: { company_id: { id: company_id } }
-      });
-
-      const compras = await queryRunner.manager.find( Buy, {
+      const compras = await this.buyRepository.find({
         select: { total: true },
         where: {
           sucursal_id: { company_id: { id: company_id } },
           isActive: true,
           created_at: ( modo == 'mes' ) ? Between( inicio, fin ) : null
         }
-      });
+      })
 
       const totalFacturado = invoices.reduce((acumulador, invoice) =>
                               acumulador + (invoice.estadoSRI == 'AUTORIZADO' ? parseFloat(invoice.total.toString()) : 0), 0);
