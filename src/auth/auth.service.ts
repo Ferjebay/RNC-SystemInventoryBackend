@@ -8,6 +8,7 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { JwtService } from "@nestjs/jwt";
 import { isUUID } from 'class-validator';
 import { UpdateUserDto } from './dto/edit-user.dto';
+import { Company } from 'src/companies/entities/company.entity';
 
 @Injectable()
 export class AuthService {
@@ -103,13 +104,18 @@ export class AuthService {
     }
   }
 
-  async findAll( estado: boolean ) {
+  async findAll( estado: boolean, company_id: Company, rol_name: string ) {
     try {
+
       let option:any = { order: { created_at: "DESC" } }
 
       if ( estado ) option.where = { isActive: true };
 
-      return await this.userRepository.find( option );
+      if (rol_name !== 'SUPER-ADMINISTRADOR') {
+        option.where = { company: { id: company_id } }
+      }
+
+      return await this.userRepository.find(option);
 
     } catch (error) {
       this.handleDBErros( error )

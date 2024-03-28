@@ -120,6 +120,7 @@ export class InvoicesService {
         },
         order: { created_at: "DESC" },
         where: {
+          sucursal_id: { id: sucursal_id },
           created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null
         }
       }

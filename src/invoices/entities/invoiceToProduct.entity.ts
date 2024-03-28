@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
 import { Product } from "src/products/entities/product.entity";
 import { Invoice } from "./invoice.entity";
 
@@ -32,5 +32,8 @@ export class InvoiceToProduct {
     @ManyToOne(() => Product, (product) => product.invoiceToProduct )
     @JoinColumn({ name: 'product_id' })
     public product_id: Product;
+
+    @CreateDateColumn()
+    created_at?: Date;
 
 }

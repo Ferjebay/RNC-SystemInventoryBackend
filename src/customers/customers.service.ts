@@ -169,8 +169,15 @@ export class CustomersService {
     return customer;
   }
 
-  async update(id: string, updateServicioDto: UpdateCustomerDto) {
+  async update(id: string, updateServicioDto: UpdateCustomerDto, company_id) {
     await this.findOne( id );
+    await this.existEmailAndCedula(
+      updateServicioDto.email,
+      updateServicioDto.numero_documento,
+      company_id,
+      true,
+      id
+    )
 
     try {
       await this.customerRepository.update( id, updateServicioDto );
@@ -185,7 +192,31 @@ export class CustomersService {
     }
   }
 
+  async existEmailAndCedula( email, num_doc, company_id, edit = false, client_id = '' ){
+    const existsEmail = await this.customerRepository.findOne({
+      where: { email: email, company_id: { id: company_id } }
+    });
+
+    if (existsEmail && !edit)
+      throw new BadRequestException(`Ya existe un cliente con este email: ${ email }`);
+    if (existsEmail && edit && client_id != existsEmail.id){
+      throw new BadRequestException(`Ya existe un cliente con este email: ${ email }`);
+    }
+
+    const existsNumDoc = await this.customerRepository.findOne({
+      where: { numero_documento: num_doc, company_id: { id: company_id } }
+    });
+
+    if (existsNumDoc && !edit)
+      throw new BadRequestException(`Ya existe un cliente con este numero de documento: ${ num_doc }`);
+    if (existsNumDoc && edit && client_id != existsNumDoc.id)
+      throw new BadRequestException(`Ya existe un cliente con este numero de documento: ${ num_doc }`);
+  }
+
   async createCustomer( createCustomer: CreateCustomerDto, company_id ) {
+
+    await this.existEmailAndCedula( createCustomer.email, createCustomer.numero_documento, company_id )
+
     try {
       const customer = await this.customerRepository.create({
         ...createCustomer,

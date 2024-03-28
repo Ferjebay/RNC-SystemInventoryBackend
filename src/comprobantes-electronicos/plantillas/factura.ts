@@ -378,8 +378,7 @@ export class Factura {
       const pathPDF = path.resolve(__dirname, `../../../static/SRI/PDF/${ claveAcceso }.pdf`);
 
       writeFile(pathPDF, pdf, {}, (err) => {
-          if(err) return console.error('error')
-          console.log('pdf creado')
+        if(err) return console.error('error')
       });
 
       return pathPDF;

@@ -29,18 +29,18 @@ export class Customer {
     @Column({ type: 'enum',  enum: ["04", "05", "06", "07"], })
     tipo_documento: string;
 
-    @Column({ type: 'varchar', unique: true })
+    @Column({ type: 'varchar' })
     numero_documento: string;
 
     @Column({ type: 'varchar', length: 10 })
     celular: string;
 
-    @Column({ type: 'varchar', length: 75, unique: true })
+    @Column({ type: 'varchar', length: 75 })
     email: string;
 
     @Column({ type: 'varchar', length: 300 })
     direccion: string;
-    
+
     @Column({ type: 'bool', default: true })
     isActive: boolean;
 

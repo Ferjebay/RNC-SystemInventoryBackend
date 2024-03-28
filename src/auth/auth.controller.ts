@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Req, SetMetadata, Param, Patch, ParseUUIDPipe, ParseBoolPipe, Delete, DefaultValuePipe, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, SetMetadata, Param, Patch, ParseUUIDPipe, ParseBoolPipe, Delete, DefaultValuePipe, UseInterceptors, UploadedFiles, Headers } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto, LoginUserDto } from './dto';
 import { UpdateUserDto } from './dto/edit-user.dto';
@@ -6,6 +6,7 @@ import { fileFilter } from './helpers/fileFilter.helper';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { fileNamer } from './helpers/fileNamer.helper';
+import { Company } from 'src/companies/entities/company.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -66,9 +67,11 @@ export class AuthController {
 
   @Get('/users')
   async findAll(
-    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
+    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean,
+    @Headers('company_id') company_id: Company,
+    @Headers('rol_name') rol_name: string,
   ) {
-    return await this.authService.findAll( estado );
+    return await this.authService.findAll( estado, company_id, rol_name );
   }
 
   @Delete(':id')

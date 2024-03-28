@@ -61,9 +61,10 @@ export class CustomersController {
   @Patch(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
+    @Headers('company_id') company_id: Company,
     @Body() updateCustomerDto: UpdateCustomerDto
   ) {
-    return await this.customersService.update(id, updateCustomerDto);
+    return await this.customersService.update(id, updateCustomerDto, company_id);
   }
 
   @Put('/actualizarDatosFactura/:id')

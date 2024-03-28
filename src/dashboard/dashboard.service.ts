@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Buy } from 'src/buys/entities/buy.entity';
 import { Customer } from 'src/customers/entities/customer.entity';
 import { Invoice } from 'src/invoices/entities/invoice.entity';
+import { InvoiceToProduct } from 'src/invoices/entities/invoiceToProduct.entity';
 import { Between, Repository } from 'typeorm';
 
 @Injectable()
@@ -14,6 +15,8 @@ export class DashboardService {
     private readonly invoiceRepository: Repository<Invoice>,
     @InjectRepository( Buy )
     private readonly buyRepository: Repository<Buy>,
+    @InjectRepository( InvoiceToProduct )
+    private readonly InvoiceToProductRepository: Repository<InvoiceToProduct>,
   ){}
 
   async dataDashboard( company_id: string, modo: string, mes: string ){
@@ -24,6 +27,16 @@ export class DashboardService {
         fin = new Date( mes.split(' - ')[1] );
         fin.setHours(23, 59, 59, 999);
       }
+
+      // const pivot = await this.InvoiceToProductRepository.find({})
+      // console.log( pivot );
+
+      // const queryBuilder = await this.InvoiceToProductRepository
+      //                       .createQueryBuilder('pivot')
+      //                       .leftJoinAndSelect('pivot.product_id', 'product')
+      //                       .getRawMany();
+
+      // console.log( queryBuilder );
 
       const totalClientes = await this.customerRepository.count({
         where: { company_id: { id: company_id } }
@@ -69,6 +82,7 @@ export class DashboardService {
         totalCompras
       }
     } catch (error) {
+      console.log( error );
       throw new BadRequestException("fallo al cargar datos del Dashboard");
     }
 
