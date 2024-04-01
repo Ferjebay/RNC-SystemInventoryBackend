@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, ParseBoolPipe, DefaultValuePipe, ParseUUIDPipe, UseInterceptors, Patch, UploadedFiles } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, ParseBoolPipe, DefaultValuePipe, ParseUUIDPipe, UseInterceptors, Patch, UploadedFiles, Headers } from '@nestjs/common';
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
@@ -6,6 +6,7 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { fileFilter } from './helpers/fileFilter.helper';
 import { fileNamer } from './helpers/fileNamer.helper';
+import { Company } from './entities/company.entity';
 const fs = require('fs');
 const path = require('path');
 
@@ -41,9 +42,11 @@ export class CompaniesController {
 
   @Get(':estado?')
   async findAll(
+    @Headers('company_id') company_id: Company,
+    @Headers('rol_name') rol_name: string,
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
-    return await this.companiesService.findAll( estado );
+    return await this.companiesService.findAll( estado, company_id, rol_name );
   }
 
   @Get('/get-iva/:empresa_id')

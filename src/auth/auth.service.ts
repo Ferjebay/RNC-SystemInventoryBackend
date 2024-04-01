@@ -27,7 +27,7 @@ export class AuthService {
     let infoUser = {
       ...userData,
       password: bcrypt.hashSync( password, 10 ),
-      foto: files.foto[0].originalname,
+      foto: files.foto ? files.foto[0].originalname : null,
       roles: JSON.parse( userData.roles ),
       sucursales: JSON.parse( userData.sucursales ),
       horarios_dias: JSON.parse( userData.horarios_dias ),
@@ -111,9 +111,7 @@ export class AuthService {
 
       if ( estado ) option.where = { isActive: true };
 
-      if (rol_name !== 'SUPER-ADMINISTRADOR') {
-        option.where = { company: { id: company_id } }
-      }
+      option.where = { company: { id: company_id } }
 
       return await this.userRepository.find(option);
 
@@ -128,6 +126,7 @@ export class AuthService {
       where:  { email },
       relations: { company: { sucursal: true } },
       select: {
+        usuario: true,
         email: true,
         password: true,
         id: true,

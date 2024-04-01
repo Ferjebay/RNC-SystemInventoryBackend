@@ -17,29 +17,26 @@ export class SucursalService {
   ){}
 
   async create(
-    createSucursalDto: CreateSucursalDto,
-    company_id: Company
+    createSucursalDto: CreateSucursalDto
   ) {
-
     try {
-      createSucursalDto.company_id = company_id;
 
       const product = this.sucursalRepository.create( createSucursalDto );
-      
+
       await this.sucursalRepository.save( product );
-  
-      return product;      
+
+      return product;
     } catch (error) {
       this.handleDBExceptions( error )
     }
   }
 
   async findAll( estado: boolean, company_id: Company ) {
-    let option:any = { 
+    let option:any = {
       relations: { company_id: true },
       select: { company_id: { id: true } },
       where: { company_id: { id: company_id } },
-      order: { created_at: "DESC" } 
+      order: { created_at: "DESC" }
     }
 
     if ( estado ) option.where = { isActive: true }
@@ -49,21 +46,21 @@ export class SucursalService {
 
   async findOne(term: string, modelo: string = 'sucursal') {
     let sucursal: Sucursal[];
-    
+
     if ( isUUID(term) ) {
       if ( modelo == 'sucursal' ) {
-        sucursal = await this.sucursalRepository.find({ 
+        sucursal = await this.sucursalRepository.find({
           where: { id: term },
           relations: ['company_id']
-        });        
+        });
       }else{
-        sucursal = await this.sucursalRepository.find({ 
+        sucursal = await this.sucursalRepository.find({
           where: { company_id: { id: term } },
           relations: ['company_id']
-        });        
-      } 
+        });
+      }
     } else {
-      const queryBuilder = this.sucursalRepository.createQueryBuilder('est'); 
+      const queryBuilder = this.sucursalRepository.createQueryBuilder('est');
       sucursal = await queryBuilder
         .leftJoinAndSelect('est.company_id', 'company')
         .where('UPPER(nombre) =:nombre', { nombre: term.toUpperCase() })
@@ -82,7 +79,7 @@ export class SucursalService {
       return {
         ok: true,
         msg: "Registro actualizado exitosamente"
-      };      
+      };
 
     } catch (error) {
       this.handleDBExceptions( error );
@@ -90,7 +87,7 @@ export class SucursalService {
   }
 
   async setEstado(id: string, estado: boolean) {
-    if ( estado ) 
+    if ( estado )
       await this.sucursalRepository.update( id, { isActive: true })
     else
       await this.sucursalRepository.update( id, { isActive: false })
@@ -100,18 +97,18 @@ export class SucursalService {
 
   async remove(id: string) {
     const sucursal = await this.findOne( id );
-    let msg: string; 
+    let msg: string;
 
     await this.sucursalRepository.remove( sucursal );
     msg = 'Eliminado Exitosamente'
-    
+
     return { ok: true, msg };;
   }
 
   private handleDBExceptions( error: any ) {
     if ( error.code === '23505' )
       throw new BadRequestException(error.detail);
-    
+
     this.logger.error(error)
     throw new InternalServerErrorException('Unexpected error, check server logs');
   }

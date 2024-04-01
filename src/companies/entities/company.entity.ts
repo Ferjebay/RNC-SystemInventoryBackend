@@ -69,6 +69,9 @@ export class Company {
     @Column({ type: 'varchar', default: null })
     archivo_certificado: string;
 
+    @Column({ type: 'varchar', default: null })
+    fecha_caducidad_certificado: string;
+
     @Column({ type: 'bool', default: true })
     isActive: boolean;
 

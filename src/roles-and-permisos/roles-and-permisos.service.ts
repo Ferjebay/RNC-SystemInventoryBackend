@@ -21,8 +21,8 @@ export class RolesAndPermisosService {
       const rol = this.roleAndPermisoRepository.create( createRolesAndPermisoDto );
 
       await this.roleAndPermisoRepository.save( rol );
-  
-      return rol;      
+
+      return rol;
     } catch (error) {
       this.handleDBExceptions( error )
     }
@@ -35,10 +35,10 @@ export class RolesAndPermisosService {
   async findOne(id: string) {
     let rol: RolAndPermiso;
 
-    if ( isUUID( id ) ) 
+    if ( isUUID( id ) )
       rol = await this.roleAndPermisoRepository.findOneBy({ id });
 
-    if ( !rol ) 
+    if ( !rol )
       throw new NotFoundException(`rol with ${ id } not found`);
 
     return rol;
@@ -53,7 +53,7 @@ export class RolesAndPermisosService {
       return {
         ok: true,
         msg: "Registro actualizado exitosamente"
-      };      
+      };
 
     } catch (error) {
       this.handleDBExceptions( error );
@@ -64,14 +64,14 @@ export class RolesAndPermisosService {
     const user = await this.findOne( id );
 
     await this.roleAndPermisoRepository.remove( user );
-    
+
     return { ok: true, msg: 'Registro eliminado exitosamente' };
   }
 
   private handleDBExceptions( error: any ) {
     if ( error.code === '23505' )
       throw new BadRequestException(error.detail);
-    
+
     this.logger.error(error)
     throw new InternalServerErrorException('Unexpected error, check server logs');
   }

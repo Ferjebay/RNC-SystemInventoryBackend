@@ -6,6 +6,7 @@ import { Company } from './entities/company.entity';
 import { Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
 import { Email } from 'src/email/entities/email.entity';
+import { Proforma } from 'src/proforma/entities/proforma.entity';
 const fs = require('fs');
 const path = require('path');
 
@@ -16,7 +17,9 @@ export class CompaniesService {
     @InjectRepository( Company )
     private readonly companyRepository: Repository<Company>,
     @InjectRepository( Email )
-    private readonly emailRepository: Repository<Email>
+    private readonly emailRepository: Repository<Email>,
+    @InjectRepository( Proforma )
+    private readonly proformaRepository: Repository<Proforma>
   ){}
 
   async create(createCompanyDto: CreateCompanyDto, files: any = null) {
@@ -45,6 +48,12 @@ export class CompaniesService {
       email.seguridad = 'SSL';
       this.emailRepository.save( email );
 
+      const proforma = new Proforma();
+      proforma.clausulas = [];
+      proforma.aceptacion_proforma = ""
+      proforma.company_id = companyCreated;
+      this.proformaRepository.save( proforma );
+
       return { ok: true, msg: "Empresa creada exitosamente" };
 
     } catch (error) {
@@ -52,8 +61,11 @@ export class CompaniesService {
     }
   }
 
-  async findAll( estado: boolean ) {
+  async findAll( estado: boolean, company_id, rol_name ) {
+
     let option:any = { order: { created_at: "DESC" }, where: { isActive: null } }
+
+    if ( rol_name != 'SUPER-ADMINISTRADOR' ) option.where.id = company_id
 
     if ( estado ) option.where.isActive = true
 
@@ -99,7 +111,9 @@ export class CompaniesService {
       await this.companyRepository.update( id, {
         ...rest,
         logo: ( files && files.logo ) ? files.logo[0].originalname : logo_old,
-        archivo_certificado: ( files && files.archivo_certificado) ? files.archivo_certificado[0].originalname : null
+        archivo_certificado: ( files && files.archivo_certificado)
+                            ? files.archivo_certificado[0].originalname
+                            : updateCompanyDto.archivo_certificado_old
       });
 
       return { ok: true, msg: "Se actualizaron los datos exitosamente" };

@@ -10,10 +10,9 @@ export class SucursalController {
 
   @Post()
   async create(
-    @Headers('company_id') company_id: Company,
     @Body() createSucursalDto: CreateSucursalDto
     ) {
-    return await this.sucursalService.create(createSucursalDto, company_id);
+    return await this.sucursalService.create(createSucursalDto);
   }
 
   @Get(':estado?')

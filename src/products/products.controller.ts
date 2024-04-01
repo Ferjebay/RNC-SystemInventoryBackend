@@ -32,7 +32,7 @@ export class ProductsController {
       page,
       limit,
       route: `${ process.env.HOST_API }/products`,
-    }, sucursal_id);
+    }, sucursal_id, busqueda);
   }
 
   @Post('/download-products-excel/')
@@ -57,10 +57,11 @@ export class ProductsController {
 
   @Patch(':id')
   async update(
+    @Headers('sucursal_id') sucursal_id: Sucursal,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProductDto: UpdateProductDto
   ) {
-    return await this.productsService.update(id, updateProductDto);
+    return await this.productsService.update(id, updateProductDto, sucursal_id);
   }
 
   @Patch(':id/:estado')

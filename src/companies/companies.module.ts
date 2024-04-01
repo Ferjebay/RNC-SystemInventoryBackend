@@ -5,12 +5,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Company } from './entities/company.entity';
 import { MulterModule } from '@nestjs/platform-express';
 import { Email } from 'src/email/entities/email.entity';
+import { Proforma } from 'src/proforma/entities/proforma.entity';
 
 @Module({
   controllers: [CompaniesController],
   providers: [CompaniesService],
   imports: [
-    TypeOrmModule.forFeature([ Company, Email ])
+    TypeOrmModule.forFeature([ Company, Email, Proforma ])
   ],
   exports: [ CompaniesService ]
 })

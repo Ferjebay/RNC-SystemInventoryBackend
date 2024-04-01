@@ -19,7 +19,7 @@ export class DashboardService {
     private readonly InvoiceToProductRepository: Repository<InvoiceToProduct>,
   ){}
 
-  async dataDashboard( company_id: string, modo: string, mes: string ){
+  async dataDashboard( company_id: string, modo: string, mes: string, sucursal_id: string ){
     try {
       let inicio, fin;
       if( modo == 'mes' ){
@@ -28,15 +28,44 @@ export class DashboardService {
         fin.setHours(23, 59, 59, 999);
       }
 
-      // const pivot = await this.InvoiceToProductRepository.find({})
-      // console.log( pivot );
+      const productosMasVendidos = await this.InvoiceToProductRepository
+                            .createQueryBuilder('pivot')
+                            .leftJoinAndSelect('pivot.product_id', 'product')
+                            .leftJoinAndSelect('pivot.invoice_id', 'invoice')
+                            .select('SUM(pivot.cantidad) as cantidad, product.nombre')
+                            .groupBy('product.id')
+                            .orderBy('cantidad', 'DESC')
+                            .limit(5)
+                            .where('pivot.created_at >= :inicio AND pivot.created_at <= :fin', { inicio, fin })
+                            .andWhere('invoice.sucursal_id = :sucursal_id', { sucursal_id })
+                            .getRawMany();
 
-      // const queryBuilder = await this.InvoiceToProductRepository
-      //                       .createQueryBuilder('pivot')
-      //                       .leftJoinAndSelect('pivot.product_id', 'product')
-      //                       .getRawMany();
+      const hoy = new Date();
+      const aniooActual = hoy.getFullYear();
 
-      // console.log( queryBuilder );
+      const ventasPorMes = await this.invoiceRepository
+                                  .createQueryBuilder("invoice")
+                                  .select("CASE EXTRACT('MONTH' FROM created_at) " +
+                                      "WHEN 1 THEN 'Enero' " +
+                                      "WHEN 2 THEN 'Febrero' " +
+                                      "WHEN 3 THEN 'Marzo' " +
+                                      "WHEN 4 THEN 'Abril' " +
+                                      "WHEN 5 THEN 'Mayo' " +
+                                      "WHEN 6 THEN 'Junio' " +
+                                      "WHEN 7 THEN 'Julio' " +
+                                      "WHEN 8 THEN 'Agosto' " +
+                                      "WHEN 9 THEN 'Septiembre' " +
+                                      "WHEN 10 THEN 'Octubre' " +
+                                      "WHEN 11 THEN 'Noviembre' " +
+                                      "WHEN 12 THEN 'Diciembre' " +
+                                      "END", "mes")
+                                  .addSelect("SUM(total)", "total_ventas")
+                                  .groupBy("EXTRACT('MONTH' FROM created_at)")
+                                  .orderBy("EXTRACT('MONTH' FROM created_at)")
+                                  .where("sucursal_id = :sucursal_id", { sucursal_id })
+                                  .andWhere("invoice.estadoSRI = :estado", { estado: 'AUTORIZADO' })
+                                  .andWhere("EXTRACT('YEAR' FROM created_at) = :anio", { anio: aniooActual })
+                                  .getRawMany();
 
       const totalClientes = await this.customerRepository.count({
         where: { company_id: { id: company_id } }
@@ -47,12 +76,12 @@ export class DashboardService {
         where: [
           {
             estadoSRI: 'AUTORIZADO',
-            sucursal_id: { company_id: { id: company_id } },
+            sucursal_id: { id: sucursal_id },
             created_at: ( modo == 'mes' ) ? Between( inicio, fin ) : null
           },
           {
             estadoSRI: 'ANULADO',
-            sucursal_id: { company_id: { id: company_id } },
+            sucursal_id: { id: sucursal_id },
             created_at: ( modo == 'mes' ) ? Between( inicio, fin ) : null
           }
         ]
@@ -61,7 +90,7 @@ export class DashboardService {
       const compras = await this.buyRepository.find({
         select: { total: true },
         where: {
-          sucursal_id: { company_id: { id: company_id } },
+          sucursal_id: { id: sucursal_id },
           isActive: true,
           created_at: ( modo == 'mes' ) ? Between( inicio, fin ) : null
         }
@@ -79,7 +108,9 @@ export class DashboardService {
         totalClientes,
         totalFacturado,
         facturasAnuladas,
-        totalCompras
+        totalCompras,
+        productosMasVendidos,
+        ventasPorMes
       }
     } catch (error) {
       console.log( error );

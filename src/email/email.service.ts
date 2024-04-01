@@ -19,32 +19,31 @@ export class EmailService {
   async testing(createEmailDto: CreateEmailDto) {
     const { host, usuario, puerto, password, email_client } = createEmailDto;
 
-    const config = {
-      host,
-      port: puerto,
-      secure: puerto === 465 ? true : false,
-      greetingTimeout: 12000,
-      connectionTimeout: 12000,
-      dnsTimeout: 12000,
-      // tls: { rejectUnauthorized: false },
-      auth: { user: usuario, pass: password }
-    }
-
-    const message = {
-      from: usuario,
-      to: email_client,
-      subject: "Test Envio de correos",
-      text: "Mensaje de prueba"
-    }
-
-    const transport = nodemailer.createTransport(config);
-
     try {
-        await transport.sendMail(message);
-        return "Correo Enviado Exitosamente";
+      const config = {
+        host,
+        port: puerto,
+        secure: puerto === 465 ? true : false,
+        greetingTimeout: 10000,
+        connectionTimeout: 10000,
+        dnsTimeout: 10000,
+        // tls: { rejectUnauthorized: false },
+        auth: { user: usuario, pass: password }
+      }
+
+      const message = {
+        from: usuario,
+        to: email_client,
+        subject: "Test Envio de correos",
+        text: "Mensaje de prueba"
+      }
+
+      const transport = nodemailer.createTransport(config);
+
+      await transport.sendMail(message);
+      return "Correo Enviado Exitosamente";
     } catch (error) {
-      console.log( error );
-      throw new BadRequestException(error);
+      throw new BadRequestException(JSON.stringify(error.message));
     }
   }
 

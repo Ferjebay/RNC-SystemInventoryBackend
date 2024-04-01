@@ -9,8 +9,9 @@ export class DashboardController {
   async getIp(
     @Body('company_id') company_id: string,
     @Body('modo') modo: string,
-    @Body('mes') mes: string
+    @Body('mes') mes: string,
+    @Body('sucursal_id') sucursal_id: string
   ){
-    return await this.dashboardService.dataDashboard(company_id, modo, mes);
+    return await this.dashboardService.dataDashboard(company_id, modo, mes, sucursal_id);
   }
 }

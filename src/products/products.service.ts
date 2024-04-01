@@ -76,10 +76,20 @@ export class ProductsService {
     }
   }
 
-  async findAll( options: IPaginationOptions, sucursal_id: string ): Promise<Pagination<Product>> {
+  async findAll( options: IPaginationOptions, sucursal_id: string, busqueda: string ): Promise<Pagination<Product>> {
     try {
       return await paginate<Product>(this.productRepository, options, {
-          where: { sucursal_id: { id: sucursal_id } },
+          relations: { sucursal_id: true },
+          where: [
+            {
+              nombre: ILike(`%${ busqueda }%`),
+              sucursal_id: { id: sucursal_id }
+            },
+            {
+              codigoBarra: ILike(`%${ busqueda }%`),
+              sucursal_id: { id: sucursal_id }
+            },
+          ],
           order: { created_at: "DESC" }
         }
       );
@@ -121,11 +131,11 @@ export class ProductsService {
     return product;
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto) {
+  async update(id: string, updateProductDto: UpdateProductDto, sucursal_id) {
     await this.findOne( id );
 
     try {
-      await this.productRepository.update( id, updateProductDto );
+      await this.productRepository.update( id, { ...updateProductDto, sucursal_id });
 
       return {
         ok: true,

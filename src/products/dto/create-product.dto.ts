@@ -23,6 +23,7 @@ export class CreateProductDto {
     @IsOptional()
     pvp: number;
 
+    @IsOptional()
     @IsNumber()
     stock: number;
 

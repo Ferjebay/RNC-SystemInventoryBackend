@@ -41,6 +41,9 @@ export class CreateCompanyDto {
     @IsString()
     iva: string;
 
+    @IsString()
+    fecha_caducidad_certificado: string;
+
     @IsOptional()
     logo?: any;
 

@@ -712,70 +712,73 @@ export class FacturasService {
     var xml = builder.create(obj, { encoding: 'UTF-8' }).end({ pretty: true});
     const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }`);
 
-    await this.crearAndFirmarXML(xml, nombreComercial, claveAcceso, infoCompany[0].company_id, 'factura')
+    const firmado = await this.crearAndFirmarXML(xml, nombreComercial, claveAcceso, infoCompany[0].company_id, 'factura', entity_id);
 
-    let host = ( ambiente === 'PRUEBA') ? 'https://celcer.sri.gob.ec' : 'https://cel.sri.gob.ec';
+    if (firmado) {
+      let host = ( ambiente === 'PRUEBA') ? 'https://celcer.sri.gob.ec' : 'https://cel.sri.gob.ec';
 
-    let recibida;
-    try {
-      recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity )
-    } catch (error) {
-      return { ok: false }
-    }
+      let recibida;
+      try {
+        recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity )
+      } catch (error) {
+        return { ok: false }
+      }
 
-    let autorizado;
-    if( recibida ){
-      // ---------------------- AUMENTAR EL SECUENCIAL FACTURA -------------------
-      const secuencial = numComprobante.split('-')[2];
-      let option: any = {};
+      let autorizado;
+      if( recibida ){
+        // ---------------------- AUMENTAR EL SECUENCIAL FACTURA -------------------
+        const secuencial = numComprobante.split('-')[2];
+        let option: any = {};
 
-      if ( ambiente == 'PRUEBA' )
-        option.secuencia_factura_pruebas = parseInt( secuencial ) + 1;
-      else
-        option.secuencia_factura_produccion = parseInt( secuencial ) + 1;
+        if ( ambiente == 'PRUEBA' )
+          option.secuencia_factura_pruebas = parseInt( secuencial ) + 1;
+        else
+          option.secuencia_factura_produccion = parseInt( secuencial ) + 1;
 
-      const sucursal: any = sucursal_id;
-      await this.sucursalRepository.update( sucursal, option );
-      // --------------------------------------------------------------------------
+        const sucursal: any = sucursal_id;
+        await this.sucursalRepository.update( sucursal, option );
+        // --------------------------------------------------------------------------
 
-      setTimeout(async () => {
-        try {
-          autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity)
-        } catch (error) {
-          return { ok: false }
-        }
-
-        if( autorizado ) {
-          if (clientFound[0].nombres !== 'CONSUMIDOR FINAL') {
-            const factura = new Factura();
-            const pathPDF = await factura.generarFacturaPDF( claveAcceso, infoCompany[0], numComprobante, clientFound[0], datosFactura, datosFactura.porcentaje_iva);
-            const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ claveAcceso }.xml`);
-
-            const comprobantes = { xml: pathXML, pdf: pathPDF, tipo: 'factura' }
-
-            await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);
-
-            //Enviar mensaje or whatsApp
-            try {
-              await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
-                cliente: clientFound[0].nombres,
-                number: clientFound[0].celular,
-                urlPDF: pathPDF,
-                urlXML: pathXML,
-                clave_acceso: claveAcceso,
-                num_comprobante: numComprobante
-              });
-            } catch (error) {
-              console.log( error );
-            }
-
+        setTimeout(async () => {
+          try {
+            autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity)
+          } catch (error) {
+            return { ok: false }
           }
-        }
-      }, 2900)
+
+          if( autorizado ) {
+            if (clientFound[0].nombres !== 'CONSUMIDOR FINAL') {
+              const factura = new Factura();
+              const pathPDF = await factura.generarFacturaPDF( claveAcceso, infoCompany[0], numComprobante, clientFound[0], datosFactura, datosFactura.porcentaje_iva);
+              const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ claveAcceso }.xml`);
+
+              const comprobantes = { xml: pathXML, pdf: pathPDF, tipo: 'factura' }
+
+              await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);
+
+              //Enviar mensaje or whatsApp
+              try {
+                await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
+                  cliente: clientFound[0].nombres,
+                  number: clientFound[0].celular,
+                  urlPDF: pathPDF,
+                  urlXML: pathXML,
+                  clave_acceso: claveAcceso,
+                  num_comprobante: numComprobante
+                });
+              } catch (error) {
+                console.log( error );
+              }
+
+            }
+          }
+        }, 2900)
+      }
     }
+
   }
 
-  async crearAndFirmarXML(xml, nombreComercial, claveAcceso, company_id, tipo_comprobante){
+  async crearAndFirmarXML(xml, nombreComercial, claveAcceso, company_id, tipo_comprobante, entity_id = ''){
 
     const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }`);
 
@@ -797,8 +800,12 @@ export class FacturasService {
 
     try {
       await execSync(cmd)
+      return true;
     } catch (err) {
-      return console.log('error firma: ', err)
+      if (entity_id != '')
+        await this.invoiceService.update( entity_id, { estadoSRI: 'NO SE ENCONTRO LA FIRMA' });
+      console.log('error firma: ', err)
+      return false;
     }
     //------------------------------------------------------------------------------------
   }
