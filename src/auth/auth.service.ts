@@ -132,7 +132,12 @@ export class AuthService {
         id: true,
         permisos: true,
         fullName: true,
-        company: { id: true, nombre_comercial: true, sucursal: { id: true } },
+        company: {
+          id: true,
+          nombre_comercial: true,
+          razon_social: true,
+          sucursal: { id: true }
+        },
         sucursales: true,
         roles: true,
         foto: true
