@@ -83,7 +83,7 @@ export class ProvidersService {
     await this.findOne( id );
 
     try {
-      // updateProviderDto.
+
       await this.providerRepository.update( id, updateProviderDto );
 
       return {

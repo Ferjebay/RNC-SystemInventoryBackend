@@ -104,7 +104,7 @@ export class Factura {
                   </div>
                   <div class="mt-3">
                     <label class="d-block">
-                      <span class="fw-bolder">Ambiente:</span> ${ infoCompany.ambiente }
+                      <span class="fw-bolder">Ambiente:</span> ${ infoCompany.ambiente == 'PRODUCCION' ? 'PRODUCCIÓN' : 'PRUEBA' }
                     </label>
                     <label class="d-block">
                       <span class="fw-bolder">Emisión:</span> NORMAL

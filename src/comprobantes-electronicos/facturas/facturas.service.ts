@@ -406,7 +406,8 @@ export class FacturasService {
             try {
               const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/${ tipo == 'nota_credito' ? 'notasCreditos' : 'facturas' }/Devueltos/${ claveAcceso }.xml`);
 
-              const respuestaSRI = xml.substring(0, xml.length - 10) + '\n \t' + resp.data + `\n \n</${ tipo == 'nota_credito' ? 'notasCredito' : 'factura' }>`;
+              console.log( resp.data );
+              const respuestaSRI = xml.substring(0, xml.length - 10) + '\n \t' + JSON.stringify(resp.data) + `\n \n</${ tipo == 'nota_credito' ? 'notasCredito' : 'factura' }>`;
 
               await fs.mkdirSync(path.dirname(pathXML), {recursive: true, })
               await fs.writeFileSync(pathXML, respuestaSRI, {flag: 'w+', encoding: 'utf-8'});
@@ -769,7 +770,6 @@ export class FacturasService {
               } catch (error) {
                 console.log( error );
               }
-
             }
           }
         }, 2900)
@@ -833,14 +833,18 @@ export class FacturasService {
 
     await this.invoiceService.update( invoice_id, { name_proforma: data.name });
 
-    await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], '', '', data);
-    await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes-proforma`, {
-      urlPDF: data.buffer,
-      number: clientFound[0].celular,
-      cliente: clientFound[0].nombres,
-      empresa: infoCompany[0].company_id.nombre_comercial,
-      name_proforma: data.name
-    });
+    try {
+      await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], '', '', data);
+      await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes-proforma`, {
+        urlPDF: data.buffer,
+        number: clientFound[0].celular,
+        cliente: clientFound[0].nombres,
+        empresa: infoCompany[0].company_id.nombre_comercial,
+        name_proforma: data.name
+      });
+    } catch (error) {
+      console.log("error envio de ws proforma");
+    }
   }
 
   async reeenviarRecepcionComprobantesOffline( datosFactura ){
@@ -881,14 +885,19 @@ export class FacturasService {
     jObj[tipo_comprobante].infoTributaria.estab       = numComprobante.split('-')[0].padStart(3, '0')
     jObj[tipo_comprobante].infoTributaria.ptoEmi      = numComprobante.split('-')[1].padStart(3, '0')
     jObj[tipo_comprobante].infoTributaria.secuencial  = numComprobante.split('-')[2].padStart(9, '0')
+    jObj[tipo_comprobante].infoTributaria.ruc         = jObj[tipo_comprobante].infoTributaria.ruc.toString().padStart(13, '0')
 
-    if (tipo_comprobante == 'factura') {
+    let totalCaracteres;
+    if (jObj[tipo_comprobante][type_info].tipoIdentificacionComprador == 4) totalCaracteres = 13
+    if (jObj[tipo_comprobante][type_info].tipoIdentificacionComprador == 5) totalCaracteres = 10
+
+    jObj[tipo_comprobante][type_info].identificacionComprador = jObj[tipo_comprobante][type_info].identificacionComprador.toString().padStart(totalCaracteres, '0')
+
+    if (tipo_comprobante == 'factura')
       jObj[tipo_comprobante][type_info].pagos.pago.formaPago = jObj[tipo_comprobante][type_info].pagos.pago.formaPago.toString().padStart(2, '0')
-    }
 
-    if (tipo_comprobante == 'notaCredito') {
+    if (tipo_comprobante == 'notaCredito')
       jObj[tipo_comprobante][type_info].codDocModificado = jObj[tipo_comprobante][type_info].codDocModificado.toString().padStart(2, '0')
-    }
 
     jObj[tipo_comprobante][type_info].tipoIdentificacionComprador = jObj[tipo_comprobante][type_info].tipoIdentificacionComprador.toString().padStart(2, '0')
 
@@ -999,9 +1008,8 @@ export class FacturasService {
       where: { id: datosFactura.sucursal_id }
     });
 
-    let autorizado;
     try {
-      autorizado = await this.autorizacionComprobantesOffline( host, datosFactura.clave_acceso, datosFactura.pago_id, datosFactura.user_id, nombreComercial, datosFactura.tipo_comprobante, datosFactura.num_comprobante, datosFactura.entity)
+      await this.autorizacionComprobantesOffline( host, datosFactura.clave_acceso, datosFactura.pago_id, datosFactura.user_id, nombreComercial, datosFactura.tipo_comprobante, datosFactura.num_comprobante, datosFactura.entity)
     } catch (error) {
       return { ok: false }
     }

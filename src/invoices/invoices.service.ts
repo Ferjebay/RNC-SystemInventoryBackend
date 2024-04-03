@@ -25,57 +25,85 @@ export class InvoicesService {
   ){}
 
   async create(createInvoiceDto: CreateInvoiceDto, sucursal_id: Sucursal) {
-    try {
-      let invoiceCreated: any = { id: null };
-      const claveAcceso = await this.facturaService.getClaveAcceso( sucursal_id );
-      const { numComprobante } = await this.facturaService.getNumComprobante( sucursal_id );
 
-      if (createInvoiceDto.tipo !== 'EMISION'){
-        let invoiceEntity = new Invoice();
-        invoiceEntity = {
-          ...createInvoiceDto,
-          sucursal_id,
-          clave_acceso: claveAcceso,
-          numero_comprobante: numComprobante,
-          estadoSRI: createInvoiceDto.tipo == 'PROFORMA' ? 'PROFORMA' : 'PENDIENTE'
-        }
-        invoiceCreated = await this.invoiceRepository.save( invoiceEntity );
+    const { products, tipo, ...rest } = createInvoiceDto;
+
+    if ( createInvoiceDto.estadoSRI == 'PROFORMA' && tipo == 'PROFORMA' ) { // Editar proforma
+      try {
+        await this.invoiceRepository.update(createInvoiceDto.id, rest);
+
+        await this.tablePivotRepository
+                  .createQueryBuilder('pivot')
+                  .delete()
+                  .where("invoice_id = :id", { id: createInvoiceDto.id })
+                  .execute();
 
         const pivot: Array<InvoiceToProduct> = [];
-        createInvoiceDto.products.forEach( product => {
-          pivot.push(new InvoiceToProduct(
+        products.forEach( product => {
+          pivot.unshift(new InvoiceToProduct(
             product.cantidad,
             product.v_total,
             product.descuento,
-            invoiceCreated,
+            createInvoiceDto.id,
             product.id
           ));
         })
         this.tablePivotRepository.save( pivot );
-      }else{
-        await this.invoiceRepository.update( createInvoiceDto.id, { estadoSRI: "PENDIENTE" } );
-        invoiceCreated.id = createInvoiceDto.id
+      } catch (error) {
+        throw new BadRequestException("Ocurrio un error al editar la proforma");
       }
+    }else{ //Crear Factura o Proforma
+      try {
+        let invoiceCreated: any = { id: null };
+        const claveAcceso = await this.facturaService.getClaveAcceso( sucursal_id );
+        const { numComprobante } = await this.facturaService.getNumComprobante( sucursal_id );
 
-      if (createInvoiceDto.tipo == 'FACTURA' || createInvoiceDto.tipo == 'EMISION') {
-        this.facturaService.generarFacturaElectronica(
-          createInvoiceDto,
-          claveAcceso,
-          sucursal_id,
-          invoiceCreated.id
-        )
-      }else{
-        this.facturaService.generarProforma(
-          createInvoiceDto,
-          sucursal_id,
-          invoiceCreated.id
-        );
+        if (createInvoiceDto.tipo !== 'EMISION'){
+          let invoiceEntity = new Invoice();
+          invoiceEntity = {
+            ...createInvoiceDto,
+            sucursal_id,
+            clave_acceso: claveAcceso,
+            numero_comprobante: numComprobante,
+            estadoSRI: createInvoiceDto.tipo == 'PROFORMA' ? 'PROFORMA' : 'PENDIENTE'
+          }
+          invoiceCreated = await this.invoiceRepository.save( invoiceEntity );
+
+          const pivot: Array<InvoiceToProduct> = [];
+          createInvoiceDto.products.forEach( product => {
+            pivot.push(new InvoiceToProduct(
+              product.cantidad,
+              product.v_total,
+              product.descuento,
+              invoiceCreated,
+              product.id
+            ));
+          })
+          this.tablePivotRepository.save( pivot );
+        }else{
+          await this.invoiceRepository.update( createInvoiceDto.id, { estadoSRI: "PENDIENTE" } );
+          invoiceCreated.id = createInvoiceDto.id
+        }
+
+        if (createInvoiceDto.tipo == 'FACTURA' || createInvoiceDto.tipo == 'EMISION') {
+          this.facturaService.generarFacturaElectronica(
+            createInvoiceDto,
+            claveAcceso,
+            sucursal_id,
+            invoiceCreated.id
+          )
+        }else{
+          this.facturaService.generarProforma(
+            createInvoiceDto,
+            sucursal_id,
+            invoiceCreated.id
+          );
+        }
+      } catch (error) {
+        this.handleDBExceptions( error )
       }
-
-      return { ok: true };
-    } catch (error) {
-      this.handleDBExceptions( error )
     }
+    return { ok: true };
   }
 
   async findAll( estado: boolean, tipo: string, sucursal_id: Sucursal, desde, hasta ) {

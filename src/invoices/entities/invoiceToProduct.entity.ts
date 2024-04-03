@@ -5,7 +5,7 @@ import { Invoice } from "./invoice.entity";
 @Entity('InvoiceToProduct')
 export class InvoiceToProduct {
 
-    constructor(cantidad: number, v_total: number, descuento: number, invoice_id: Invoice, product_id: Product){
+    constructor(cantidad: number, v_total: number, descuento: number, invoice_id: any, product_id: Product){
         this.cantidad = cantidad;
         this.v_total = v_total;
         this.product_id = product_id;
