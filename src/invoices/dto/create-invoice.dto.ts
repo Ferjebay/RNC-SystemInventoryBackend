@@ -1,4 +1,4 @@
-import { ArrayNotEmpty, IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, MinLength } from "class-validator";
+import { ArrayNotEmpty, IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, MinLength } from "class-validator";
 import { User } from "src/auth/entities/user.entity";
 import { Customer } from "src/customers/entities/customer.entity";
 import { Product } from "src/products/entities/product.entity";
@@ -59,5 +59,8 @@ export class CreateInvoiceDto {
 
     @IsOptional()
     respuestaSRI?: string;
+
+    @IsBoolean()
+    send_messages: boolean;
 
 }

@@ -21,10 +21,13 @@ export class DashboardService {
 
   async dataDashboard( company_id: string, modo: string, mes: string, sucursal_id: string ){
     try {
-      let inicio, fin;
+      let inicio, fin, mesAbuscar;
       if( modo == 'mes' ){
-        inicio = new Date( mes.split(' - ')[0] );
-        fin = new Date( mes.split(' - ')[1] );
+        mesAbuscar = mes.split(' - ')[0].split('-')[1];
+
+        inicio = new Date(mes.split(' - ')[0]);
+        fin = new Date(mes.split(' - ')[1]);
+        inicio.setHours(0, 0, 0, 0);
         fin.setHours(23, 59, 59, 999);
       }
 
@@ -40,8 +43,7 @@ export class DashboardService {
                             .andWhere('invoice.sucursal_id = :sucursal_id', { sucursal_id })
                             .getRawMany();
 
-      const hoy = new Date();
-      const aniooActual = hoy.getFullYear();
+      const aniooActual = new Date().getFullYear();
 
       const ventasPorMes = await this.invoiceRepository
                                   .createQueryBuilder("invoice")
@@ -67,24 +69,40 @@ export class DashboardService {
                                   .andWhere("EXTRACT('YEAR' FROM created_at) = :anio", { anio: aniooActual })
                                   .getRawMany();
 
+    const queryFacturacionTotal = this.invoiceRepository
+                                  .createQueryBuilder("invoice")
+                                  .select("EXTRACT('MONTH' FROM created_at)", "mes")
+                                  .addSelect("SUM(total)", "total_ventas")
+                                  .groupBy("EXTRACT('MONTH' FROM created_at)")
+                                  .orderBy("EXTRACT('MONTH' FROM created_at)")
+                                  .where("sucursal_id = :sucursal_id", { sucursal_id })
+
+                                  if (modo == 'mes' )
+                                    queryFacturacionTotal.andWhere(`EXTRACT('MONTH' FROM created_at) = ${ mesAbuscar }`)
+
+      const totalFactAutorizado = await queryFacturacionTotal.andWhere("invoice.estadoSRI = :estado", { estado: 'AUTORIZADO' })
+                                  .andWhere("EXTRACT('YEAR' FROM created_at) = :anio", { anio: aniooActual })
+                                  .getRawMany();
+
+    const queryFacturacionAnulada = this.invoiceRepository
+                                  .createQueryBuilder("invoice")
+                                  .select("EXTRACT('MONTH' FROM created_at)", "mes")
+                                  .addSelect("SUM(total)", "total_ventas")
+                                  .groupBy("EXTRACT('MONTH' FROM created_at)")
+                                  .orderBy("EXTRACT('MONTH' FROM created_at)")
+                                  .where("sucursal_id = :sucursal_id", { sucursal_id })
+
+                                  if (modo == 'mes' )
+                                    queryFacturacionAnulada.andWhere(`EXTRACT('MONTH' FROM created_at) = ${ mesAbuscar }`)
+
+      const totalFactAnulado = await queryFacturacionAnulada.andWhere("invoice.estadoSRI = :estado", { estado: 'ANULADO' })
+                                  .andWhere("EXTRACT('YEAR' FROM created_at) = :anio", { anio: aniooActual })
+                                  .getRawMany();
+
+      console.log( totalFactAutorizado );
+
       const totalClientes = await this.customerRepository.count({
         where: { company_id: { id: company_id } }
-      });
-
-      const invoices = await this.invoiceRepository.find({
-        select: { total: true, estadoSRI: true },
-        where: [
-          {
-            estadoSRI: 'AUTORIZADO',
-            sucursal_id: { id: sucursal_id },
-            created_at: ( modo == 'mes' ) ? Between( inicio, fin ) : null
-          },
-          {
-            estadoSRI: 'ANULADO',
-            sucursal_id: { id: sucursal_id },
-            created_at: ( modo == 'mes' ) ? Between( inicio, fin ) : null
-          }
-        ]
       });
 
       const compras = await this.buyRepository.find({
@@ -96,11 +114,8 @@ export class DashboardService {
         }
       })
 
-      const totalFacturado = invoices.reduce((acumulador, invoice) =>
-                              acumulador + (invoice.estadoSRI == 'AUTORIZADO' ? parseFloat(invoice.total.toString()) : 0), 0);
-
-      const facturasAnuladas = invoices.reduce((acumulador, invoice) =>
-                              acumulador + (invoice.estadoSRI == 'ANULADO' ? parseFloat(invoice.total.toString()) : 0), 0);
+      const totalFacturado = totalFactAutorizado.reduce((acumulador, invoice) => acumulador + parseFloat(invoice.total_ventas), 0);
+      const facturasAnuladas = totalFactAnulado.reduce((acumulador, invoice) => acumulador + parseFloat(invoice.total_ventas), 0);
 
       const totalCompras = compras.reduce((acumulador, buy) => acumulador + parseFloat(buy.total.toString()), 0);
 

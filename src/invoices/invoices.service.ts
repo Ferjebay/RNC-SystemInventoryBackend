@@ -26,11 +26,15 @@ export class InvoicesService {
 
   async create(createInvoiceDto: CreateInvoiceDto, sucursal_id: Sucursal) {
 
-    const { products, tipo, ...rest } = createInvoiceDto;
+    const { products, tipo, send_messages, name_proforma, ...rest } = createInvoiceDto;
 
     if ( createInvoiceDto.estadoSRI == 'PROFORMA' && tipo == 'PROFORMA' ) { // Editar proforma
       try {
-        await this.invoiceRepository.update(createInvoiceDto.id, rest);
+
+        await this.invoiceRepository.update(createInvoiceDto.id, {
+          ...rest,
+          numero_comprobante: '--- --- ---------'
+        });
 
         await this.tablePivotRepository
                   .createQueryBuilder('pivot')
@@ -49,7 +53,20 @@ export class InvoicesService {
           ));
         })
         this.tablePivotRepository.save( pivot );
+
+        const ruta = path.resolve(__dirname, `../../static/SRI/PROFORMAS`);
+
+        if(await fs.existsSync(`${ ruta }/${ name_proforma }`))
+            await fs.unlinkSync(`${ ruta }/${ name_proforma }`)
+
+        await this.facturaService.generarProforma(
+          createInvoiceDto,
+          sucursal_id,
+          createInvoiceDto.id,
+          send_messages
+        );
       } catch (error) {
+        console.log( error );
         throw new BadRequestException("Ocurrio un error al editar la proforma");
       }
     }else{ //Crear Factura o Proforma
@@ -64,7 +81,7 @@ export class InvoicesService {
             ...createInvoiceDto,
             sucursal_id,
             clave_acceso: claveAcceso,
-            numero_comprobante: numComprobante,
+            numero_comprobante: createInvoiceDto.tipo == 'PROFORMA' ? '--- --- ---------' : numComprobante,
             estadoSRI: createInvoiceDto.tipo == 'PROFORMA' ? 'PROFORMA' : 'PENDIENTE'
           }
           invoiceCreated = await this.invoiceRepository.save( invoiceEntity );
@@ -90,13 +107,16 @@ export class InvoicesService {
             createInvoiceDto,
             claveAcceso,
             sucursal_id,
-            invoiceCreated.id
+            invoiceCreated.id,
+            'Invoice',
+            createInvoiceDto.send_messages
           )
         }else{
           this.facturaService.generarProforma(
             createInvoiceDto,
             sucursal_id,
-            invoiceCreated.id
+            invoiceCreated.id,
+            createInvoiceDto.send_messages
           );
         }
       } catch (error) {
@@ -141,9 +161,16 @@ export class InvoicesService {
           invoiceToProduct: { product_id: true }
         },
         select: {
-          customer_id: { nombres: true, id: true, tipo_documento: true, numero_documento: true, email: true },
+          customer_id: {
+            nombres: true,
+            id: true,
+            tipo_documento: true,
+            numero_documento: true,
+            email: true,
+            celular: true
+          },
           sucursal_id: { id: true, nombre: true, ambiente: true, direccion: true },
-          user_id:     { fullName: true, id: true },
+          user_id: { fullName: true, id: true },
           invoiceToProduct: { v_total: true, cantidad: true, product_id: true, descuento: true }
         },
         order: { created_at: "DESC" },

@@ -445,6 +445,7 @@ export class FacturasService {
             reject( false );
         }
 
+        await this.invoiceService.update( entity_id, { numero_comprobante: num_comprobante })
         resolve( true )
       }
     });
@@ -562,7 +563,8 @@ export class FacturasService {
     claveAcceso = '',
     sucursal_id: any,
     entity_id: string = null,
-    entity: string = 'Invoice'
+    entity: string = 'Invoice',
+    send_messages: boolean = true
   ){
 
     if ( datosFactura.tipo == 'EMISION')
@@ -720,7 +722,7 @@ export class FacturasService {
 
       let recibida;
       try {
-        recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity )
+        recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante )
       } catch (error) {
         return { ok: false }
       }
@@ -755,21 +757,24 @@ export class FacturasService {
 
               const comprobantes = { xml: pathXML, pdf: pathPDF, tipo: 'factura' }
 
-              await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);
+              if ( send_messages ) {
+                await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);
 
-              //Enviar mensaje or whatsApp
-              try {
-                await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
-                  cliente: clientFound[0].nombres,
-                  number: clientFound[0].celular,
-                  urlPDF: pathPDF,
-                  urlXML: pathXML,
-                  clave_acceso: claveAcceso,
-                  num_comprobante: numComprobante
-                });
-              } catch (error) {
-                console.log( error );
+                //Enviar mensaje or whatsApp
+                try {
+                  await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
+                    cliente: clientFound[0].nombres,
+                    number: clientFound[0].celular,
+                    urlPDF: pathPDF,
+                    urlXML: pathXML,
+                    clave_acceso: claveAcceso,
+                    num_comprobante: numComprobante
+                  });
+                } catch (error) {
+                  console.log( error );
+                }
               }
+
             }
           }
         }, 2900)
@@ -810,7 +815,7 @@ export class FacturasService {
     //------------------------------------------------------------------------------------
   }
 
-  async generarProforma(datosFactura, sucursal_id: any, invoice_id){
+  async generarProforma(datosFactura, sucursal_id: any, invoice_id, send_messages: boolean = true){
     const clientFound = await this.customerService.findOne( datosFactura.customer_id );
     const infoCompany = await this.sucursalRepository.find({
       relations: { company_id: { proforma: true } },
@@ -834,14 +839,16 @@ export class FacturasService {
     await this.invoiceService.update( invoice_id, { name_proforma: data.name });
 
     try {
-      await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], '', '', data);
-      await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes-proforma`, {
-        urlPDF: data.buffer,
-        number: clientFound[0].celular,
-        cliente: clientFound[0].nombres,
-        empresa: infoCompany[0].company_id.nombre_comercial,
-        name_proforma: data.name
-      });
+      if (send_messages) {
+        await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], '', '', data);
+        await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes-proforma`, {
+          urlPDF: data.buffer,
+          number: clientFound[0].celular,
+          cliente: clientFound[0].nombres,
+          empresa: infoCompany[0].company_id.nombre_comercial,
+          name_proforma: data.name
+        });
+      }
     } catch (error) {
       console.log("error envio de ws proforma");
     }
@@ -936,58 +943,60 @@ export class FacturasService {
 
     var xml = builder.create(obj, { encoding: 'UTF-8' }).end({ pretty: true});
 
-    await this.crearAndFirmarXML(xml, nombreComercial, claveAcceso, infoCompany[0].company_id, datosFactura.tipo_comprobante)
+    const firmado = await this.crearAndFirmarXML(xml, nombreComercial, claveAcceso, infoCompany[0].company_id, datosFactura.tipo_comprobante)
 
-    let recibida = false;
-    try {
-      recibida = await this.recepcionComprobantesOffline(
-        nombreComercial, claveAcceso,
-        datosFactura.pago_id, datosFactura.tipo_comprobante,
-        host, pathXML, datosFactura.user_id,
-        xml, datosFactura.entity, numComprobante
-      );
-    } catch (error) {
-      return new BadRequestException("ERROR ENVIO RECEPCION");
-    }
+    if ( firmado ) {
+      let recibida = false;
+      try {
+        recibida = await this.recepcionComprobantesOffline(
+          nombreComercial, claveAcceso,
+          datosFactura.pago_id, datosFactura.tipo_comprobante,
+          host, pathXML, datosFactura.user_id,
+          xml, datosFactura.entity, numComprobante
+        );
+      } catch (error) {
+        return new BadRequestException("ERROR ENVIO RECEPCION");
+      }
 
-    let autorizado = false;
-    if( recibida ){
+      let autorizado = false;
+      if( recibida ){
 
-      // ---------------------- AUMENTAR EL SECUENCIAL FACTURA -------------------
-      const secuencial = numComprobante.split('-')[2];
-      let option: any = {};
+        // ---------------------- AUMENTAR EL SECUENCIAL FACTURA -------------------
+        const secuencial = numComprobante.split('-')[2];
+        let option: any = {};
 
-      if ( datosFactura.ambiente == 'PRUEBA' && datosFactura.tipo_comprobante == 'factura')
-        option.secuencia_factura_pruebas = parseInt( secuencial ) + 1;
-      if ( datosFactura.ambiente == 'PRUEBA' && datosFactura.tipo_comprobante == 'nota_credito')
-        option.secuencia_nota_credito_pruebas = parseInt( secuencial ) + 1;
-      if ( datosFactura.ambiente == 'PRODUCCION' && datosFactura.tipo_comprobante == 'factura')
-        option.secuencia_factura_produccion = parseInt( secuencial ) + 1;
-      if ( datosFactura.ambiente == 'PRODUCCION' && datosFactura.tipo_comprobante == 'nota_credito')
-        option.secuencia_nota_credito_produccion = parseInt( secuencial ) + 1;
+        if ( datosFactura.ambiente == 'PRUEBA' && datosFactura.tipo_comprobante == 'factura')
+          option.secuencia_factura_pruebas = parseInt( secuencial ) + 1;
+        if ( datosFactura.ambiente == 'PRUEBA' && datosFactura.tipo_comprobante == 'nota_credito')
+          option.secuencia_nota_credito_pruebas = parseInt( secuencial ) + 1;
+        if ( datosFactura.ambiente == 'PRODUCCION' && datosFactura.tipo_comprobante == 'factura')
+          option.secuencia_factura_produccion = parseInt( secuencial ) + 1;
+        if ( datosFactura.ambiente == 'PRODUCCION' && datosFactura.tipo_comprobante == 'nota_credito')
+          option.secuencia_nota_credito_produccion = parseInt( secuencial ) + 1;
 
-      const sucursal: any = datosFactura.sucursal_id;
-      await this.sucursalRepository.update( sucursal, option );
-      // --------------------------------------------------------------------------
+        const sucursal: any = datosFactura.sucursal_id;
+        await this.sucursalRepository.update( sucursal, option );
+        // --------------------------------------------------------------------------
 
-      setTimeout(async () => {
-        try {
-          autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, datosFactura.pago_id, datosFactura.user_id, nombreComercial, datosFactura.tipo_comprobante, numComprobante, datosFactura.entity)
-        } catch (error) {
-          return { ok: false }
-        }
+        setTimeout(async () => {
+          try {
+            autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, datosFactura.pago_id, datosFactura.user_id, nombreComercial, datosFactura.tipo_comprobante, numComprobante, datosFactura.entity)
+          } catch (error) {
+            return { ok: false }
+          }
 
-        if( autorizado ) {
+          if( autorizado ) {
 
-          const factura = new Factura();
-          const pdfBuffer = await factura.generarFacturaPDF( claveAcceso, infoCompany[0], numComprobante, clientFound[0], datosFactura, datosFactura.porcentaje_iva);
-          const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ claveAcceso }.xml`);
+            const factura = new Factura();
+            const pdfBuffer = await factura.generarFacturaPDF( claveAcceso, infoCompany[0], numComprobante, clientFound[0], datosFactura, datosFactura.porcentaje_iva);
+            const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ claveAcceso }.xml`);
 
-          const comprobantes = { xml: pathXML, pdf: pdfBuffer, tipo: 'factura' }
+            const comprobantes = { xml: pathXML, pdf: pdfBuffer, tipo: 'factura' }
 
-          this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);
-        }
-      }, 3000)
+            this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);
+          }
+        }, 3000)
+      }
     }
   }
 

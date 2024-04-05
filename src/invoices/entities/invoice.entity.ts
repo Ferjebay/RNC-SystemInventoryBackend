@@ -31,7 +31,7 @@ export class Invoice {
     @Column({ type: 'varchar', length: 50, unique: true, nullable: true })
     clave_acceso_nota_credito?: string;
 
-    @Column({ type: 'varchar', length: 50, unique: true, nullable: true })
+    @Column({ type: 'varchar', length: 50, nullable: true })
     name_proforma?: string;
 
     @Column({ type: 'varchar', length: 50 })
