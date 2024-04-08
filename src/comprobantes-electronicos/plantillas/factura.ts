@@ -44,7 +44,7 @@ export class Factura {
               <div class="mt-3 d-flex justify-content-center">
                 <img src="${ pathImage }" style="width: auto;max-height: 105px;" class="rounded">
               </div>
-              <div class="mt-1 backColor pt-1" style="padding-bottom: 50px;">
+              <div class="mt-1 backColor pt-1" style="padding-bottom: 40px;">
                 <div style="padding-left: 13px">
                   <label class="d-block pt-3">
                     <span class="fw-bolder">Emisor:</span>
@@ -92,7 +92,7 @@ export class Factura {
                     <label class="fw-bolder">
                       Número de Autorización:
                     </label>
-                    <label style="font-size: 12px;width: 100%;word-wrap: break-word;">
+                    <label style="font-size: 13px;width: 100%;word-wrap: break-word;">
                       ${ claveAcceso }
                     </label>
                   </div>
