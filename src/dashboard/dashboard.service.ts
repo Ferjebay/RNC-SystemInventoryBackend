@@ -99,8 +99,6 @@ export class DashboardService {
                                   .andWhere("EXTRACT('YEAR' FROM created_at) = :anio", { anio: aniooActual })
                                   .getRawMany();
 
-      console.log( totalFactAutorizado );
-
       const totalClientes = await this.customerRepository.count({
         where: { company_id: { id: company_id } }
       });
