@@ -9,7 +9,7 @@ export class FacturasController {
 
   @Get('getNumFactura')
   getNumComprobante(
-    @Headers('sucursal_id') sucursal_id: string,
+    @Headers('sucursal-id') sucursal_id: string,
   ) {
     return this.facturasService.getNumComprobante( sucursal_id );
   }
