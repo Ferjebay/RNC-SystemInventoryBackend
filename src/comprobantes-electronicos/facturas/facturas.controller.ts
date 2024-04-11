@@ -9,7 +9,7 @@ export class FacturasController {
 
   @Get('getNumFactura')
   getNumComprobante(
-    @Headers('sucursal-id') sucursal_id: string,
+    @Headers('sucursal_id') sucursal_id: string,
   ) {
     return this.facturasService.getNumComprobante( sucursal_id );
   }
@@ -29,7 +29,7 @@ export class FacturasController {
 
   @Post('generarFacturaElectronica')
   generarFacturaElectronica(
-    @Headers('sucursal-id') sucursal_id: Sucursal,
+    @Headers('sucursal_id') sucursal_id: Sucursal,
     @Body() datosFactura: any
   ){
     return this.facturasService.generarFacturaElectronica(
