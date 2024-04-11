@@ -29,7 +29,7 @@ export class FacturasController {
 
   @Post('generarFacturaElectronica')
   generarFacturaElectronica(
-    @Headers('sucursal_id') sucursal_id: Sucursal,
+    @Headers('sucursal-id') sucursal_id: Sucursal,
     @Body() datosFactura: any
   ){
     return this.facturasService.generarFacturaElectronica(
