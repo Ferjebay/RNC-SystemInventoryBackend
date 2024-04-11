@@ -10,7 +10,7 @@ export class RouterController {
 
   @Post()
   create(
-    @Headers('company_id') company_id: Company,
+    @Headers('company-id') company_id: Company,
     @Body() createRouterDto: CreateRouterDto
   ){
     return this.routerService.create(createRouterDto, company_id);
@@ -18,9 +18,9 @@ export class RouterController {
 
   @Get(':estado?')
   findAll(
-    @Headers('company_id') company_id: Company,
-    @Headers('rol_name') rol_name: string,
-    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean 
+    @Headers('company-id') company_id: Company,
+    @Headers('rol-name') rol_name: string,
+    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ){
     return this.routerService.findAll( company_id, rol_name, estado );
   }
@@ -37,8 +37,8 @@ export class RouterController {
 
   @Patch(':id/:estado')
   setEstado(
-    @Param('id', ParseUUIDPipe) id: string, 
-    @Param('estado', ParseBoolPipe) estado: boolean, 
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('estado', ParseBoolPipe) estado: boolean,
     ) {
     return this.routerService.setEstado(id, estado);
   }

@@ -10,7 +10,7 @@ export class ProformaController {
 
   @Post('/clausula')
   create(
-    @Headers('company_id') company_id: Company,
+    @Headers('company-id') company_id: Company,
     @Body() createProformaDto: CreateProformaDto
   ) {
     return this.proformaService.create(createProformaDto, company_id);

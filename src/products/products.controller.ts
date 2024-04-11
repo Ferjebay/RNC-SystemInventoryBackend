@@ -14,7 +14,7 @@ export class ProductsController {
 
   @Post()
   create(
-    @Headers('sucursal_id') sucursal_id: Sucursal,
+    @Headers('sucursal-id') sucursal_id: Sucursal,
     @Body() createProductDto: CreateProductDto
   ) {
     return this.productsService.create(createProductDto, sucursal_id);
@@ -22,7 +22,7 @@ export class ProductsController {
 
   @Get()
   async findAll(
-    @Headers('sucursal_id') sucursal_id: string,
+    @Headers('sucursal-id') sucursal_id: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe ) page: number = 1,
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number = 5,
     @Query('busqueda' ) busqueda: string
@@ -49,7 +49,7 @@ export class ProductsController {
 
   @Get(':term')
   async findOne(
-    @Headers('company_id') company_id: string,
+    @Headers('company-id') company_id: string,
     @Param('term') term: string
   ) {
     return await this.productsService.findOne( term, company_id );
@@ -57,7 +57,7 @@ export class ProductsController {
 
   @Patch(':id')
   async update(
-    @Headers('sucursal_id') sucursal_id: Sucursal,
+    @Headers('sucursal-id') sucursal_id: Sucursal,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProductDto: UpdateProductDto
   ) {

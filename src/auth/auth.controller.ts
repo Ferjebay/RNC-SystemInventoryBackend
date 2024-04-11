@@ -68,8 +68,8 @@ export class AuthController {
   @Get('/users')
   async findAll(
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean,
-    @Headers('company_id') company_id: Company,
-    @Headers('rol_name') rol_name: string,
+    @Headers('company-id') company_id: Company,
+    @Headers('rol-name') rol_name: string,
   ) {
     return await this.authService.findAll( estado, company_id, rol_name );
   }

@@ -25,8 +25,8 @@ export class PagosController {
 
   @Patch(':id')
   update(
-    @Param('id') id: string, 
-    @Headers('sucursal_id') sucursal_id: Sucursal,
+    @Param('id') id: string,
+    @Headers('sucursal-id') sucursal_id: Sucursal,
     @Body() updatePagoDto: UpdatePagoDto
     ) {
     return this.pagosService.update(id, updatePagoDto, sucursal_id);

@@ -42,8 +42,8 @@ export class CompaniesController {
 
   @Get(':estado?')
   async findAll(
-    @Headers('company_id') company_id: Company,
-    @Headers('rol_name') rol_name: string,
+    @Headers('company-id') company_id: Company,
+    @Headers('rol-name') rol_name: string,
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
     return await this.companiesService.findAll( estado, company_id, rol_name );

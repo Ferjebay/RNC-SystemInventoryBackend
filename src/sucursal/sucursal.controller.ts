@@ -17,7 +17,7 @@ export class SucursalController {
 
   @Get(':estado?')
   async findAll(
-    @Headers('company_id') company_id: Company,
+    @Headers('company-id') company_id: Company,
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
     return await this.sucursalService.findAll( estado, company_id );

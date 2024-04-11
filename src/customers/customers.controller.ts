@@ -14,7 +14,7 @@ export class CustomersController {
 
   @Post()
   async create(
-    @Headers('company_id') company_id: Company,
+    @Headers('company-id') company_id: Company,
     @Body() createCustomerDto: CreateServicioDto
   ) {
     return await this.customersService.create(createCustomerDto, company_id);
@@ -22,7 +22,7 @@ export class CustomersController {
 
   @Post('/download-clients-excel/')
   async downloadClientsToExcel(
-    @Headers('company_id') company_id: Company,
+    @Headers('company-id') company_id: Company,
     @Res() res: Response
   ){
     const file = await this.customersService.downloadClientsToExcel( company_id );
@@ -34,7 +34,7 @@ export class CustomersController {
 
   @Post('/create')
   async createCustomer(
-    @Headers('company_id') company_id: Company,
+    @Headers('company-id') company_id: Company,
     @Body() createCustomerDto: CreateCustomerDto
   ) {
     return await this.customersService.createCustomer(createCustomerDto, company_id);
@@ -42,7 +42,7 @@ export class CustomersController {
 
   @Get(':estado?')
   async findAll(
-    @Headers('company_id') company_id: Company,
+    @Headers('company-id') company_id: Company,
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
     return await this.customersService.findAll( estado, company_id );
@@ -61,7 +61,7 @@ export class CustomersController {
   @Patch(':id')
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Headers('company_id') company_id: Company,
+    @Headers('company-id') company_id: Company,
     @Body() updateCustomerDto: UpdateCustomerDto
   ) {
     return await this.customersService.update(id, updateCustomerDto, company_id);

@@ -10,7 +10,7 @@ export class ProvidersController {
 
   @Post()
   async create(
-    @Headers('company_id') company_id: Company,
+    @Headers('company-id') company_id: Company,
     @Body() createProviderDto: CreateProviderDto
   ) {
     return await this.providersService.create(createProviderDto, company_id );
@@ -18,7 +18,7 @@ export class ProvidersController {
 
   @Get(':estado?')
   async findAll(
-    @Headers('company_id') company_id: Company,
+    @Headers('company-id') company_id: Company,
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
     return await this.providersService.findAll( estado, company_id );
@@ -31,7 +31,7 @@ export class ProvidersController {
 
   @Patch(':id')
   async update(
-    @Headers('company_id') company_id: Company,
+    @Headers('company-id') company_id: Company,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateProviderDto: UpdateProviderDto
     ) {

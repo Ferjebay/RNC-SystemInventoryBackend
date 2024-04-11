@@ -16,7 +16,7 @@ export class BuysController {
 
   @Post()
   async create(
-    @Headers('sucursal_id') sucursal_id: Sucursal,
+    @Headers('sucursal-id') sucursal_id: Sucursal,
     @Body() createBuyDto: CreateBuyDto
   ) {
     return await this.buysService.create(createBuyDto, sucursal_id);
@@ -25,7 +25,7 @@ export class BuysController {
   @Get(':estado?')
   async findAll(
     @Headers('tipo') tipo: string | boolean,
-    @Headers('sucursal_id') sucursal_id: Sucursal,
+    @Headers('sucursal-id') sucursal_id: Sucursal,
     @Headers('desde') desde: string,
     @Headers('hasta') hasta: string,
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean

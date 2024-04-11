@@ -11,7 +11,7 @@ export class InvoicesController {
 
   @Post()
   async create(
-    @Headers('sucursal_id') sucursal_id: Sucursal,
+    @Headers('sucursal-id') sucursal_id: Sucursal,
     @Body() createInvoiceDto: CreateInvoiceDto,
   ) {
     return await this.invoicesService.create(createInvoiceDto, sucursal_id);
@@ -22,7 +22,7 @@ export class InvoicesController {
     @Headers('tipo') tipo: string,
     @Headers('desde') desde: string,
     @Headers('hasta') hasta: string,
-    @Headers('sucursal_id') sucursal_id: Sucursal,
+    @Headers('sucursal-id') sucursal_id: Sucursal,
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
     return await this.invoicesService.findAll( estado, tipo, sucursal_id, desde, hasta );
