@@ -18,6 +18,7 @@ export class MessagesWsService {
       this.connectedClients[userId] = {
         socket: client
       };
+
     }
 
     updateStateInvoice( user_id ){
