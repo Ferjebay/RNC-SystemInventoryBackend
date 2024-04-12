@@ -66,14 +66,26 @@ export class EmailService {
     }
 
     if (comprobantes.tipo == 'proforma') {
-      message.subject = `${infoCompany.company_id.razon_social} - le envia su proforma`,
-      message.text    = `${infoCompany.company_id.razon_social} agradece su consulta :)`,
+      message.subject = `${infoCompany.company_id.nombre_comercial} - le envia su proforma`;
+      message.html = `
+      <p>
+        <strong>Estimado(a):</strong> ${ clientFound.nombres } la empresa <strong>${infoCompany.company_id.nombre_comercial}</strong> le ha emitido la siguiente proforma a su nombre
+      </p>`;
       message.attachments = [
         { filename: comprobantes.name, path: comprobantes.buffer }
       ]
     }else{
-      message.subject = `${infoCompany.company_id.razon_social} - Factura Nro. ${ numComprobante }`,
-      message.text    = `${infoCompany.company_id.razon_social} agradece su compra, acontinuación se adjunta su comprobante electronico`,
+      message.subject = `${infoCompany.company_id.nombre_comercial} - Factura Nro. ${ numComprobante }`,
+      message.html = `
+      <p>
+        <strong>Estimado(a):</strong> ${ clientFound.nombres } la empresa <strong>${infoCompany.company_id.nombre_comercial}</strong> le ha emitido la siguiente factura a su nombre:
+      </p>
+      <p>
+       Factura Nro. ${ numComprobante }
+      </p>
+      <p>
+        A continuación adjuntamos el comprobante electrónico en formato XML y PDF
+      </p>`
       message.attachments = [
         { filename: clave_acceso +'.xml', path: comprobantes.xml },
         { filename: clave_acceso +'.pdf', path: comprobantes.pdf }
@@ -83,8 +95,8 @@ export class EmailService {
     const transport = nodemailer.createTransport(config);
 
     try {
-        await transport.sendMail(message);
-        return "Correo Enviado Exitosamente";
+      await transport.sendMail(message);
+      return "Correo Enviado Exitosamente";
     } catch (error) {
       console.log( error );
       if ( error.code == 'EDNS' )

@@ -239,7 +239,7 @@ export class FacturasService {
       }
     };
 
-    const nombreComercial = infoCompany[0].company_id.nombre_comercial.split(' ').join('-');
+    const nombreComercial = infoCompany[0].company_id.ruc;
 
     var xml = builder.create(obj, { encoding: 'UTF-8' }).end({ pretty: true});
 
@@ -608,7 +608,7 @@ export class FacturasService {
     if ( datosFactura.porcentaje_iva == 14 ) codigo_tarifa = 3
     if ( datosFactura.porcentaje_iva == 12 ) codigo_tarifa = 2
 
-    const nombreComercial = infoCompany[0].company_id.nombre_comercial.split(' ').join('-');
+    const nombreComercial = infoCompany[0].company_id.ruc;
 
     const infoTributaria = {
       ambiente:     ( ambiente == 'PRUEBA') ? 1 : 2,
@@ -768,7 +768,8 @@ export class FacturasService {
                     urlPDF: pathPDF,
                     urlXML: pathXML,
                     clave_acceso: claveAcceso,
-                    num_comprobante: numComprobante
+                    num_comprobante: numComprobante,
+                    empresa: infoCompany[0].company_id.nombre_comercial
                   });
                 } catch (error) {
                   console.log( error );
@@ -848,6 +849,8 @@ export class FacturasService {
           empresa: infoCompany[0].company_id.nombre_comercial,
           name_proforma: data.name
         });
+
+        this.messageWsService.updateStateInvoice( datosFactura.user_id );
       }
     } catch (error) {
       console.log("error envio de ws proforma");
@@ -856,7 +859,7 @@ export class FacturasService {
 
   async reeenviarRecepcionComprobantesOffline( datosFactura ){
 
-    const nombreComercial = datosFactura.company_name.split(' ').join('-');
+    const nombreComercial = datosFactura.clave_acceso.slice(10, 23);
 
     let host = ( datosFactura.ambiente === 'PRUEBA')
               ? 'https://celcer.sri.gob.ec'
@@ -1002,7 +1005,7 @@ export class FacturasService {
 
   async reeenviarAutorizacionComprobantesOffline( datosFactura ){
 
-    const nombreComercial = datosFactura.company_name.split(' ').join('-');
+    const nombreComercial = datosFactura.clave_acceso.slice(10, 23);
     let host = ( datosFactura.ambiente === 'PRUEBA') ? 'https://celcer.sri.gob.ec' : 'https://cel.sri.gob.ec';
     const clientFound = await this.customerService.findOne( datosFactura.customer_id );
     const infoCompany = await this.sucursalRepository.find({
@@ -1031,6 +1034,21 @@ export class FacturasService {
       const comprobantes = { xml: pathXML, pdf: pdfBuffer, tipo: 'factura' }
 
       this.emailService.sendComprobantes(clientFound[0], infoCompany[0], datosFactura.num_comprobante, datosFactura.clave_acceso, comprobantes);
+
+      //Enviar mensaje or whatsApp
+      try {
+        await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
+          cliente: clientFound[0].nombres,
+          number: clientFound[0].celular,
+          urlPDF: pdfBuffer,
+          urlXML: pathXML,
+          clave_acceso: datosFactura.clave_acceso,
+          num_comprobante: datosFactura.num_comprobante,
+          empresa: infoCompany[0].company_id.nombre_comercial
+        });
+      } catch (error) {
+        console.log( error );
+      }
     }
 
   }
@@ -1052,7 +1070,7 @@ export class FacturasService {
 
         comprobantes = {  name: name_proforma, buffer: pathPDF, tipo: 'proforma' }
       }else{
-        const nombreComercial = sucursal_id.company_id.nombre_comercial.split(' ').join('-');
+        const nombreComercial = sucursal_id.company_id.ruc;
         pathPDF = path.resolve(__dirname, `../../../static/SRI/PDF/${ clave_acceso }.pdf`);
         pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ clave_acceso }.xml`);
 
@@ -1062,7 +1080,15 @@ export class FacturasService {
       try {
         if (datosFactura.tipo_envio == 'ambas') {
           if (estadoSRI == 'PROFORMA') {
-            await this.emailService.sendComprobantes({ email: datosFactura.email}, sucursal_id, '', '', comprobantes);
+            await this.emailService.sendComprobantes({
+              email: datosFactura.email,
+              nombres: customer_id.nombres
+            },
+            sucursal_id,
+            '',
+            '',
+            comprobantes);
+
             await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes-proforma`, {
               urlPDF: pathPDF,
               number: datosFactura.telefono,
@@ -1072,7 +1098,7 @@ export class FacturasService {
             });
           }else{
             await this.emailService.sendComprobantes(
-              { email: datosFactura.email },
+              { email: datosFactura.email, nombres: customer_id.nombres },
               sucursal_id,
               numero_comprobante,
               clave_acceso,
@@ -1113,10 +1139,21 @@ export class FacturasService {
         }
         if (datosFactura.tipo_envio == 'email') {
           if (estadoSRI == 'PROFORMA') {
-            await this.emailService.sendComprobantes({ email: datosFactura.email}, sucursal_id, '', '', comprobantes);
+            await this.emailService.sendComprobantes({
+              email: datosFactura.email,
+              nombres: customer_id.nombres
+            },
+            sucursal_id,
+            '',
+            '',
+            comprobantes
+          );
           }else{
             await this.emailService.sendComprobantes(
-              { email: datosFactura.email },
+              {
+                email: datosFactura.email,
+                nombres: customer_id.nombres
+              },
               sucursal_id,
               numero_comprobante,
               clave_acceso,

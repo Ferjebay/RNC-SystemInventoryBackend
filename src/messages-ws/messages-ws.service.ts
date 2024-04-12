@@ -12,14 +12,12 @@ export class MessagesWsService {
 
     private connectedClients: ConnetedClients = {}
 
-    async registerClient( client: Socket, userId: string ){
-
+    async registerClient( client: Socket, userId: string ) {
       this.checkUserConnection( userId );
 
       this.connectedClients[userId] = {
         socket: client
       };
-
     }
 
     updateStateInvoice( user_id ){
@@ -31,10 +29,12 @@ export class MessagesWsService {
     }
 
     //VALIDAR ESTO XQ BORRARIA TODOS LOS USUARIOS Y NO ES ASI
-    private checkUserConnection( userId: string ){
-      for (const userId of Object.keys(this.connectedClients)){
-        const connectedClient = this.connectedClients[userId];
-        connectedClient.socket.disconnect();
+    private checkUserConnection( userId: string ) {
+      for (const user_connected of Object.keys(this.connectedClients)){
+        if ( userId == user_connected ) {
+          const connectedClient = this.connectedClients[userId];
+          connectedClient.socket.disconnect();
+        }
       }
     }
 

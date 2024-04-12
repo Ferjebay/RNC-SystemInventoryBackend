@@ -57,7 +57,7 @@ export class InvoicesService {
         const ruta = path.resolve(__dirname, `../../static/SRI/PROFORMAS`);
 
         if(await fs.existsSync(`${ ruta }/${ name_proforma }`))
-            await fs.unlinkSync(`${ ruta }/${ name_proforma }`)
+          await fs.unlinkSync(`${ ruta }/${ name_proforma }`)
 
         await this.facturaService.generarProforma(
           createInvoiceDto,
@@ -220,7 +220,7 @@ export class InvoicesService {
 
   async downloadRideXml( clave_acceso: string, tipo_documento: string, razon_social: string ) {
 
-    const nombreComercial = razon_social.split(' ').join('-');
+    const nombreComercial = clave_acceso.slice(10, 23);
 
     try {
 

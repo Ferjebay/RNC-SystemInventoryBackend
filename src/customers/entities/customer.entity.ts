@@ -32,7 +32,7 @@ export class Customer {
     @Column({ type: 'varchar' })
     numero_documento: string;
 
-    @Column({ type: 'varchar', length: 10 })
+    @Column({ type: 'varchar', nullable: true })
     celular: string;
 
     @Column({ type: 'varchar', length: 75 })
