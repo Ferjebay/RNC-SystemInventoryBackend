@@ -55,9 +55,15 @@ export class Sucursal {
     @Column({ type: 'int', nullable: true, default: 1 })
     secuencia_nota_credito_pruebas?: number;
 
+    @Column({ type: 'int', nullable: true, default: 1 })
+    secuencia_retencion_produccion: number;
+
+    @Column({ type: 'int', nullable: true, default: 1 })
+    secuencia_retencion_pruebas?: number;
+
     @Column({ type: 'enum',  enum: ["PRODUCCION", "PRUEBA"], default: 'PRUEBA' })
     ambiente: EnviromentType;
-    
+
     @Column({ type: 'bool', default: true })
     isActive: boolean;
 
