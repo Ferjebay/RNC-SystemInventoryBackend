@@ -6,12 +6,19 @@ import { CustomersModule } from 'src/customers/customers.module';
 import { InvoicesModule } from 'src/invoices/invoices.module';
 import { EmailModule } from 'src/email/email.module';
 import { MessagesWsModule } from '../../messages-ws/messages-ws.module';
-import { CompaniesModule } from 'src/companies/companies.module';
+import { RetencionesModule } from '../retenciones/retenciones.module';
 
 @Module({
   controllers: [FacturasController],
   providers: [FacturasService],
-  imports: [ SucursalModule, CustomersModule, EmailModule, MessagesWsModule,forwardRef(() => InvoicesModule) ],
+  imports: [
+    SucursalModule,
+    CustomersModule,
+    EmailModule,
+    MessagesWsModule,
+    forwardRef(() => InvoicesModule),
+    forwardRef(() => RetencionesModule)
+  ],
   exports: [ FacturasService ]
 })
 export class FacturasModule {}

@@ -1,5 +1,6 @@
 import { Buy } from "src/buys/entities/buy.entity";
 import { Company } from "src/companies/entities/company.entity";
+import { Retencion } from "src/comprobantes-electronicos/retenciones/entities/retencione.entity";
 import { Invoice } from "src/invoices/entities/invoice.entity";
 import { BeforeInsert, BeforeUpdate, Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
@@ -11,6 +12,9 @@ export class User {
 
     @OneToMany(() => Invoice, (invoice) => invoice.user_id)
     invoices: Invoice[]
+
+    @OneToMany(() => Retencion, (retencion) => retencion.user_id)
+    retenciones: Retencion[]
 
     @OneToMany(() => Buy, (buy) => buy.user_id)
     buys: Buy[]

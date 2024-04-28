@@ -75,6 +75,6 @@ export class InvoicesController {
 
   @Delete(':id')
   async remove(@Param('id') id: string) {
-    return await this.invoicesService.remove(+id);
+    return await this.invoicesService.remove(id);
   }
 }

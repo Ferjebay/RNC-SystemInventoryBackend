@@ -10,8 +10,11 @@ import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 
 @Module({
   controllers: [InvoicesController],
-  providers: [InvoicesService],
-  imports: [ TypeOrmModule.forFeature([ Invoice, InvoiceToProduct, Sucursal ]), forwardRef(() => FacturasModule) ],
-  exports: [ InvoicesService ]
+  imports: [
+    TypeOrmModule.forFeature([ Invoice, InvoiceToProduct, Sucursal ]),
+    forwardRef(() => FacturasModule)
+  ],
+  exports: [ InvoicesService ],
+  providers: [InvoicesService]
 })
 export class InvoicesModule {}

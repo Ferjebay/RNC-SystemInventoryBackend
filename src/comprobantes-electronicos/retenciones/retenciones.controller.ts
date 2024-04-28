@@ -14,6 +14,13 @@ export class RetencionesController {
     return this.retencionesService.getNumComprobante( sucursal_id );
   }
 
+  @Post('generar-retencion')
+  anularFactura(
+    @Body() retencion: any
+  ) {
+    return this.retencionesService.generarRetencion( retencion );
+  }
+
   @Post()
   create(@Body() createRetencioneDto: CreateRetencioneDto) {
     return this.retencionesService.create(createRetencioneDto);

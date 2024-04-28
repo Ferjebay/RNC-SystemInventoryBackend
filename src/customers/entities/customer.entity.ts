@@ -3,6 +3,7 @@ import { Invoice } from "src/invoices/entities/invoice.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { FacturaCliente } from './Facturacion.entity';
 import { ServicioCliente } from "./ServicioCliente.entity";
+import { Retencion } from "src/comprobantes-electronicos/retenciones/entities/retencione.entity";
 
 @Entity('customers')
 export class Customer {
@@ -18,6 +19,9 @@ export class Customer {
 
     @OneToMany(() => Invoice, (invoice) => invoice.customer_id)
     invoices: Invoice[];
+
+    @OneToMany(() => Retencion, (retencion) => retencion.customer_id)
+    retenciones: Retencion[];
 
     @ManyToOne(() => Company, (company) => company.customer)
     @JoinColumn({ name: 'company_id' })

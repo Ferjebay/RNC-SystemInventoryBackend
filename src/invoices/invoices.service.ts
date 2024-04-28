@@ -84,6 +84,7 @@ export class InvoicesService {
             numero_comprobante: createInvoiceDto.tipo == 'PROFORMA' ? '--- --- ---------' : numComprobante,
             estadoSRI: createInvoiceDto.tipo == 'PROFORMA' ? 'PROFORMA' : 'PENDIENTE'
           }
+
           invoiceCreated = await this.invoiceRepository.save( invoiceEntity );
 
           const pivot: Array<InvoiceToProduct> = [];
@@ -275,8 +276,11 @@ export class InvoicesService {
     }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} invoice`;
+  async remove(id: string) {
+    const pivot = await this.tablePivotRepository.find({ where: { invoice_id: { id } } });
+    await this.tablePivotRepository.remove( pivot );
+
+    return await this.invoiceRepository.delete( id );
   }
 
   private handleDBExceptions( error: any ) {

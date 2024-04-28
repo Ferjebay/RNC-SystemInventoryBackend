@@ -42,13 +42,13 @@ export class Factura {
 
             <div class="col-6">
               <div class="mt-3 d-flex justify-content-center">
-                <img src="${ pathImage }" style="width: auto;max-height: 105px;" class="rounded">
+                <img src="${ pathImage }" style="width: auto;max-height: 117px;" class="rounded">
               </div>
               <div class="mt-1 backColor pt-1" style="padding-bottom: 40px;">
                 <div style="padding-left: 13px">
                   <label class="d-block pt-3">
                     <span class="fw-bolder">Emisor:</span>
-                    ${ infoCompany.company_id.razon_social }
+                    ${ infoCompany.company_id.nombre_comercial }
                   </label>
                   <label class="d-block pt-2">
                     <span class="fw-bolder">RUC:</span>
@@ -344,7 +344,7 @@ export class Factura {
 
       let imageName;
       if(infoCompany.company_id.logo == null || infoCompany.company_id.logo == 'null')
-        imageName = 'default.jpg'
+        imageName = 'default.png'
       else imageName =  infoCompany.company_id.logo
 
       const pathImage = `${process.env.HOST_API}/images/${ imageName }`;

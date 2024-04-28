@@ -17,6 +17,7 @@ import { MessagesWsService } from 'src/messages-ws/messages-ws.service';
 import { Proforma } from '../plantillas/proforma';
 import { Factura } from '../plantillas/factura';
 import { Pago } from 'src/pagos/entities/pago.entity';
+import { RetencionesService } from '../retenciones/retenciones.service';
 
 @Injectable()
 export class FacturasService {
@@ -24,8 +25,13 @@ export class FacturasService {
   constructor(
     @InjectRepository( Sucursal )
     private readonly sucursalRepository: Repository<Sucursal>,
+
     @Inject(forwardRef(() => InvoicesService))
     private invoiceService: InvoicesService,
+
+    @Inject(forwardRef(() => RetencionesService))
+    private retencionService: RetencionesService,
+
     private readonly customerService: CustomersService,
     private readonly emailService: EmailService,
     private readonly messageWsService: MessagesWsService,
@@ -57,15 +63,20 @@ export class FacturasService {
     return await fs.readFileSync(pathPDF);
   }
 
-  async getNumComprobante( sucursal_id: any, tipo: string = 'factura' ){
+  async getNumComprobante( sucursal_id: any, tipo: string = 'factura' ) {
     let query;
     if ( tipo == 'factura' ) {
       query = `CASE
                   WHEN (ambiente = 'PRODUCCION') THEN sucursal.secuencia_factura_produccion
                   ELSE sucursal.secuencia_factura_pruebas
               END`
-    }else{
+    }else if(tipo == 'retencion'){
         query = `CASE
+                  WHEN (ambiente = 'PRODUCCION') THEN sucursal.secuencia_retencion_produccion
+                  ELSE sucursal.secuencia_retencion_pruebas
+                END`
+    }else{
+      query = `CASE
                   WHEN (ambiente = 'PRODUCCION') THEN sucursal.secuencia_nota_credito_produccion
                   ELSE sucursal.secuencia_nota_credito_pruebas
                 END`
@@ -102,15 +113,19 @@ export class FacturasService {
     const puntoEmision          = numComprobante.split('-')[1];
     const secuencia             = numComprobante.split('-')[2];
 
+    let codDoc;
+    if (tipo == 'factura') codDoc = '01'
+    else if (tipo == 'retencion') codDoc = '07'
+    else codDoc = '07'
+
     const fechaEmision    = moment().format('DDMMYYYY');
-    const tipoComprobante = tipo == 'factura' ? '01' : '04';
     const ruc             = infoCompany[0].company_id.ruc
     const ambiente        = infoCompany[0].ambiente === 'PRUEBA' ? '1' : '2' ;
     const serie           = codigoEstablecimiento + '' + puntoEmision;
     const codigoNumerico  = Date.now().toString(10).substring(5);
     const tipoEmision     = '1' //Emision Normal
 
-    let claveAcceso = fechaEmision + tipoComprobante + ruc + ambiente + serie + secuencia + codigoNumerico + tipoEmision;
+    let claveAcceso = fechaEmision + codDoc + ruc + ambiente + serie + secuencia + codigoNumerico + tipoEmision;
 
     const digitoVerificador = this.calcularDigitoVerificadorMod11( claveAcceso );
 
@@ -171,26 +186,26 @@ export class FacturasService {
     if ( datosFactura.porcentaje_iva == 12 ) codigo_tarifa = 2
 
     const infoNotaCredito = {
-        fechaEmision:                moment().format('DD/MM/YYYY'),
-        dirEstablecimiento:          datosFactura.sucursal_id.direccion,
-        tipoIdentificacionComprador: datosFactura.customer_id.tipo_documento,
-        razonSocialComprador:        datosFactura.customer_id.nombres,
-        identificacionComprador:     datosFactura.customer_id.numero_documento,
-        codDocModificado:            '01', //Factura
-        numDocModificado:            datosFactura.numero_comprobante,
-        fechaEmisionDocSustento:     datosFactura.created_at.split(' ')[0],
-        totalSinImpuestos:           ( parseFloat(datosFactura.subtotal) - parseFloat(datosFactura.descuento) ).toFixed(2),
-        valorModificacion:           datosFactura.total,
-        moneda:                      'DOLAR',
-        totalConImpuestos: {
-          totalImpuesto: {
-            codigo: 2,  //IVA
-            codigoPorcentaje: parseFloat(datosFactura.iva) > 0 ? codigo_tarifa : 0,
-            baseImponible: parseFloat(datosFactura.iva) > 0 ? parseFloat(sumaPrecioTotalSinImpuesto.toString()).toFixed(2) : datosFactura.total,
-            valor: datosFactura.iva ? datosFactura.iva : (0).toFixed(2)
-          }
-        },
-        motivo: 'DEVOLUCION'
+      fechaEmision:                moment().format('DD/MM/YYYY'),
+      dirEstablecimiento:          datosFactura.sucursal_id.direccion,
+      tipoIdentificacionComprador: datosFactura.customer_id.tipo_documento,
+      razonSocialComprador:        datosFactura.customer_id.nombres,
+      identificacionComprador:     datosFactura.customer_id.numero_documento,
+      codDocModificado:            '01', //Factura
+      numDocModificado:            datosFactura.numero_comprobante,
+      fechaEmisionDocSustento:     datosFactura.created_at.split(' ')[0],
+      totalSinImpuestos:           ( parseFloat(datosFactura.subtotal) - parseFloat(datosFactura.descuento) ).toFixed(2),
+      valorModificacion:           datosFactura.total,
+      moneda:                      'DOLAR',
+      totalConImpuestos: {
+        totalImpuesto: {
+          codigo: 2,  //IVA
+          codigoPorcentaje: parseFloat(datosFactura.iva) > 0 ? codigo_tarifa : 0,
+          baseImponible: parseFloat(datosFactura.iva) > 0 ? parseFloat(sumaPrecioTotalSinImpuesto.toString()).toFixed(2) : datosFactura.total,
+          valor: datosFactura.iva ? datosFactura.iva : (0).toFixed(2)
+        }
+      },
+      motivo: 'DEVOLUCION'
     };
 
     const detalle = []
@@ -318,12 +333,19 @@ export class FacturasService {
   ): Promise<boolean>{
     return new Promise(async (resolve, reject) => {
       let signedXml = null;
+      let name_folder;
+
 
       try {
-        const xmlOut = await fs.readFileSync(`${ pathXML }/${ tipo == 'factura' ? 'facturas' : 'notasCreditos' }/Firmados/${ claveAcceso }.xml`);
-          signedXml = xmlOut.toString('base64');
+
+        if (tipo == 'factura') name_folder = 'facturas';
+        else if (tipo == 'retencion') name_folder = 'retenciones';
+        else name_folder = 'notasCreditos'
+
+        const xmlOut = await fs.readFileSync(`${ pathXML }/${ name_folder }/Firmados/${ claveAcceso }.xml`);
+        signedXml = xmlOut.toString('base64');
       } catch (err) {
-          console.log('error firma: ', err)
+        console.log('error firma: ', err)
       }
 
       var config = {
@@ -350,6 +372,7 @@ export class FacturasService {
         resp = await axios(config);
         // throw new Error('Algo salió mal');
       } catch (err) {
+
         console.log('error axio:', err)
 
         if ( entity == 'Pagos' ){
@@ -360,12 +383,17 @@ export class FacturasService {
           })
           await queryRunner.release()
         }else{
-          let options: any = { estadoSRI: `ERROR ENVIO RECEPCION ${ tipo == 'nota_credito' ? '- ANULACION' : ''}` }
+          if ( tipo == 'factura' || tipo == 'nota_credito' ) {
+            let options: any = { estadoSRI: `ERROR ENVIO RECEPCION ${ tipo == 'nota_credito' ? '- ANULACION' : ''}` }
 
-          if ( tipo == 'factura' ) options.clave_acceso = claveAcceso
-          if ( tipo == 'nota_credito' ) options.clave_acceso_nota_credito = claveAcceso
+            if ( tipo == 'factura' ) options.clave_acceso = claveAcceso
+            if ( tipo == 'nota_credito' ) options.clave_acceso_nota_credito = claveAcceso
 
-          await this.invoiceService.update( entity_id, options);
+            await this.invoiceService.update( entity_id, options);
+          }
+
+          if ( tipo == 'retencion' )
+            await this.retencionService.update( entity_id, { estadoSRI: 'ERROR ENVIO RECEPCION RETENCION' } );
         }
 
         this.messageWsService.updateStateInvoice( user_id );
@@ -374,6 +402,7 @@ export class FacturasService {
 
       //-------------------------- Leer xml de respuesta del SRI ------------------------------
       if (resp !== null && resp.status === 200) {
+
         const parser = new XMLParser();
         const jObj = parser.parse( resp.data );
 
@@ -392,27 +421,29 @@ export class FacturasService {
             estadoSRI: `${ tipo == 'nota_credito' ? 'ANULACION -' : '' } ${ estado }`
           };
 
-          if ( tipo == 'factura' )
-            options.clave_acceso = claveAcceso
-          if ( tipo == 'nota_credito' )
-            options.clave_acceso_nota_credito = claveAcceso
+          if ( tipo == 'factura' || tipo == 'nota_credito' ) {
+            if ( tipo == 'factura' ) options.clave_acceso = claveAcceso
+            if ( tipo == 'nota_credito' ) options.clave_acceso_nota_credito = claveAcceso
 
-          await this.invoiceService.update( entity_id, options)
+            await this.invoiceService.update( entity_id, options)
+          }
+
+          if ( tipo == 'retencion' )
+            await this.retencionService.update( entity_id, { estadoSRI: `RETENCION ${ estado }` } )
         }
 
         if ('DEVUELTA' === estado) {
             const comprobantes = jObj['soap:Envelope']['soap:Body']['ns2:validarComprobanteResponse']['RespuestaRecepcionComprobante']['comprobantes'];
 
             try {
-              const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/${ tipo == 'nota_credito' ? 'notasCreditos' : 'facturas' }/Devueltos/${ claveAcceso }.xml`);
+              const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/${ name_folder }/Devueltos/${ claveAcceso }.xml`);
 
-              console.log( resp.data );
-              const respuestaSRI = xml.substring(0, xml.length - 10) + '\n \t' + JSON.stringify(resp.data) + `\n \n</${ tipo == 'nota_credito' ? 'notasCredito' : 'factura' }>`;
+              const respuestaSRI = xml.substring(0, xml.length - 10) + '\n \t' + JSON.stringify(resp.data) + `\n \n</${ name_folder }>`;
 
               await fs.mkdirSync(path.dirname(pathXML), {recursive: true, })
               await fs.writeFileSync(pathXML, respuestaSRI, {flag: 'w+', encoding: 'utf-8'});
             } catch (err) {
-                console.log(err)
+              console.log(err);
             }
 
             const mensaje = comprobantes.comprobante.mensajes.mensaje;
@@ -426,26 +457,31 @@ export class FacturasService {
               await queryRunner.manager.update(Pago, entity_id, { respuestaSRI })
               await queryRunner.release()
             }else{
-              let option: any = {
-                respuestaSRI
+              let option: any = { respuestaSRI }
+
+              if ( tipo == 'factura' || tipo == 'nota_credito' ) {
+                if (num_comprobante.length !== 0)
+                  option.numero_comprobante = num_comprobante
+
+                if ( tipo == 'factura' )
+                  option.clave_acceso = claveAcceso
+                if ( tipo == 'nota_credito' )
+                  option.clave_acceso_nota_credito = claveAcceso
+
+                await this.invoiceService.update( entity_id, option)
               }
 
-              if (num_comprobante.length !== 0)
-                option.numero_comprobante = num_comprobante
-
-              if ( tipo == 'factura' )
-                option.clave_acceso = claveAcceso
-              if ( tipo == 'nota_credito' )
-                option.clave_acceso_nota_credito = claveAcceso
-
-              await this.invoiceService.update( entity_id, option)
+              if ( tipo == 'retencion' )
+                await this.retencionService.update( entity_id, option )
             }
 
             this.messageWsService.updateStateInvoice( user_id );
             reject( false );
         }
 
-        await this.invoiceService.update( entity_id, { numero_comprobante: num_comprobante })
+        if ( tipo == 'factura' || tipo == 'nota_credito' )
+          await this.invoiceService.update( entity_id, { numero_comprobante: num_comprobante })
+
         resolve( true )
       }
     });
@@ -477,6 +513,11 @@ export class FacturasService {
       };
 
       let resp = null;
+      let name_folder;
+
+      if (tipo == 'factura') name_folder = 'facturas';
+      else if (tipo == 'retencion') name_folder = 'retenciones';
+      else name_folder = 'notasCreditos'
 
       try {
         resp = await axios(config);
@@ -492,18 +533,20 @@ export class FacturasService {
           })
           await queryRunner.release()
         }else{
-          await this.invoiceService.update( invoice_id, {
-            estadoSRI: `ERROR ENVIO AUTORIZACION ${ tipo == 'nota_credito' ? '- ANULACION' : '' }`
-          });
+          if ( tipo == 'factura' || tipo == 'nota_credito' )
+            await this.invoiceService.update( invoice_id, {
+              estadoSRI: `ERROR ENVIO AUTORIZACION ${ tipo == 'nota_credito' ? '- ANULACION' : '' }`
+            });
+
+          if( tipo == 'retencion' )
+            await this.retencionService.update( invoice_id, { estadoSRI: 'ERROR ENVIO AUTORIZACION RETENCION' } );
         }
         this.messageWsService.updateStateInvoice( user_id );
         reject( false );
       }
 
       if (resp !== null && resp.status === 200) {
-
         try {
-
           const parser = new XMLParser();
           const jObj = parser.parse(resp.data);
 
@@ -521,10 +564,10 @@ export class FacturasService {
 
           if (tipo == 'nota_credito' && estado == 'AUTORIZADO') estado = 'ANULADO';
 
-          const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/${ tipo == 'factura' ? 'facturas' : 'notasCreditos' }/${ directorio }/${ accessKey }.xml`);
+          const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/${ name_folder }/${ directorio }/${ accessKey }.xml`);
 
-          await fs.mkdirSync(path.dirname(pathXML), {recursive: true, })
-          await fs.writeFileSync(pathXML, resp.data, {flag: 'w+', encoding: 'utf-8'});
+          await fs.mkdirSync(path.dirname(pathXML), { recursive: true })
+          await fs.writeFileSync(pathXML, resp.data, { flag: 'w+', encoding: 'utf-8' });
 
           if ( entity == 'Pagos' ){
             const queryRunner = this.dataSource.createQueryRunner();
@@ -537,10 +580,17 @@ export class FacturasService {
             })
             await queryRunner.release()
           }else{
-            await this.invoiceService.update( invoice_id, {
-              estadoSRI: estado.trim(),
-              respuestaSRI
-            });
+            if ( tipo == 'factura' || tipo == 'nota_credito' )
+              await this.invoiceService.update( invoice_id, {
+                estadoSRI: estado.trim(),
+                respuestaSRI
+              });
+
+            if ( tipo == 'retencion' )
+              await this.retencionService.update( invoice_id, {
+                estadoSRI: estado.trim(),
+                respuestaSRI
+              });
           }
 
           if ( estado == 'AUTORIZADO' || estado == 'ANULADO'){
@@ -704,7 +754,7 @@ export class FacturasService {
         infoTributaria: infoTributaria,
         infoFactura: infoFactura,
         detalles: {
-            detalle: detalle
+          detalle: detalle
         },
         infoAdicional: {
           campoAdicional
@@ -751,8 +801,10 @@ export class FacturasService {
 
           if( autorizado ) {
             if (clientFound[0].nombres !== 'CONSUMIDOR FINAL') {
+
               const factura = new Factura();
               const pathPDF = await factura.generarFacturaPDF( claveAcceso, infoCompany[0], numComprobante, clientFound[0], datosFactura, datosFactura.porcentaje_iva);
+
               const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ claveAcceso }.xml`);
 
               const comprobantes = { xml: pathXML, pdf: pathPDF, tipo: 'factura' }
@@ -810,7 +862,9 @@ export class FacturasService {
     } catch (err) {
       if (entity_id != '')
         await this.invoiceService.update( entity_id, { estadoSRI: 'NO SE ENCONTRO LA FIRMA' });
+
       console.log('error firma: ', err)
+
       return false;
     }
     //------------------------------------------------------------------------------------
