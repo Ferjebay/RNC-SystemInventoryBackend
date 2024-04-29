@@ -402,7 +402,7 @@ export class Proforma {
 
     let imageName;
     if(infoCompany[0].company_id.logo == null || infoCompany[0].company_id.logo == 'null')
-      imageName = 'default.png'
+      imageName = 'default.jpg'
     else imageName =  infoCompany[0].company_id.logo
 
     const pathImage = `${process.env.HOST_API}/images/${ imageName }`;
