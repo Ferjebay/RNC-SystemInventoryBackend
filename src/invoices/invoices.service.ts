@@ -232,6 +232,9 @@ export class InvoicesService {
       if ( tipo_documento == 'ride' )
         ruta = path.resolve(__dirname, `../../static/SRI/PDF/${ clave_acceso }.pdf`);
 
+      if ( tipo_documento == 'proforma' )
+        ruta = path.resolve(__dirname, `../../static/SRI/PROFORMAS/${ clave_acceso }`);
+
       const file = await fs.readFileSync(ruta);
 
       return file;

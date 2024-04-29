@@ -896,6 +896,9 @@ export class FacturasService {
     try {
       if (send_messages) {
         await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], '', '', data);
+
+        this.messageWsService.updateStateInvoice( datosFactura.user_id );
+
         await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes-proforma`, {
           urlPDF: data.buffer,
           number: clientFound[0].celular,
@@ -903,8 +906,6 @@ export class FacturasService {
           empresa: infoCompany[0].company_id.nombre_comercial,
           name_proforma: data.name
         });
-
-        this.messageWsService.updateStateInvoice( datosFactura.user_id );
       }
     } catch (error) {
       console.log("error envio de ws proforma");
