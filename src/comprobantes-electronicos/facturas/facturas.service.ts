@@ -638,6 +638,7 @@ export class FacturasService {
         direccion: true,
         ambiente: true,
         company_id: {
+          id: true,
           ruc: true,
           razon_social: true,
           direccion_matriz: true,
@@ -810,10 +811,12 @@ export class FacturasService {
               const comprobantes = { xml: pathXML, pdf: pathPDF, tipo: 'factura' }
 
               if ( send_messages ) {
-                await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);
 
-                //Enviar mensaje or whatsApp
                 try {
+
+                  await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);
+
+                  //Enviar mensaje or whatsApp
                   await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
                     cliente: clientFound[0].nombres,
                     number: clientFound[0].celular,
@@ -821,8 +824,10 @@ export class FacturasService {
                     urlXML: pathXML,
                     clave_acceso: claveAcceso,
                     num_comprobante: numComprobante,
-                    empresa: infoCompany[0].company_id.nombre_comercial
+                    empresa: infoCompany[0].company_id.nombre_comercial,
+                    telefono: infoCompany[0].company_id.telefono
                   });
+
                 } catch (error) {
                   console.log( error );
                 }
@@ -876,6 +881,7 @@ export class FacturasService {
       relations: { company_id: { proforma: true } },
       select: {
         company_id: {
+          id: true,
           ruc: true,
           razon_social: true,
           direccion_matriz: true,
@@ -902,6 +908,7 @@ export class FacturasService {
         await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes-proforma`, {
           urlPDF: data.buffer,
           number: clientFound[0].celular,
+          telefono: infoCompany[0].company_id.telefono,
           cliente: clientFound[0].nombres,
           empresa: infoCompany[0].company_id.nombre_comercial,
           name_proforma: data.name
@@ -1146,7 +1153,8 @@ export class FacturasService {
 
             await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes-proforma`, {
               urlPDF: pathPDF,
-              number: datosFactura.telefono,
+              number: datosFactura.number,
+              telefono: datosFactura.telefono,
               cliente: customer_id.nombres,
               empresa: sucursal_id.company_id.nombre_comercial,
               name_proforma: name_proforma
@@ -1161,7 +1169,8 @@ export class FacturasService {
             );
             await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
               cliente: customer_id.nombres,
-              number: datosFactura.telefono,
+              number: datosFactura.number,
+              telefono: datosFactura.telefono,
               urlPDF: pathPDF,
               urlXML: pathXML,
               clave_acceso: clave_acceso,
@@ -1175,7 +1184,8 @@ export class FacturasService {
           if (estadoSRI == 'PROFORMA') {
             await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes-proforma`, {
               urlPDF: pathPDF,
-              number: datosFactura.telefono,
+              number: datosFactura.number,
+              telefono: datosFactura.telefono,
               cliente: customer_id.nombres,
               empresa: sucursal_id.company_id.nombre_comercial,
               name_proforma: name_proforma
@@ -1183,7 +1193,8 @@ export class FacturasService {
           }else{
             await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
               cliente: customer_id.nombres,
-              number: datosFactura.telefono,
+              number: datosFactura.number,
+              telefono: datosFactura.telefono,
               urlPDF: pathPDF,
               urlXML: pathXML,
               clave_acceso: clave_acceso,
@@ -1217,6 +1228,7 @@ export class FacturasService {
           }
         }
       } catch (error) {
+        // console.log(error);
         if(error.response.data == 'error ws'){
           throw new BadRequestException('Fallo al enviar mensaje por WhatsApp');
         }else{

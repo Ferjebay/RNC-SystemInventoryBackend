@@ -344,7 +344,7 @@ export class Factura {
 
       let imageName;
       if(infoCompany.company_id.logo == null || infoCompany.company_id.logo == 'null')
-        imageName = 'default.png'
+        imageName = 'default.jpg'
       else imageName =  infoCompany.company_id.logo
 
       const pathImage = `${process.env.HOST_API}/images/${ imageName }`;

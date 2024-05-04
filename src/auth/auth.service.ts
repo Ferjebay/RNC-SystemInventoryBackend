@@ -136,7 +136,8 @@ export class AuthService {
           id: true,
           nombre_comercial: true,
           razon_social: true,
-          sucursal: { id: true }
+          sucursal: { id: true },
+          telefono: true
         },
         sucursales: true,
         roles: true,

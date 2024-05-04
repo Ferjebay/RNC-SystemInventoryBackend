@@ -48,6 +48,7 @@ export class EmailService {
   }
 
   async sendComprobantes( clientFound, infoCompany, numComprobante = '', clave_acceso = '', comprobantes ) {
+
     const { host, usuario, puerto, password } = await this.findOne( infoCompany.company_id.id );
 
     const config = {

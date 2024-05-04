@@ -51,7 +51,7 @@ export class Company {
     @Column({ type: 'varchar', length: 100 })
     email: string;
 
-    @Column({ type: 'varchar', default: 15 })
+    @Column({ type: 'varchar', default: 15, nullable: true })
     telefono: string;
 
     @Column({ type: 'char', nullable: true })
