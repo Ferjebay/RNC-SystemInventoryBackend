@@ -825,7 +825,7 @@ export class FacturasService {
                     clave_acceso: claveAcceso,
                     num_comprobante: numComprobante,
                     empresa: infoCompany[0].company_id.nombre_comercial,
-                    telefono: infoCompany[0].company_id.telefono
+                    telefono: this.convertirFormatoTelefono(infoCompany[0].company_id.telefono)
                   });
 
                 } catch (error) {
@@ -838,7 +838,19 @@ export class FacturasService {
         }, 2900)
       }
     }
+  }
 
+  convertirFormatoTelefono(numero) {
+    if (numero.startsWith('593')) {
+      return numero;
+    } else {
+      numero = numero.replace(/\s/g, '').replace(/-/g, '');
+
+      if (numero.startsWith('0'))
+        return '593' + numero.substring(1);
+      else
+        return '593' + numero;
+    }
   }
 
   async crearAndFirmarXML(xml, nombreComercial, claveAcceso, company_id, tipo_comprobante, entity_id = ''){
@@ -908,7 +920,7 @@ export class FacturasService {
         await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes-proforma`, {
           urlPDF: data.buffer,
           number: clientFound[0].celular,
-          telefono: infoCompany[0].company_id.telefono,
+          telefono: this.convertirFormatoTelefono(infoCompany[0].company_id.telefono),
           cliente: clientFound[0].nombres,
           empresa: infoCompany[0].company_id.nombre_comercial,
           name_proforma: data.name

@@ -88,8 +88,8 @@ export class EmailService {
         A continuación adjuntamos el comprobante electrónico en formato XML y PDF
       </p>`
       message.attachments = [
-        { filename: clave_acceso +'.xml', path: comprobantes.xml },
-        { filename: clave_acceso +'.pdf', path: comprobantes.pdf }
+        { filename: numComprobante +'.xml', path: comprobantes.xml },
+        { filename: numComprobante +'.pdf', path: comprobantes.pdf }
       ]
     }
 
