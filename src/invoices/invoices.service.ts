@@ -135,6 +135,17 @@ export class InvoicesService {
     }
   }
 
+  async contarTotalProforma( sucursal_id ){
+    const proformas = await this.invoiceRepository.find({
+      where: {
+        sucursal_id: { id: sucursal_id },
+        estadoSRI: 'PROFORMA'
+      }
+    })
+
+    return proformas.length + 1;
+  }
+
   async getVentas(estado: boolean, tipo: string, sucursal_id: Sucursal, desde, hasta){
     try {
       let inicio, fin;

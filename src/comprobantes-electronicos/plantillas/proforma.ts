@@ -89,9 +89,9 @@ export class Proforma {
                 </li>
                 <li>RUC: ${ infoCompany.company_id.ruc }</li>
                 <li>${ infoCompany.company_id.direccion_matriz }</li>
-                <li>Guayaquil - Ecuador</li>
                 <li>Tel: ${ infoCompany.company_id.telefono }</li>
                 <li>${ infoCompany.company_id.email }</li>
+                <li>${ infoCompany.company_id.ciudad } - ECUADOR</li>
               </ul>
             </div>
 
@@ -365,7 +365,9 @@ export class Proforma {
                   <br>
                     <div class="dotted-line"></div>
                     <p>Firma del Prestador</p>
-                    <p>${ infoCompany.company_id.razon_social }</p>
+                    <p style="font-size: 16px">
+                      ${ infoCompany.company_id.razon_social }
+                    </p>
                   </div>
                   <!-- Firma a la derecha -->
                   <div class="col-md-6 signature-column">
@@ -397,8 +399,9 @@ export class Proforma {
   }
 
   async generarProformaPDF( ...data ) {
-    const name = Date.now().toString(10).substring(5);
-    const [ datosFactura, clientFound, infoCompany ] = data;
+    const [ datosFactura, clientFound, infoCompany, total_proforma ] = data;
+
+    const name_proforma = `proforma-${ total_proforma }.pdf`
 
     let imageName;
     if(infoCompany[0].company_id.logo == null || infoCompany[0].company_id.logo == 'null')
@@ -407,7 +410,7 @@ export class Proforma {
 
     const pathImage = `${process.env.HOST_API}/images/${ imageName }`;
 
-    const content = this.plantilla( datosFactura, clientFound[0], infoCompany[0], pathImage, name );
+    const content = this.plantilla( datosFactura, clientFound[0], infoCompany[0], pathImage, total_proforma );
 
     let browser;
     if (process.env.SISTEMA == 'linux') {
@@ -432,8 +435,6 @@ export class Proforma {
     })
 
     await browser.close();
-    const name_proforma = `proforma-${ name }.pdf`
-
     const pathPDF = path.resolve(__dirname, `../../../static/SRI/PROFORMAS/${ name_proforma }`);
 
     writeFile(pathPDF, pdf, {}, (err) => {

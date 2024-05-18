@@ -66,6 +66,12 @@ export class Company {
     @Column({ type: 'varchar', length: 300 })
     clave_certificado: string;
 
+    @Column({ type: 'varchar', length: 75, nullable: true })
+    provincia: string;
+
+    @Column({ type: 'varchar', length: 75, nullable: true })
+    ciudad: string;
+
     @Column({ type: 'varchar', default: null })
     archivo_certificado: string;
 

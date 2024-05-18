@@ -900,14 +900,23 @@ export class FacturasService {
           nombre_comercial: true,
           telefono: true,
           email: true,
-          logo: true
+          logo: true,
+          ciudad: true
         }
       },
       where: { id: sucursal_id }
     });
 
+    const total_proforma = await this.invoiceService.contarTotalProforma( sucursal_id );
+
     const proforma = new Proforma()
-    const data = await proforma.generarProformaPDF(datosFactura, clientFound, infoCompany);
+
+    const data = await proforma.generarProformaPDF(
+      datosFactura,
+      clientFound,
+      infoCompany,
+      total_proforma
+    );
 
     await this.invoiceService.update( invoice_id, { name_proforma: data.name });
 

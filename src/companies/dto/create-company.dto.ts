@@ -23,6 +23,14 @@ export class CreateCompanyDto {
     @MaxLength(13)
     ruc: string;
 
+    @IsString()
+    @IsNotEmpty()
+    provincia: string
+
+    @IsString()
+    @IsNotEmpty()
+    ciudad: string
+
     @IsOptional()
     @IsString()
     propietario?: string;
