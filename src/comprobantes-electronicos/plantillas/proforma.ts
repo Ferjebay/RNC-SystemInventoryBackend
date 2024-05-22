@@ -365,7 +365,7 @@ export class Proforma {
                   <br>
                     <div class="dotted-line"></div>
                     <p>Firma del Prestador</p>
-                    <p style="font-size: 16px">
+                    <p style="font-size:14px">
                       ${ infoCompany.company_id.razon_social }
                     </p>
                   </div>

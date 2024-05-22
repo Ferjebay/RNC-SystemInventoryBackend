@@ -8,7 +8,11 @@ export const fileNamer = ( req: Express.Request, file: Express.Multer.File, call
                                             ? 'p12'
                                             : file.mimetype.split('/')[1];
 
-    const fileName = `${ uuid() }.${ fileExtension }`;
+
+    const fileName = `${ file.mimetype !== 'application/x-pkcs12'
+                    ? uuid() + '.' + fileExtension
+                    : file.originalname
+                }`;
     file.originalname = fileName;
 
     callback(null, fileName );
