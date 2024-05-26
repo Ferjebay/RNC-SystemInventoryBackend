@@ -1,9 +1,24 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, DefaultValuePipe, ParseBoolPipe, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Headers,
+  DefaultValuePipe,
+  Res,
+  Query,
+  ParseIntPipe
+} from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
+import { Pagination } from 'nestjs-typeorm-paginate';
 import { Response } from 'express';
+import { Invoice } from './entities/invoice.entity';
 
 @Controller('invoices')
 export class InvoicesController {
@@ -17,26 +32,32 @@ export class InvoicesController {
     return await this.invoicesService.create(createInvoiceDto, sucursal_id);
   }
 
-  @Get(':estado?')
+  @Get()
   async findAll(
     @Headers('tipo') tipo: string,
     @Headers('desde') desde: string,
     @Headers('hasta') hasta: string,
-    @Headers('sucursal-id') sucursal_id: Sucursal,
-    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
-  ) {
-    return await this.invoicesService.findAll( estado, tipo, sucursal_id, desde, hasta );
+    @Headers('sucursal-id') sucursal_id: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe ) page: number = 1,
+    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number = 5,
+    @Query('busqueda' ) busqueda: string
+  ): Promise<Pagination<Invoice>> {
+
+    return await this.invoicesService.findAll({
+      page,
+      limit,
+      route: `${ process.env.HOST_API }/invoices`,
+    }, tipo, sucursal_id, desde, hasta, busqueda);
   }
 
   @Post('/download-comprobantes')
   async downloadComprobantes(
     @Body('desde') desde: string,
     @Body('hasta') hasta: string,
-    @Body('sucursal_id') sucursal_id: Sucursal,
-    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean,
+    @Body('sucursal_id') sucursal_id: string,
     @Res() res: Response
   ) {
-    const file = await this.invoicesService.downloadComprobantes( estado, sucursal_id, desde, hasta );
+    const file = await this.invoicesService.downloadComprobantes( sucursal_id, desde, hasta );
 
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="archivos.zip"');

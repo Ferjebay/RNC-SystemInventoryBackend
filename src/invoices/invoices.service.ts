@@ -3,10 +3,15 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { UpdateInvoiceDto } from './dto/update-invoice.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Invoice } from './entities/invoice.entity';
-import { Between, Not, Repository } from 'typeorm';
+import { Between, ILike, Not, Repository } from 'typeorm';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { FacturasService } from 'src/comprobantes-electronicos/facturas/facturas.service';
 import { InvoiceToProduct } from './entities/invoiceToProduct.entity';
+import {
+  paginate,
+  Pagination,
+  IPaginationOptions
+} from 'nestjs-typeorm-paginate';
 const path = require('path');
 const AdmZip = require('adm-zip');
 const fs = require('fs');
@@ -127,9 +132,9 @@ export class InvoicesService {
     return { ok: true };
   }
 
-  async findAll( estado: boolean, tipo: string, sucursal_id: Sucursal, desde, hasta ) {
+  async findAll( options: IPaginationOptions, tipo: string, sucursal_id: string, desde, hasta, busqueda ): Promise<Pagination<Invoice>> {
     try {
-      return await this.getVentas(estado, tipo, sucursal_id, desde, hasta);
+      return await this.getVentas(options, tipo, sucursal_id, desde, hasta, busqueda)
     } catch (error) {
       this.handleDBExceptions(error);
     }
@@ -146,8 +151,9 @@ export class InvoicesService {
     return proformas.length + 1;
   }
 
-  async getVentas(estado: boolean, tipo: string, sucursal_id: Sucursal, desde, hasta){
+  async getVentas(options: IPaginationOptions, tipo: string, sucursal_id: string, desde, hasta, busqueda){
     try {
+
       let inicio, fin;
       if ( desde != "" && hasta == "" ) {
         inicio = new Date( desde );
@@ -165,6 +171,10 @@ export class InvoicesService {
         fin.setHours(23, 59, 59, 999);
       }
 
+      let estadoSRI: any = null
+      if ( tipo == 'FACTURAS' ) estadoSRI   = Not("PROFORMA");
+      else estadoSRI = tipo;
+
       let option: any = {
         relations: {
           user_id: true,
@@ -172,45 +182,51 @@ export class InvoicesService {
           customer_id: true,
           invoiceToProduct: { product_id: true }
         },
-        select: {
-          customer_id: {
-            nombres: true,
-            id: true,
-            tipo_documento: true,
-            numero_documento: true,
-            email: true,
-            celular: true
+        where: [
+          {
+            numero_comprobante: ILike(`%${ busqueda }%`),
+            created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null,
+            sucursal_id: { id: sucursal_id },
+            estadoSRI
           },
-          sucursal_id: { id: true, nombre: true, ambiente: true, direccion: true },
-          user_id: { fullName: true, id: true },
-          invoiceToProduct: { v_total: true, cantidad: true, product_id: true, descuento: true }
-        },
-        order: { created_at: "DESC" },
-        where: {
-          sucursal_id: { id: sucursal_id },
-          created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null
-        }
+          {
+            clave_acceso: ILike(`%${ busqueda }%`),
+            created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null,
+            sucursal_id: { id: sucursal_id },
+            estadoSRI
+          },
+          {
+            customer_id: { nombres: ILike(`%${ busqueda }%`) },
+            created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null,
+            sucursal_id: { id: sucursal_id },
+            estadoSRI
+          },
+          {
+            customer_id: { numero_documento: ILike(`%${ busqueda }%`) },
+            created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null,
+            sucursal_id: { id: sucursal_id },
+            estadoSRI
+          }
+        ],
+        order: { created_at: "DESC" }
       }
 
-      if ( tipo == 'PROFORMA' ) option.where.estadoSRI = tipo;
-      if ( tipo == 'ANULADO' ) option.where.estadoSRI = tipo;
-      if ( tipo == 'AUTORIZADO' ) option.where.estadoSRI = tipo;
-      if ( tipo == 'TODOS' ) option.where.estadoSRI = null;
-      if ( tipo == 'FACTURAS' ) option.where.estadoSRI = Not("PROFORMA");
+      return await paginate<Invoice>(this.invoiceRepository, options, option);
 
-      if ( estado ) option.where.isActive = true ;
-
-      return await this.invoiceRepository.find( option );
     } catch (error) {
       this.handleDBExceptions(error)
     }
   }
 
-  async downloadComprobantes( estado: boolean, sucursal_id: Sucursal, desde, hasta ) {
+  async downloadComprobantes( sucursal_id: string, desde, hasta ) {
 
-    const ventas = await this.getVentas(estado, 'FACTURAS', sucursal_id, desde, hasta);
+    const ventas = await this.getVentas({
+      page: 1,
+      limit: 1000000,
+      route: `${ process.env.HOST_API }/invoices`,
+    }, 'FACTURAS', sucursal_id, desde, hasta, '');
 
-    const comprobantes = ventas.map( venta => {
+    const comprobantes = ventas.items.map( venta => {
       let pathComprobante = path.resolve(__dirname, `../../static/SRI/PDF/${ venta.clave_acceso }.pdf`);
       return pathComprobante;
     })

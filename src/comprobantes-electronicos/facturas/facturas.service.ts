@@ -608,6 +608,13 @@ export class FacturasService {
     })
   }
 
+  escapeHtml(str) {
+    console.log("recibidooo", str);
+    return str.replace(/[\u00A0-\u9999<>&]/gim, function(i) {
+        return '&#' + i.charCodeAt(0)
+    });
+  }
+
   async generarFacturaElectronica(
     datosFactura,
     claveAcceso = '',
@@ -664,14 +671,14 @@ export class FacturasService {
     const infoTributaria = {
       ambiente:     ( ambiente == 'PRUEBA') ? 1 : 2,
       tipoEmision:  1,
-      razonSocial:  infoCompany[0].company_id.razon_social,
+      razonSocial:  this.escapeHtml(infoCompany[0].company_id.razon_social),
       ruc:          infoCompany[0].company_id.ruc,
       claveAcceso:  claveAcceso,
       codDoc:       '01', //Factura
       estab:        numComprobante.split('-')[0],
       ptoEmi:       numComprobante.split('-')[1],
       secuencial:   numComprobante.split('-')[2],
-      dirMatriz:    infoCompany[0].company_id.direccion_matriz
+      dirMatriz:    this.escapeHtml(infoCompany[0].company_id.direccion_matriz)
     };
 
     //------ OBTIENE LA SUMA DE TODOS LOS ARTICULOS QUE APLICAN IVA Y DESCUENTOS ------------
@@ -688,12 +695,12 @@ export class FacturasService {
 
     const infoFactura = {
       fechaEmision:                 moment().format('DD/MM/YYYY'),
-      dirEstablecimiento:           infoCompany[0].direccion,
+      dirEstablecimiento:           this.escapeHtml(infoCompany[0].direccion),
       obligadoContabilidad:         infoCompany[0].company_id.obligado_contabilidad ? 'SI' : 'NO',
       tipoIdentificacionComprador:  clientFound[0].tipo_documento,
-      razonSocialComprador:         clientFound[0].nombres,
+      razonSocialComprador:         this.escapeHtml(clientFound[0].nombres),
       identificacionComprador:      clientFound[0].numero_documento,
-      direccionComprador:           clientFound[0].direccion,
+      direccionComprador:           this.escapeHtml(clientFound[0].direccion),
       totalSinImpuestos:            ( datosFactura.subtotal - datosFactura.descuento ).toFixed(2),
       totalDescuento:               datosFactura.descuento,
       totalConImpuestos: {
@@ -709,7 +716,7 @@ export class FacturasService {
       moneda: 'DOLAR',
       pagos: {
         pago: {
-          formaPago: datosFactura.forma_pago,
+          formaPago: this.escapeHtml(datosFactura.forma_pago),
           total: datosFactura.total
         }
       }
@@ -723,8 +730,8 @@ export class FacturasService {
       let precioTotalSinImpuesto = (subtotalSinDescuento - subtotalConDescuento).toFixed(2);
 
       detalle.push({
-        codigoPrincipal: item.codigoBarra,
-        descripcion: item.nombre,
+        codigoPrincipal: this.escapeHtml(item.codigoBarra),
+        descripcion: this.escapeHtml(item.nombre),
         cantidad: item.cantidad,
         precioUnitario: parseFloat(item.pvp).toFixed(2),
         descuento: parseFloat(subtotalConDescuento.toString()).toFixed(2),
@@ -745,7 +752,7 @@ export class FacturasService {
       '@nombre': 'Descripcion',
       '#text': datosFactura.descripcion.trim().length == 0
                 ? 'Sin descripcion'
-                : datosFactura.descripcion.trim()
+                : this.escapeHtml(datosFactura.descripcion.trim())
     }];
 
     var obj = {
@@ -817,16 +824,16 @@ export class FacturasService {
                   await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);
 
                   //Enviar mensaje or whatsApp
-                  await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
-                    cliente: clientFound[0].nombres,
-                    number: clientFound[0].celular,
-                    urlPDF: pathPDF,
-                    urlXML: pathXML,
-                    clave_acceso: claveAcceso,
-                    num_comprobante: numComprobante,
-                    empresa: infoCompany[0].company_id.nombre_comercial,
-                    telefono: this.convertirFormatoTelefono(infoCompany[0].company_id.telefono)
-                  });
+                  // await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
+                  //   cliente: clientFound[0].nombres,
+                  //   number: clientFound[0].celular,
+                  //   urlPDF: pathPDF,
+                  //   urlXML: pathXML,
+                  //   clave_acceso: claveAcceso,
+                  //   num_comprobante: numComprobante,
+                  //   empresa: infoCompany[0].company_id.nombre_comercial,
+                  //   telefono: this.convertirFormatoTelefono(infoCompany[0].company_id.telefono)
+                  // });
 
                 } catch (error) {
                   console.log( error );
@@ -998,7 +1005,7 @@ export class FacturasService {
       '@nombre': 'Descripcion',
       '#text': jObj[tipo_comprobante].infoAdicional.campoAdicional.trim().length == 0
                 ? 'Sin descripcion'
-                : jObj[tipo_comprobante].infoAdicional.campoAdicional
+                : this.escapeHtml(jObj[tipo_comprobante].infoAdicional.campoAdicional)
     }];
 
     let obj: any = {}
