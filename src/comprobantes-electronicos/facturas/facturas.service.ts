@@ -609,7 +609,6 @@ export class FacturasService {
   }
 
   escapeHtml(str) {
-    console.log("recibidooo", str);
     return str.replace(/[\u00A0-\u9999<>&]/gim, function(i) {
         return '&#' + i.charCodeAt(0)
     });
@@ -818,22 +817,20 @@ export class FacturasService {
               const comprobantes = { xml: pathXML, pdf: pathPDF, tipo: 'factura' }
 
               if ( send_messages ) {
-
                 try {
-
                   await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);
 
                   //Enviar mensaje or whatsApp
-                  // await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
-                  //   cliente: clientFound[0].nombres,
-                  //   number: clientFound[0].celular,
-                  //   urlPDF: pathPDF,
-                  //   urlXML: pathXML,
-                  //   clave_acceso: claveAcceso,
-                  //   num_comprobante: numComprobante,
-                  //   empresa: infoCompany[0].company_id.nombre_comercial,
-                  //   telefono: this.convertirFormatoTelefono(infoCompany[0].company_id.telefono)
-                  // });
+                  await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
+                    cliente: clientFound[0].nombres,
+                    number: clientFound[0].celular,
+                    urlPDF: pathPDF,
+                    urlXML: pathXML,
+                    clave_acceso: claveAcceso,
+                    num_comprobante: numComprobante,
+                    empresa: infoCompany[0].company_id.nombre_comercial,
+                    telefono: this.convertirFormatoTelefono(infoCompany[0].company_id.telefono)
+                  });
 
                 } catch (error) {
                   console.log( error );
@@ -1080,13 +1077,28 @@ export class FacturasService {
 
           if( autorizado ) {
 
-            const factura = new Factura();
-            const pdfBuffer = await factura.generarFacturaPDF( claveAcceso, infoCompany[0], numComprobante, clientFound[0], datosFactura, datosFactura.porcentaje_iva);
-            const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ claveAcceso }.xml`);
+            try {
+              const factura = new Factura();
+              const pathPDF = await factura.generarFacturaPDF( claveAcceso, infoCompany[0], numComprobante, clientFound[0], datosFactura, datosFactura.porcentaje_iva);
+              const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ claveAcceso }.xml`);
 
-            const comprobantes = { xml: pathXML, pdf: pdfBuffer, tipo: 'factura' }
+              const comprobantes = { xml: pathXML, pdf: pathPDF, tipo: 'factura' }
 
-            this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);
+              await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);
+
+              await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
+                cliente: clientFound[0].nombres,
+                number: clientFound[0].celular,
+                urlPDF: pathPDF,
+                urlXML: pathXML,
+                clave_acceso: claveAcceso,
+                num_comprobante: numComprobante,
+                empresa: infoCompany[0].company_id.nombre_comercial,
+                telefono: this.convertirFormatoTelefono(infoCompany[0].company_id.telefono)
+              });
+            } catch (error) {
+              console.log(error);
+            }
           }
         }, 3000)
       }
@@ -1118,26 +1130,27 @@ export class FacturasService {
 
     if ( datosFactura.tipo_comprobante == 'factura' ) {
       const factura = new Factura();
-      const pdfBuffer = await factura.generarFacturaPDF( datosFactura.clave_acceso, infoCompany[0], datosFactura.num_comprobante, clientFound[0], datosFactura, datosFactura.porcentaje_iva);
+      const pathPDF = await factura.generarFacturaPDF( datosFactura.clave_acceso, infoCompany[0], datosFactura.num_comprobante, clientFound[0], datosFactura, datosFactura.porcentaje_iva);
       const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ datosFactura.clave_acceso }.xml`);
 
-      const comprobantes = { xml: pathXML, pdf: pdfBuffer, tipo: 'factura' }
+      const comprobantes = { xml: pathXML, pdf: pathPDF, tipo: 'factura' }
 
-      this.emailService.sendComprobantes(clientFound[0], infoCompany[0], datosFactura.num_comprobante, datosFactura.clave_acceso, comprobantes);
+      await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], datosFactura.num_comprobante, datosFactura.clave_acceso, comprobantes);
 
       //Enviar mensaje or whatsApp
       try {
         await axios.post(`${ process.env.HOST_API_WHATSAPP }/send-comprobantes`, {
           cliente: clientFound[0].nombres,
           number: clientFound[0].celular,
-          urlPDF: pdfBuffer,
+          urlPDF: pathPDF,
           urlXML: pathXML,
           clave_acceso: datosFactura.clave_acceso,
           num_comprobante: datosFactura.num_comprobante,
-          empresa: infoCompany[0].company_id.nombre_comercial
+          empresa: infoCompany[0].company_id.nombre_comercial,
+          telefono: this.convertirFormatoTelefono(infoCompany[0].company_id.telefono)
         });
       } catch (error) {
-        console.log( error );
+        console.log( "error" );
       }
     }
 
