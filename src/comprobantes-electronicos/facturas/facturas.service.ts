@@ -379,29 +379,30 @@ export class FacturasService {
 
         console.log('error axio:', err)
 
-        if ( entity == 'Pagos' ){
-          const queryRunner = this.dataSource.createQueryRunner();
-          await queryRunner.connect()
-          await queryRunner.manager.update(Pago, entity_id, {
-            estadoSRI: `ERROR ENVIO RECEPCION ${ tipo == 'nota_credito' ? '- ANULACION' : ''}`
-          })
-          await queryRunner.release()
-        }else{
-          if ( tipo == 'factura' || tipo == 'nota_credito' ) {
-            let options: any = { estadoSRI: `ERROR ENVIO RECEPCION ${ tipo == 'nota_credito' ? '- ANULACION' : ''}` }
+        if (reenviado){
+          if ( entity == 'Pagos' ){
+            const queryRunner = this.dataSource.createQueryRunner();
+            await queryRunner.connect()
+            await queryRunner.manager.update(Pago, entity_id, {
+              estadoSRI: `ERROR ENVIO RECEPCION ${ tipo == 'nota_credito' ? '- ANULACION' : ''}`
+            })
+            await queryRunner.release()
+          }else{
+            if ( tipo == 'factura' || tipo == 'nota_credito' ) {
+              let options: any = { estadoSRI: `ERROR ENVIO RECEPCION ${ tipo == 'nota_credito' ? '- ANULACION' : ''}` }
 
-            if ( tipo == 'factura' ) options.clave_acceso = claveAcceso
-            if ( tipo == 'nota_credito' ) options.clave_acceso_nota_credito = claveAcceso
+              if ( tipo == 'factura' ) options.clave_acceso = claveAcceso
+              if ( tipo == 'nota_credito' ) options.clave_acceso_nota_credito = claveAcceso
 
-            await this.invoiceService.update( entity_id, options);
+              await this.invoiceService.update( entity_id, options);
+            }
+
+            if ( tipo == 'retencion' )
+              await this.retencionService.update( entity_id, { estadoSRI: 'ERROR ENVIO RECEPCION RETENCION' } );
           }
 
-          if ( tipo == 'retencion' )
-            await this.retencionService.update( entity_id, { estadoSRI: 'ERROR ENVIO RECEPCION RETENCION' } );
-        }
-
-        if (reenviado)
           this.messageWsService.updateStateInvoice( user_id );
+        }
 
         return reject( false );
       }
