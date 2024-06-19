@@ -368,13 +368,8 @@ export class FacturasService {
       let resp = null;
 
       try {
-        if (reenviado){
-          console.log('reenviado', reenviado);
-          resp = await axios(config);
-        } else{
-          console.log('reenviado', reenviado);
-          throw new Error('Algo salió mal');
-        }
+        resp = await axios(config);
+        // throw new Error('Algo salió mal');
       } catch (err) {
 
         console.log('error axio:', err)
@@ -498,7 +493,8 @@ export class FacturasService {
     host, accessKey,
     invoice_id, user_id,
     nombreComercial, tipo,
-    numComprobante, entity
+    numComprobante, entity,
+    reenviadoAutorizacion = true
   ): Promise<boolean>{
     return new Promise(async (resolve, reject) => {
       var config = {
@@ -527,28 +523,36 @@ export class FacturasService {
       else name_folder = 'notasCreditos'
 
       try {
-        resp = await axios(config);
-        // throw new Error('fwjfjw')
+        if (reenviadoAutorizacion) {
+          console.log('reenviadoAutorizacion', reenviadoAutorizacion);
+          resp = await axios(config);
+        }else {
+          console.log('reenviadoAutorizacion', reenviadoAutorizacion);
+          throw new Error('fwjfjw')
+        }
       } catch (err) {
         console.log('error axio:', err);
 
-        if ( entity == 'Pagos' ){
-          const queryRunner = this.dataSource.createQueryRunner();
-          await queryRunner.connect()
-          await queryRunner.manager.update(Pago, invoice_id, {
-            estadoSRI: `ERROR ENVIO AUTORIZACION ${ tipo == 'nota_credito' ? '- ANULACION' : '' }`
-          })
-          await queryRunner.release()
-        }else{
-          if ( tipo == 'factura' || tipo == 'nota_credito' )
-            await this.invoiceService.update( invoice_id, {
+        if (reenviadoAutorizacion) {
+          if ( entity == 'Pagos' ){
+            const queryRunner = this.dataSource.createQueryRunner();
+            await queryRunner.connect()
+            await queryRunner.manager.update(Pago, invoice_id, {
               estadoSRI: `ERROR ENVIO AUTORIZACION ${ tipo == 'nota_credito' ? '- ANULACION' : '' }`
-            });
+            })
+            await queryRunner.release()
+          }else{
+            if ( tipo == 'factura' || tipo == 'nota_credito' )
+              await this.invoiceService.update( invoice_id, {
+                estadoSRI: `ERROR ENVIO AUTORIZACION ${ tipo == 'nota_credito' ? '- ANULACION' : '' }`
+              });
 
-          if( tipo == 'retencion' )
-            await this.retencionService.update( invoice_id, { estadoSRI: 'ERROR ENVIO AUTORIZACION RETENCION' } );
+            if( tipo == 'retencion' )
+              await this.retencionService.update( invoice_id, { estadoSRI: 'ERROR ENVIO AUTORIZACION RETENCION' } );
+          }
+          this.messageWsService.updateStateInvoice( user_id );
         }
-        this.messageWsService.updateStateInvoice( user_id );
+
         reject( false );
       }
 
@@ -792,7 +796,9 @@ export class FacturasService {
         try {
           reenviado = true;
 
-          recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante, reenviado )
+          setTimeout(async () => {
+            recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante, reenviado )
+          }, 500)
         } catch (error) {
           return { ok: false }
         }
@@ -813,11 +819,21 @@ export class FacturasService {
         await this.sucursalRepository.update( sucursal, option );
         // --------------------------------------------------------------------------
 
+        let reenviadoAutorizacion = false
         setTimeout(async () => {
           try {
-            autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity)
+            autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity, reenviadoAutorizacion)
           } catch (error) {
-            return { ok: false }
+
+            try {
+              reenviadoAutorizacion = true;
+
+              setTimeout(async () => {
+                autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity, reenviadoAutorizacion)
+              }, 500)
+            } catch (error) {
+              return { ok: false }
+            }
           }
 
           if( autorizado ) {
