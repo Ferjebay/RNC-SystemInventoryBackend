@@ -330,7 +330,7 @@ export class FacturasService {
     xml,
     entity,
     num_comprobante = '',
-    reenviado = false
+    reenviado = true
   ): Promise<boolean> {
     return new Promise(async (resolve, reject) => {
       let signedXml = null;
@@ -787,7 +787,7 @@ export class FacturasService {
       let recibida;
       let reenviado = false
       try {
-        recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante )
+        recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante, reenviado )
       } catch (error) {
         try {
           reenviado = true;
