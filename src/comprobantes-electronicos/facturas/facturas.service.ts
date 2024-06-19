@@ -523,13 +523,9 @@ export class FacturasService {
       else name_folder = 'notasCreditos'
 
       try {
-        if (reenviadoAutorizacion) {
-          console.log('reenviadoAutorizacion', reenviadoAutorizacion);
-          resp = await axios(config);
-        }else {
-          console.log('reenviadoAutorizacion', reenviadoAutorizacion);
-          throw new Error('fwjfjw')
-        }
+        resp = await axios(config);
+
+        // throw new Error('fwjfjw')
       } catch (err) {
         console.log('error axio:', err);
 
