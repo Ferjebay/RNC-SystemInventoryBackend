@@ -51,7 +51,7 @@ export class Router {
     @Column({ type: 'varchar', length: 50 })
     control_velocidad: string;
 
-    @Column({ type: 'varchar', length: 50 })
+    @Column({ type: 'varchar', length: 50, nullable: true })
     seguridad: string;
 
     @Column({ type: 'int', nullable: true })

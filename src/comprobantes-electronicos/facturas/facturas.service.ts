@@ -329,15 +329,14 @@ export class FacturasService {
     user_id,
     xml,
     entity,
-    num_comprobante = ''
-  ): Promise<boolean>{
+    num_comprobante = '',
+    reenviado = false
+  ): Promise<boolean> {
     return new Promise(async (resolve, reject) => {
       let signedXml = null;
       let name_folder;
 
-
       try {
-
         if (tipo == 'factura') name_folder = 'facturas';
         else if (tipo == 'retencion') name_folder = 'retenciones';
         else name_folder = 'notasCreditos'
@@ -369,8 +368,13 @@ export class FacturasService {
       let resp = null;
 
       try {
-        resp = await axios(config);
-        // throw new Error('Algo salió mal');
+        if (reenviado){
+          console.log('reenviado', reenviado);
+          resp = await axios(config);
+        } else{
+          console.log('reenviado', reenviado);
+          throw new Error('Algo salió mal');
+        }
       } catch (err) {
 
         console.log('error axio:', err)
@@ -396,7 +400,9 @@ export class FacturasService {
             await this.retencionService.update( entity_id, { estadoSRI: 'ERROR ENVIO RECEPCION RETENCION' } );
         }
 
-        this.messageWsService.updateStateInvoice( user_id );
+        if (reenviado)
+          this.messageWsService.updateStateInvoice( user_id );
+
         return reject( false );
       }
 
@@ -778,15 +784,22 @@ export class FacturasService {
       let host = ( ambiente === 'PRUEBA') ? 'https://celcer.sri.gob.ec' : 'https://cel.sri.gob.ec';
 
       let recibida;
+      let reenviado = false
       try {
         recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante )
       } catch (error) {
-        return { ok: false }
+        try {
+          reenviado = true;
+
+          recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante, reenviado )
+        } catch (error) {
+          return { ok: false }
+        }
       }
 
       let autorizado;
       if( recibida ){
-        // ---------------------- AUMENTAR EL SECUENCIAL FACTURA -------------------
+        // ---------------------- AUMENTA EL SECUENCIAL FACTURA -------------------
         const secuencial = numComprobante.split('-')[2];
         let option: any = {};
 
