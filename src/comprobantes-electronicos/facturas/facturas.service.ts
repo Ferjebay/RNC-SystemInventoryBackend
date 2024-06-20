@@ -785,19 +785,20 @@ export class FacturasService {
       let host = ( ambiente === 'PRUEBA') ? 'https://celcer.sri.gob.ec' : 'https://cel.sri.gob.ec';
 
       let recibida;
-      let reenviado = false
+      let reenviado = true
       try {
         recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante, reenviado )
       } catch (error) {
-        try {
-          reenviado = true;
+        // try {
+        //   reenviado = true;
 
-          setTimeout(async () => {
-            recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante, reenviado )
-          }, 500)
-        } catch (error) {
-          return { ok: false }
-        }
+        //   setTimeout(async () => {
+        //     recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante, reenviado )
+        //   }, 500)
+        // } catch (error) {
+        //   return { ok: false }
+        // }
+        return { ok: false }
       }
 
       let autorizado;
@@ -815,21 +816,22 @@ export class FacturasService {
         await this.sucursalRepository.update( sucursal, option );
         // --------------------------------------------------------------------------
 
-        let reenviadoAutorizacion = false
+        let reenviadoAutorizacion = true
         setTimeout(async () => {
           try {
             autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity, reenviadoAutorizacion)
           } catch (error) {
 
-            try {
-              reenviadoAutorizacion = true;
+            // try {
+            //   reenviadoAutorizacion = true;
 
-              setTimeout(async () => {
-                autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity, reenviadoAutorizacion)
-              }, 500)
-            } catch (error) {
-              return { ok: false }
-            }
+            //   setTimeout(async () => {
+            //     autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity, reenviadoAutorizacion)
+            //   }, 500)
+            // } catch (error) {
+            //   return { ok: false }
+            // }
+            return { ok: false }
           }
 
           if( autorizado ) {
