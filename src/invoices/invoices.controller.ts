@@ -19,6 +19,7 @@ import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { Pagination } from 'nestjs-typeorm-paginate';
 import { Response } from 'express';
 import { Invoice } from './entities/invoice.entity';
+import { Company } from 'src/companies/entities/company.entity';
 
 @Controller('invoices')
 export class InvoicesController {
@@ -38,16 +39,16 @@ export class InvoicesController {
     @Headers('desde') desde: string,
     @Headers('hasta') hasta: string,
     @Headers('sucursal-id') sucursal_id: string,
+    @Headers('company-id') company_id: Company,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe ) page: number = 1,
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number = 5,
     @Query('busqueda' ) busqueda: string
   ): Promise<Pagination<Invoice>> {
-
     return await this.invoicesService.findAll({
       page,
       limit,
       route: `${ process.env.HOST_API }/invoices`,
-    }, tipo, sucursal_id, desde, hasta, busqueda);
+    }, tipo, sucursal_id, desde, hasta, busqueda, company_id);
   }
 
   @Post('/download-comprobantes')

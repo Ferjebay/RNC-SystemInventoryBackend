@@ -7,6 +7,7 @@ import { Between, Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { BuyToProduct } from './entities/buyToProduct.entity';
+import { Company } from 'src/companies/entities/company.entity';
 
 @Injectable()
 export class BuysService {
@@ -50,7 +51,7 @@ export class BuysService {
     }
   }
 
-  async findAll( estado: boolean, sucursal_id: Sucursal, desde: string, hasta: string, tipo: string | boolean ) {
+  async findAll( estado: boolean, sucursal_id: Sucursal, desde: string, hasta: string, tipo: string | boolean, company_id: Company ) {
     try {
       let inicio, fin;
       if ( desde != "" && hasta == "" ) {
@@ -81,7 +82,7 @@ export class BuysService {
           buyToProduct: { v_total: true, cantidad: true, product_id: true, descuento: true, iva: true }
         },
         where: {
-          sucursal_id: { id: sucursal_id },
+          sucursal_id: { id: sucursal_id, company_id: { id: company_id } },
           created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null
         },
         order: { created_at: "DESC" }
@@ -91,7 +92,7 @@ export class BuysService {
       if ( tipo == 'Aceptados' ) option.where.isActive = true;
       if ( tipo == 'Anulados' ) option.where.isActive = false;
 
-      return await this.buyRepository.find( option );
+      return await this.buyRepository.find(option);
     } catch (error) {
       console.log( error );
     }

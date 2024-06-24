@@ -524,8 +524,7 @@ export class FacturasService {
 
       try {
         resp = await axios(config);
-
-        // throw new Error('fwjfjw')
+        // throw new Error('error en autorizacion')
       } catch (err) {
         console.log('error axio:', err);
 
@@ -785,20 +784,19 @@ export class FacturasService {
       let host = ( ambiente === 'PRUEBA') ? 'https://celcer.sri.gob.ec' : 'https://cel.sri.gob.ec';
 
       let recibida;
-      let reenviado = true
+      let reenviado = false
       try {
         recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante, reenviado )
       } catch (error) {
-        // try {
-        //   reenviado = true;
+        try {
+          reenviado = true;
 
-        //   setTimeout(async () => {
-        //     recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante, reenviado )
-        //   }, 500)
-        // } catch (error) {
-        //   return { ok: false }
-        // }
-        return { ok: false }
+          await new Promise((resolve) => setTimeout(resolve, 500));
+
+          recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante, reenviado )
+        } catch (error) {
+          return { ok: false }
+        }
       }
 
       let autorizado;
@@ -816,36 +814,33 @@ export class FacturasService {
         await this.sucursalRepository.update( sucursal, option );
         // --------------------------------------------------------------------------
 
-        let reenviadoAutorizacion = true
+        let reenviadoAutorizacion = false
         setTimeout(async () => {
           try {
             autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity, reenviadoAutorizacion)
           } catch (error) {
+            try {
+              reenviadoAutorizacion = true;
 
-            // try {
-            //   reenviadoAutorizacion = true;
+              await new Promise((resolve) => setTimeout(resolve, 500));
 
-            //   setTimeout(async () => {
-            //     autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity, reenviadoAutorizacion)
-            //   }, 500)
-            // } catch (error) {
-            //   return { ok: false }
-            // }
-            return { ok: false }
+              autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity, reenviadoAutorizacion)
+            } catch (error) {
+              return { ok: false }
+            }
           }
 
           if( autorizado ) {
             if (clientFound[0].nombres !== 'CONSUMIDOR FINAL') {
+              try {
+                const factura = new Factura();
+                const pathPDF = await factura.generarFacturaPDF( claveAcceso, infoCompany[0], numComprobante, clientFound[0], datosFactura, datosFactura.porcentaje_iva);
 
-              const factura = new Factura();
-              const pathPDF = await factura.generarFacturaPDF( claveAcceso, infoCompany[0], numComprobante, clientFound[0], datosFactura, datosFactura.porcentaje_iva);
+                const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ claveAcceso }.xml`);
 
-              const pathXML = path.resolve(__dirname, `../../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ claveAcceso }.xml`);
+                const comprobantes = { xml: pathXML, pdf: pathPDF, tipo: 'factura' }
 
-              const comprobantes = { xml: pathXML, pdf: pathPDF, tipo: 'factura' }
-
-              if ( send_messages ) {
-                try {
+                if ( send_messages ) {
                   await this.emailService.sendComprobantes(clientFound[0], infoCompany[0], numComprobante, claveAcceso, comprobantes);
 
                   //Enviar mensaje or whatsApp
@@ -860,11 +855,10 @@ export class FacturasService {
                     telefono: this.convertirFormatoTelefono(infoCompany[0].company_id.telefono)
                   });
 
-                } catch (error) {
-                  console.log( error );
                 }
+              } catch (error) {
+                console.log( error );
               }
-
             }
           }
         }, 2900)

@@ -9,6 +9,7 @@ import { BuysService } from './buys.service';
 import { CreateBuyDto } from './dto/create-buy.dto';
 import { UpdateBuyDto } from './dto/update-buy.dto';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
+import { Company } from 'src/companies/entities/company.entity';
 
 @Controller('buys')
 export class BuysController {
@@ -26,11 +27,12 @@ export class BuysController {
   async findAll(
     @Headers('tipo') tipo: string | boolean,
     @Headers('sucursal-id') sucursal_id: Sucursal,
+    @Headers('company-id') company_id: Company,
     @Headers('desde') desde: string,
     @Headers('hasta') hasta: string,
     @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
   ) {
-    return await this.buysService.findAll( estado, sucursal_id, desde, hasta, tipo );
+    return await this.buysService.findAll( estado, sucursal_id, desde, hasta, tipo, company_id );
   }
 
   @Get('/find/:term')

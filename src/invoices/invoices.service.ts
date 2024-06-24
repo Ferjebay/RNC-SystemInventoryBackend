@@ -12,6 +12,7 @@ import {
   Pagination,
   IPaginationOptions
 } from 'nestjs-typeorm-paginate';
+import { Company } from 'src/companies/entities/company.entity';
 const path = require('path');
 const AdmZip = require('adm-zip');
 const fs = require('fs');
@@ -132,9 +133,16 @@ export class InvoicesService {
     return { ok: true };
   }
 
-  async findAll( options: IPaginationOptions, tipo: string, sucursal_id: string, desde, hasta, busqueda ): Promise<Pagination<Invoice>> {
+  async findAll(
+      options: IPaginationOptions,
+      tipo: string,
+      sucursal_id: string,
+      desde,
+      hasta,
+      busqueda,
+      company_id: Company ): Promise<Pagination<Invoice>> {
     try {
-      return await this.getVentas(options, tipo, sucursal_id, desde, hasta, busqueda)
+      return await this.getVentas(options, tipo, sucursal_id, desde, hasta, busqueda, company_id)
     } catch (error) {
       this.handleDBExceptions(error);
     }
@@ -151,7 +159,7 @@ export class InvoicesService {
     return proformas.length + 1;
   }
 
-  async getVentas(options: IPaginationOptions, tipo: string, sucursal_id: string, desde, hasta, busqueda){
+  async getVentas(options: IPaginationOptions, tipo: string, sucursal_id: string, desde, hasta, busqueda, company_id?: Company){
     try {
 
       let inicio, fin;
@@ -186,25 +194,25 @@ export class InvoicesService {
           {
             numero_comprobante: ILike(`%${ busqueda }%`),
             created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null,
-            sucursal_id: { id: sucursal_id },
+            sucursal_id: { id: sucursal_id, company_id: { id: company_id } },
             estadoSRI
           },
           {
             clave_acceso: ILike(`%${ busqueda }%`),
             created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null,
-            sucursal_id: { id: sucursal_id },
+            sucursal_id: { id: sucursal_id, company_id: { id: company_id } },
             estadoSRI
           },
           {
             customer_id: { nombres: ILike(`%${ busqueda }%`) },
             created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null,
-            sucursal_id: { id: sucursal_id },
+            sucursal_id: { id: sucursal_id, company_id: { id: company_id } },
             estadoSRI
           },
           {
             customer_id: { numero_documento: ILike(`%${ busqueda }%`) },
             created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null,
-            sucursal_id: { id: sucursal_id },
+            sucursal_id: { id: sucursal_id, company_id: { id: company_id } },
             estadoSRI
           }
         ],
