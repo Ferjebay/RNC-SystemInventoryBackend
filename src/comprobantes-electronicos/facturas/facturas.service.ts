@@ -791,8 +791,6 @@ export class FacturasService {
         try {
           reenviado = true;
 
-          await new Promise((resolve) => setTimeout(resolve, 500));
-
           recibida = await this.recepcionComprobantesOffline(nombreComercial, claveAcceso, entity_id, 'factura', host, pathXML, datosFactura.user_id, xml, entity, numComprobante, reenviado )
         } catch (error) {
           return { ok: false }
@@ -821,8 +819,6 @@ export class FacturasService {
           } catch (error) {
             try {
               reenviadoAutorizacion = true;
-
-              await new Promise((resolve) => setTimeout(resolve, 500));
 
               autorizado = await this.autorizacionComprobantesOffline( host, claveAcceso, entity_id, datosFactura.user_id, nombreComercial, 'factura', numComprobante, entity, reenviadoAutorizacion)
             } catch (error) {
