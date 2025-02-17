@@ -116,7 +116,7 @@ export class FacturasService {
     let codDoc;
     if (tipo == 'factura') codDoc = '01'
     else if (tipo == 'retencion') codDoc = '07'
-    else codDoc = '07'
+    else codDoc = '04'
 
     const fechaEmision    = moment().format('DDMMYYYY');
     const ruc             = infoCompany[0].company_id.ruc
