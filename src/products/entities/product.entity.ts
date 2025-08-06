@@ -25,7 +25,7 @@ export class Product {
     @Column('bool')
     aplicaIva: boolean;
 
-    @Column({ type: 'varchar', length: 60 })
+    @Column({ type: 'text', nullable: false })
     nombre: string;
 
     @Column({ type: "decimal", nullable: true, precision: 8, scale: 2, default: 0 })
