@@ -40,9 +40,7 @@ export class CreateCompanyDto {
     @MinLength(5)
     email: string;
 
-    @IsNotEmpty()
-    @IsString()
-    @MinLength(5)
+    @IsOptional()
     telefono: string;
 
     @IsNotEmpty()
