@@ -18,13 +18,6 @@ import { InvoicesModule } from './invoices/invoices.module';
 import { FacturasModule } from './comprobantes-electronicos/facturas/facturas.module';
 import { SucursalModule } from './sucursal/sucursal.module';
 import { EmailModule } from './email/email.module';
-import { MikrotikModule } from './mikrotik/mikrotik.module';
-import { RouterModule } from './router/router.module';
-import { InternetModule } from './internet/internet.module';
-import { CajaNapModule } from './caja-nap/caja-nap.module';
-import { PuertosModule } from './puertos/puertos.module';
-import { RedIpv4Module } from './red-ipv4/red-ipv4.module';
-import { PagosModule } from './pagos/pagos.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RolesAndPermisosModule } from './roles-and-permisos/roles-and-permisos.module';
 import { ProformaModule } from './proforma/proforma.module';
@@ -38,7 +31,7 @@ import { RetencionesModule } from './comprobantes-electronicos/retenciones/reten
     TypeOrmModule.forRoot({
       ssl: process.env.STAGE == 'prod',
       extra: {
-        ssl: process.env.STAGE == 'prod' 
+        ssl: process.env.STAGE == 'prod'
         ? { rejectUnauthorized: false }
         : null
       },
@@ -57,7 +50,7 @@ import { RetencionesModule } from './comprobantes-electronicos/retenciones/reten
     }),
 
     ScheduleModule.forRoot(),
-    
+
     CommonModule,
     AuthModule,
     MessagesWsModule,
@@ -71,13 +64,6 @@ import { RetencionesModule } from './comprobantes-electronicos/retenciones/reten
     FacturasModule,
     SucursalModule,
     EmailModule,
-    MikrotikModule,
-    RouterModule,
-    InternetModule,
-    CajaNapModule,
-    PuertosModule,
-    RedIpv4Module,
-    PagosModule,
     RolesAndPermisosModule,
     ProformaModule,
     DashboardModule,

@@ -1,24 +1,14 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, DefaultValuePipe, ParseBoolPipe, ParseUUIDPipe, Headers, Put, Res } from '@nestjs/common';
 import { CustomersService } from './customers.service';
-import { CreateServicioDto } from './dto/create-servicio.dto';
 import { CreateCustomerDto } from './dto/create-customer.dto';
-import { UpdateServicioDto } from './dto/update-servicio.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Company } from 'src/companies/entities/company.entity';
-import { Router } from 'src/router/entities/router.entity';
 import { Response } from 'express';
 
 @Controller('customers')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
-  @Post()
-  async create(
-    @Headers('company-id') company_id: Company,
-    @Body() createCustomerDto: CreateServicioDto
-  ) {
-    return await this.customersService.create(createCustomerDto, company_id);
-  }
 
   @Post('/download-clients-excel/')
   async downloadClientsToExcel(
@@ -53,10 +43,6 @@ export class CustomersController {
     return await this.customersService.findOne( term );
   }
 
-  @Get('/get-ips/:router_id')
-  async getIpsUtilizadas(@Param('router_id') router_id: Router) {
-    return await this.customersService.getIpsUtilizadas( router_id );
-  }
 
   @Patch(':id')
   async update(
@@ -67,13 +53,6 @@ export class CustomersController {
     return await this.customersService.update(id, updateCustomerDto, company_id);
   }
 
-  @Put('/actualizarDatosFactura/:id')
-  async actualizarDatosFactura(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() datosFacturacion: any
-  ){
-    return await this.customersService.actualizarDatosFactura(id, datosFacturacion);
-  }
 
   @Put('/actualizarDatosPersonales/:id')
   async actualizarDatosPersonales(
@@ -83,21 +62,7 @@ export class CustomersController {
     return await this.customersService.actualizarDatosPersonales(id, datosFactura);
   }
 
-  @Put('/actualizarDatosServicio/:id')
-  async actualizarDatosServicio(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() datosServicio: any
-  ){
-    return await this.customersService.actualizarDatosServicio(id, datosServicio);
-  }
 
-  @Put('/activeOrSuspendService/:id')
-  async activeOrSuspendService(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() datosServicio: any
-  ){
-    return await this.customersService.activeOrSuspendService(id, datosServicio);
-  }
 
   @Patch(':id/:estado')
   async setEstado(

@@ -6,6 +6,7 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { fileFilter } from './helpers/fileFilter.helper';
 import { fileNamer } from './helpers/fileNamer.helper';
+import { fileDestination } from './helpers/fileDestination.helper';
 import { Company } from './entities/company.entity';
 const fs = require('fs');
 const path = require('path');
@@ -23,13 +24,8 @@ export class CompaniesController {
     {
       fileFilter: fileFilter,
       storage: diskStorage({
-        destination: function (_, file, cb) {
-          if(file.fieldname == 'logo')
-            cb(null, './public/images')
-          else
-            cb(null, `./static/SRI/FIRMAS`)
-        },
-          filename: fileNamer
+        destination: fileDestination,
+        filename: fileNamer
       })
     }
   ))
@@ -70,12 +66,7 @@ export class CompaniesController {
     {
       fileFilter: fileFilter,
       storage: diskStorage({
-        destination: function (_, file, cb) {
-          if(file.fieldname == 'logo')
-            cb(null, './public/images')
-          else
-            cb(null, './static/SRI/FIRMAS')
-        },
+        destination: fileDestination,
         filename: fileNamer
       })
     }

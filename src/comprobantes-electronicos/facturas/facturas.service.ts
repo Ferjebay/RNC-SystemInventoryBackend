@@ -16,7 +16,6 @@ import { EmailService } from 'src/email/email.service';
 import { MessagesWsService } from 'src/messages-ws/messages-ws.service';
 import { Proforma } from '../plantillas/proforma';
 import { Factura } from '../plantillas/factura';
-import { Pago } from 'src/pagos/entities/pago.entity';
 import { RetencionesService } from '../retenciones/retenciones.service';
 
 @Injectable()
@@ -375,26 +374,18 @@ export class FacturasService {
         console.log('error axio:', err)
 
         if (reenviado){
-          if ( entity == 'Pagos' ){
-            const queryRunner = this.dataSource.createQueryRunner();
-            await queryRunner.connect()
-            await queryRunner.manager.update(Pago, entity_id, {
-              estadoSRI: `ERROR ENVIO RECEPCION ${ tipo == 'nota_credito' ? '- ANULACION' : ''}`
-            })
-            await queryRunner.release()
-          }else{
-            if ( tipo == 'factura' || tipo == 'nota_credito' ) {
-              let options: any = { estadoSRI: `ERROR ENVIO RECEPCION ${ tipo == 'nota_credito' ? '- ANULACION' : ''}` }
+          if ( tipo == 'factura' || tipo == 'nota_credito' ) {
+            let options: any = { estadoSRI: `ERROR ENVIO RECEPCION ${ tipo == 'nota_credito' ? '- ANULACION' : ''}` }
 
-              if ( tipo == 'factura' ) options.clave_acceso = claveAcceso
-              if ( tipo == 'nota_credito' ) options.clave_acceso_nota_credito = claveAcceso
+            if ( tipo == 'factura' ) options.clave_acceso = claveAcceso
+            if ( tipo == 'nota_credito' ) options.clave_acceso_nota_credito = claveAcceso
 
-              await this.invoiceService.update( entity_id, options);
-            }
-
-            if ( tipo == 'retencion' )
-              await this.retencionService.update( entity_id, { estadoSRI: 'ERROR ENVIO RECEPCION RETENCION' } );
+            await this.invoiceService.update( entity_id, options);
           }
+
+          if ( tipo == 'retencion' )
+            await this.retencionService.update( entity_id, { estadoSRI: 'ERROR ENVIO RECEPCION RETENCION' } );
+        
 
           this.messageWsService.updateStateInvoice( user_id );
         }
@@ -410,29 +401,20 @@ export class FacturasService {
 
         const estado = jObj['soap:Envelope']['soap:Body']['ns2:validarComprobanteResponse']['RespuestaRecepcionComprobante']['estado'];
 
-        if ( entity == 'Pagos' ){
-          const queryRunner = this.dataSource.createQueryRunner();
-          await queryRunner.connect()
-          await queryRunner.manager.update(Pago, entity_id, {
-            clave_acceso: claveAcceso,
-            estadoSRI: `${ tipo == 'nota_credito' ? 'ANULACION -' : '' } ${ estado }`
-          })
-          await queryRunner.release()
-        }else{
-          let options: any = {
-            estadoSRI: `${ tipo == 'nota_credito' ? 'ANULACION -' : '' } ${ estado }`
-          };
+        let options: any = {
+          estadoSRI: `${ tipo == 'nota_credito' ? 'ANULACION -' : '' } ${ estado }`
+        };
 
-          if ( tipo == 'factura' || tipo == 'nota_credito' ) {
-            if ( tipo == 'factura' ) options.clave_acceso = claveAcceso
-            if ( tipo == 'nota_credito' ) options.clave_acceso_nota_credito = claveAcceso
+        if ( tipo == 'factura' || tipo == 'nota_credito' ) {
+          if ( tipo == 'factura' ) options.clave_acceso = claveAcceso
+          if ( tipo == 'nota_credito' ) options.clave_acceso_nota_credito = claveAcceso
 
-            await this.invoiceService.update( entity_id, options)
-          }
-
-          if ( tipo == 'retencion' )
-            await this.retencionService.update( entity_id, { estadoSRI: `RETENCION ${ estado }` } )
+          await this.invoiceService.update( entity_id, options)
         }
+
+        if ( tipo == 'retencion' )
+          await this.retencionService.update( entity_id, { estadoSRI: `RETENCION ${ estado }` } )
+      
 
         if ('DEVUELTA' === estado) {
             const comprobantes = jObj['soap:Envelope']['soap:Body']['ns2:validarComprobanteResponse']['RespuestaRecepcionComprobante']['comprobantes'];
@@ -453,29 +435,23 @@ export class FacturasService {
 
             const respuestaSRI = `MENSAJE: ${ mensaje.mensaje } - INFOADICIONAL: ${ infoAdicional }`
 
-            if ( entity == 'Pagos' ){
-              const queryRunner = this.dataSource.createQueryRunner();
-              await queryRunner.connect()
-              await queryRunner.manager.update(Pago, entity_id, { respuestaSRI })
-              await queryRunner.release()
-            }else{
-              let option: any = { respuestaSRI }
+            let option: any = { respuestaSRI }
 
-              if ( tipo == 'factura' || tipo == 'nota_credito' ) {
-                if (num_comprobante.length !== 0)
-                  option.numero_comprobante = num_comprobante
+            if ( tipo == 'factura' || tipo == 'nota_credito' ) {
+              if (num_comprobante.length !== 0)
+                option.numero_comprobante = num_comprobante
 
-                if ( tipo == 'factura' )
-                  option.clave_acceso = claveAcceso
-                if ( tipo == 'nota_credito' )
-                  option.clave_acceso_nota_credito = claveAcceso
+              if ( tipo == 'factura' )
+                option.clave_acceso = claveAcceso
+              if ( tipo == 'nota_credito' )
+                option.clave_acceso_nota_credito = claveAcceso
 
-                await this.invoiceService.update( entity_id, option)
-              }
-
-              if ( tipo == 'retencion' )
-                await this.retencionService.update( entity_id, option )
+              await this.invoiceService.update( entity_id, option)
             }
+
+            if ( tipo == 'retencion' )
+              await this.retencionService.update( entity_id, option )
+          
 
             this.messageWsService.updateStateInvoice( user_id );
             reject( false );
@@ -529,22 +505,14 @@ export class FacturasService {
         console.log('error axio:', err);
 
         if (reenviadoAutorizacion) {
-          if ( entity == 'Pagos' ){
-            const queryRunner = this.dataSource.createQueryRunner();
-            await queryRunner.connect()
-            await queryRunner.manager.update(Pago, invoice_id, {
+          if ( tipo == 'factura' || tipo == 'nota_credito' )
+            await this.invoiceService.update( invoice_id, {
               estadoSRI: `ERROR ENVIO AUTORIZACION ${ tipo == 'nota_credito' ? '- ANULACION' : '' }`
-            })
-            await queryRunner.release()
-          }else{
-            if ( tipo == 'factura' || tipo == 'nota_credito' )
-              await this.invoiceService.update( invoice_id, {
-                estadoSRI: `ERROR ENVIO AUTORIZACION ${ tipo == 'nota_credito' ? '- ANULACION' : '' }`
-              });
+            });
 
-            if( tipo == 'retencion' )
-              await this.retencionService.update( invoice_id, { estadoSRI: 'ERROR ENVIO AUTORIZACION RETENCION' } );
-          }
+          if( tipo == 'retencion' )
+            await this.retencionService.update( invoice_id, { estadoSRI: 'ERROR ENVIO AUTORIZACION RETENCION' } );
+        
           this.messageWsService.updateStateInvoice( user_id );
         }
 
@@ -575,29 +543,18 @@ export class FacturasService {
           await fs.mkdirSync(path.dirname(pathXML), { recursive: true })
           await fs.writeFileSync(pathXML, resp.data, { flag: 'w+', encoding: 'utf-8' });
 
-          if ( entity == 'Pagos' ){
-            const queryRunner = this.dataSource.createQueryRunner();
-            await queryRunner.connect()
-            await queryRunner.manager.update(Pago, invoice_id, {
-              num_comprobante: numComprobante,
-              clave_acceso: accessKey,
+          if ( tipo == 'factura' || tipo == 'nota_credito' )
+            await this.invoiceService.update( invoice_id, {
               estadoSRI: estado.trim(),
               respuestaSRI
-            })
-            await queryRunner.release()
-          }else{
-            if ( tipo == 'factura' || tipo == 'nota_credito' )
-              await this.invoiceService.update( invoice_id, {
-                estadoSRI: estado.trim(),
-                respuestaSRI
-              });
+            });
 
-            if ( tipo == 'retencion' )
-              await this.retencionService.update( invoice_id, {
-                estadoSRI: estado.trim(),
-                respuestaSRI
-              });
-          }
+          if ( tipo == 'retencion' )
+            await this.retencionService.update( invoice_id, {
+              estadoSRI: estado.trim(),
+              respuestaSRI
+            });
+        
 
           if ( estado == 'AUTORIZADO' || estado == 'ANULADO'){
             this.messageWsService.updateStateInvoice( user_id );
@@ -634,15 +591,6 @@ export class FacturasService {
 
     const clientFound = await this.customerService.findOne( datosFactura.customer_id );
     const { numComprobante, ambiente } = await this.getNumComprobante( sucursal_id );
-
-    if ( entity == 'Pagos' ){
-      const queryRunner = this.dataSource.createQueryRunner();
-      await queryRunner.connect()
-      await queryRunner.manager.update(Pago, entity_id, {
-        sucursal_id, clave_acceso: claveAcceso, num_comprobante: numComprobante
-      })
-      await queryRunner.release()
-    }
 
     const infoCompany = await this.sucursalRepository.find({
       relations: { company_id: true },

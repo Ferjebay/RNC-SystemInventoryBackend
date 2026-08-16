@@ -1,7 +1,7 @@
 {
-  "name": "teslo-shop",
+  "name": "factucash-backend",
   "version": "0.0.1",
-  "description": "",
+  "description": "FactuCash — backend del sistema de facturación electrónica e inventario",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
@@ -47,7 +47,6 @@
     "moment": "^2.29.4",
     "nestjs-typeorm-paginate": "^4.0.4",
     "node-cron": "^3.0.3",
-    "node-routeros": "^1.6.9",
     "nodemailer": "^6.9.6",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.1",
