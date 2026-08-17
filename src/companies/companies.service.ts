@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
 import { Email } from 'src/email/entities/email.entity';
 import { Proforma } from 'src/proforma/entities/proforma.entity';
+import { FacturacionMsClient } from 'src/comprobantes-electronicos/facturacion-ms/facturacion-ms.client';
 const fs = require('fs');
 const path = require('path');
 
@@ -19,8 +20,28 @@ export class CompaniesService {
     @InjectRepository( Email )
     private readonly emailRepository: Repository<Email>,
     @InjectRepository( Proforma )
-    private readonly proformaRepository: Repository<Proforma>
+    private readonly proformaRepository: Repository<Proforma>,
+    private readonly facturacionMs: FacturacionMsClient
   ){}
+
+  /**
+   * Deja el certificado listo en el microservicio, que es quien firma.
+   *
+   * El .p12 se sigue guardando aquí (multer ya lo escribió) pero además se
+   * empuja al MS y se le pide la caducidad. Si el MS no responde, el guardado
+   * de la empresa continúa: el archivo quedó local y basta reintentar.
+   */
+  private async sincronizarCertificado( nombreArchivo: string, password: string ) {
+    const ruta = path.resolve(__dirname, `../../static/SRI/FIRMAS/${ nombreArchivo }`);
+
+    if ( !fs.existsSync( ruta ) ) return null;
+
+    await this.facturacionMs.subirCertificado( ruta, nombreArchivo );
+
+    if ( !password ) return null;
+
+    return await this.facturacionMs.caducidadCertificado( nombreArchivo, password );
+  }
 
   async create(createCompanyDto: CreateCompanyDto, files: any = null) {
     try {
@@ -36,6 +57,9 @@ export class CompaniesService {
         archivo_certificado: cert_name,
         logo: logo_name
       });
+
+      const caducidad = await this.sincronizarCertificado( cert_name, createCompanyDto.clave_certificado );
+      if ( caducidad ) company.fecha_caducidad_certificado = caducidad.toISOString();
 
       const companyCreated = await this.companyRepository.save( company );
 
@@ -108,13 +132,24 @@ export class CompaniesService {
     try {
       let { archivo_certificado_old, logo_old, ...rest } = updateCompanyDto;
 
-      await this.companyRepository.update( id, {
+      const cert_name = ( files && files.archivo_certificado )
+                          ? files.archivo_certificado[0].originalname
+                          : archivo_certificado_old;
+
+      const datos: any = {
         ...rest,
         logo: ( files && files.logo ) ? files.logo[0].originalname : logo_old,
-        archivo_certificado: ( files && files.archivo_certificado)
-                            ? files.archivo_certificado[0].originalname
-                            : updateCompanyDto.archivo_certificado_old
-      });
+        archivo_certificado: cert_name
+      };
+
+      // Solo se resincroniza cuando llega un certificado nuevo: subirlo en cada
+      // guardado sería mandar el mismo archivo por gusto.
+      if ( files && files.archivo_certificado ) {
+        const caducidad = await this.sincronizarCertificado( cert_name, updateCompanyDto.clave_certificado );
+        if ( caducidad ) datos.fecha_caducidad_certificado = caducidad.toISOString();
+      }
+
+      await this.companyRepository.update( id, datos );
 
       return { ok: true, msg: "Se actualizaron los datos exitosamente" };
 

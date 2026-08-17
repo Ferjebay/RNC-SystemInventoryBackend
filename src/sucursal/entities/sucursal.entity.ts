@@ -1,6 +1,5 @@
 import { Buy } from "src/buys/entities/buy.entity";
 import { Company } from "src/companies/entities/company.entity";
-import { Retencion } from "src/comprobantes-electronicos/retenciones/entities/retencione.entity";
 import { Invoice } from "src/invoices/entities/invoice.entity";
 import { Product } from "src/products/entities/product.entity";
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
@@ -23,9 +22,6 @@ export class Sucursal {
 
     @OneToMany(() => Invoice, (invoice) => invoice.sucursal_id)
     invoices: Invoice[];
-
-    @OneToMany(() => Retencion, (retencion) => retencion.sucursal_id)
-    retenciones: Retencion[];
 
     @OneToMany(() => Product, (product) => product.sucursal_id)
     products: Product[];

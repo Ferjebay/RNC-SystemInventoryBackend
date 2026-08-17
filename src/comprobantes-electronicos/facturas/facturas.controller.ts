@@ -34,7 +34,6 @@ export class FacturasController {
   ){
     return this.facturasService.generarFacturaElectronica(
       datosFactura,
-      '',
       sucursal_id,
       datosFactura.pago_id,
       datosFactura.entity
@@ -43,14 +42,12 @@ export class FacturasController {
 
   @Post('recepcionComprobantesOffline')
   async recepcionComprobantesOffline( @Body() datosFactura: any ){
-    this.facturasService.reeenviarRecepcionComprobantesOffline(datosFactura);
-    return "ok"
+    return this.facturasService.reintentarEnvioSRI( datosFactura );
   }
 
   @Post('autorizacionComprobantesOffline')
   async autorizacionComprobantesOffline( @Body() datosFactura: any ){
-    this.facturasService.reeenviarAutorizacionComprobantesOffline(datosFactura);
-    return "ok"
+    return { ok: true };
   }
 
   @Post('anularFactura')

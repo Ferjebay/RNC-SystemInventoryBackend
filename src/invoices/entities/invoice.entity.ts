@@ -25,8 +25,8 @@ export class Invoice {
     @OneToMany(() => InvoiceToProduct, (invoiceToproduct) => invoiceToproduct.invoice_id)
     invoiceToProduct?: InvoiceToProduct[];
 
-    @Column({ type: 'varchar', length: 50, unique: true })
-    clave_acceso: string;
+    @Column({ type: 'varchar', length: 50, unique: true, nullable: true })
+    clave_acceso?: string;
 
     @Column({ type: 'varchar', length: 50, unique: true, nullable: true })
     clave_acceso_nota_credito?: string;

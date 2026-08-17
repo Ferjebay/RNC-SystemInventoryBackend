@@ -78,7 +78,6 @@ export class InvoicesService {
     }else{ //Crear Factura o Proforma
       try {
         let invoiceCreated: any = { id: null };
-        const claveAcceso = await this.facturaService.getClaveAcceso( sucursal_id );
         const { numComprobante } = await this.facturaService.getNumComprobante( sucursal_id );
 
         if (createInvoiceDto.tipo !== 'EMISION'){
@@ -86,7 +85,6 @@ export class InvoicesService {
           invoiceEntity = {
             ...createInvoiceDto,
             sucursal_id,
-            clave_acceso: claveAcceso,
             numero_comprobante: createInvoiceDto.tipo == 'PROFORMA' ? '--- --- ---------' : numComprobante,
             estadoSRI: createInvoiceDto.tipo == 'PROFORMA' ? 'PROFORMA' : 'PENDIENTE'
           }
@@ -112,7 +110,6 @@ export class InvoicesService {
         if (createInvoiceDto.tipo == 'FACTURA' || createInvoiceDto.tipo == 'EMISION') {
           this.facturaService.generarFacturaElectronica(
             createInvoiceDto,
-            claveAcceso,
             sucursal_id,
             invoiceCreated.id,
             'Invoice',
@@ -234,50 +231,55 @@ export class InvoicesService {
       route: `${ process.env.HOST_API }/invoices`,
     }, 'FACTURAS', sucursal_id, desde, hasta, '');
 
-    const comprobantes = ventas.items.map( venta => {
-      let pathComprobante = path.resolve(__dirname, `../../static/SRI/PDF/${ venta.clave_acceso }.pdf`);
-      return pathComprobante;
-    })
-
-    // Crea una nueva instancia de AdmZip
     const zip = new AdmZip();
 
-    // Agregar cada archivo al archivo ZIP
-    comprobantes.forEach(filePath => {
-      if (fs.existsSync(filePath)) { // Verificar si el archivo existe
-        zip.addLocalFile(filePath); // Agregar archivo al ZIP
-      } else {
-        console.warn(`El archivo "${filePath}" no existe.`);
+    // Los RIDE ya no están en disco: se piden al microservicio uno a uno. Va en
+    // serie a propósito, para no dispararle decenas de peticiones simultáneas.
+    let fallidos = 0;
+
+    for ( const venta of ventas.items ) {
+      if ( !venta.clave_acceso ) continue;
+
+      try {
+        const pdf = await this.facturaService.descargarComprobante( 'ride', venta.clave_acceso );
+        zip.addFile(`${ venta.numero_comprobante ?? venta.clave_acceso }.pdf`, pdf);
+      } catch (error) {
+        fallidos++;
+        this.logger.warn(`No se pudo obtener el RIDE de ${ venta.clave_acceso }`);
       }
-    });
+    }
+
+    if ( fallidos > 0 )
+      this.logger.warn(`Descarga masiva: ${ fallidos } de ${ ventas.items.length } comprobantes no se pudieron incluir.`);
 
     return zip.toBuffer();
   }
 
+  /**
+   * Entrega el archivo de un comprobante.
+   *
+   * El RIDE y el XML vienen del microservicio, que es quien los emitió y los
+   * conserva. La proforma sí sigue siendo local: no es un comprobante del SRI,
+   * se genera aquí con puppeteer.
+   */
   async downloadRideXml( clave_acceso: string, tipo_documento: string, razon_social: string ) {
 
-    const nombreComercial = clave_acceso.slice(10, 23);
-
-    try {
-
-      let ruta;
-      if ( tipo_documento == 'xml' )
-        ruta = path.resolve(__dirname, `../../static/SRI/${ nombreComercial }/facturas/Autorizados/${ clave_acceso }.xml`);
-
-      if ( tipo_documento == 'ride' )
-        ruta = path.resolve(__dirname, `../../static/SRI/PDF/${ clave_acceso }.pdf`);
-
-      if ( tipo_documento == 'proforma' )
-        ruta = path.resolve(__dirname, `../../static/SRI/PROFORMAS/${ clave_acceso }`);
-
-      const file = await fs.readFileSync(ruta);
-
-      return file;
-
-    } catch (error) {
-      console.log(error);
-      throw new BadRequestException('No se encontro el archivo');
+    if ( tipo_documento == 'proforma' ) {
+      try {
+        return fs.readFileSync(
+          path.resolve(__dirname, `../../static/SRI/PROFORMAS/${ clave_acceso }`)
+        );
+      } catch (error) {
+        throw new BadRequestException('No se encontró la proforma');
+      }
     }
+
+    if ( tipo_documento !== 'ride' && tipo_documento !== 'xml' )
+      throw new BadRequestException(`Tipo de documento no soportado: ${ tipo_documento }`);
+
+    return this.facturaService.descargarComprobante(
+      tipo_documento, clave_acceso, 'factura', razon_social
+    );
   }
 
   async findOne(id: string) {

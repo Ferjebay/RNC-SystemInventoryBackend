@@ -22,7 +22,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { RolesAndPermisosModule } from './roles-and-permisos/roles-and-permisos.module';
 import { ProformaModule } from './proforma/proforma.module';
 import { DashboardModule } from './dashboard/dashboard.module';
-import { RetencionesModule } from './comprobantes-electronicos/retenciones/retenciones.module';
 
 @Module({
   imports: [
@@ -67,7 +66,6 @@ import { RetencionesModule } from './comprobantes-electronicos/retenciones/reten
     RolesAndPermisosModule,
     ProformaModule,
     DashboardModule,
-    RetencionesModule
   ],
   controllers: [AppController],
   providers: [AppService],
