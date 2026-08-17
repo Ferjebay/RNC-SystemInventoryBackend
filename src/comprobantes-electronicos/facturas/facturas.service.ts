@@ -220,8 +220,11 @@ export class FacturasService {
     return ( datosFactura.products ?? [] ).map(( item: any ) => {
       const cantidad       = Number( item.cantidad );
       const precioUnitario = Number( item.pvp );
-      const porcentaje     = Number( item.descuento ?? 0 );
-      const descuento      = +(( cantidad * precioUnitario * porcentaje ) / 100).toFixed(2);
+      const totalLinea     = cantidad * precioUnitario;
+      const descuento      = +Math.min(
+        Math.max( Number( item.descuento ?? 0 ), 0 ),
+        totalLinea
+      ).toFixed(2);
 
       const codigo = String( item.codigoBarra ?? '' ).trim() || String( item.id ?? '' ).trim();
 
