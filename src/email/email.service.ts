@@ -151,7 +151,14 @@ export class EmailService {
 
   async sendComprobantes( clientFound, infoCompany, numComprobante = '', clave_acceso = '', comprobantes ) {
 
-    const { host, usuario, puerto, password, seguridad } = await this.findOne( infoCompany.company_id.id );
+    const { host, usuario, puerto, password, seguridad, activo } = await this.findOne( infoCompany.company_id.id );
+
+    // Interruptor de Mensajería: apagado, no se intenta el envío. Se comprueba
+    // acá y no en cada llamador para que ninguna vía se salte la decisión.
+    if ( activo === false ) {
+      console.log('Correo desactivado en Mensajería: no se envía el comprobante.');
+      return 'Correo desactivado';
+    }
 
     const config = {
       host,
@@ -177,7 +184,9 @@ export class EmailService {
         <strong>Estimado(a):</strong> ${ clientFound.nombres } la empresa <strong>${infoCompany.company_id.nombre_comercial}</strong> le ha emitido la siguiente proforma a su nombre
       </p>`;
       message.attachments = [
-        { filename: comprobantes.name, path: comprobantes.buffer }
+        // nombreVisible es "proforma-3.pdf"; el del disco lleva un sufijo
+        // interno para no chocar entre sucursales, pero eso no le sirve al cliente.
+        { filename: comprobantes.nombreVisible ?? comprobantes.name, path: comprobantes.buffer }
       ]
     }else{
       message.subject = `${infoCompany.company_id.nombre_comercial} - Factura Nro. ${ numComprobante }`,
@@ -211,8 +220,19 @@ export class EmailService {
     }
   }
 
-  async findAll() {
-    return await this.emailRepository.find();
+  /**
+   * Devolvía las configuraciones SMTP de TODAS las empresas: credenciales de
+   * otros clientes visibles en el listado. Ahora exige la empresa.
+   */
+  async findAll( company_id ) {
+
+    if ( !company_id )
+      throw new BadRequestException('Falta la empresa: no se puede listar la configuración de correo.');
+
+    return await this.emailRepository.find({
+      where: { company_id: { id: company_id } },
+      relations: { company_id: true }
+    });
   }
 
   async findOne(id: string) {
@@ -230,8 +250,14 @@ export class EmailService {
 
     const { email_client, puerto, ...rest } = updateEmailDto
 
+    // El puerto solo se toca si vino en la petición: con un PATCH parcial (por
+    // ejemplo solo el interruptor `activo`) el `+undefined` de antes escribía
+    // NaN en una columna int y reventaba el guardado.
+    const cambios: any = { ...rest };
+    if ( puerto !== undefined && puerto !== null ) cambios.puerto = +puerto;
+
     try {
-      await this.emailRepository.update( id, { ...rest, puerto: +puerto } );
+      await this.emailRepository.update( id, cambios );
 
       return {
         ok: true,

@@ -45,7 +45,9 @@ export class RolesAndPermisosService {
   }
 
   async update(id: string, updateRolesAndPermisoDto: UpdateRolesAndPermisoDto) {
-    await this.findOne( id );
+    const rol = await this.findOne( id );
+
+    this.protegerSuperAdministrador( rol, 'modificar' );
 
     try {
       await this.roleAndPermisoRepository.update( id, updateRolesAndPermisoDto );
@@ -63,9 +65,24 @@ export class RolesAndPermisosService {
   async remove(id: string) {
     const user = await this.findOne( id );
 
+    this.protegerSuperAdministrador( user, 'eliminar' );
+
     await this.roleAndPermisoRepository.remove( user );
 
     return { ok: true, msg: 'Registro eliminado exitosamente' };
+  }
+
+  /**
+   * El SUPER-ADMINISTRADOR tiene todos los permisos por definición y es el único
+   * rol capaz de administrar los demás: quitarle permisos o borrarlo deja el
+   * sistema sin quién lo gobierne. El front lo bloquea, pero eso solo esconde el
+   * botón; la garantía tiene que estar acá.
+   */
+  private protegerSuperAdministrador( rol: RolAndPermiso, accion: string ) {
+    if ( rol?.nombre === 'SUPER-ADMINISTRADOR' )
+      throw new BadRequestException(
+        `El rol SUPER-ADMINISTRADOR no se puede ${ accion }: tiene todos los permisos de forma permanente.`
+      );
   }
 
   private handleDBExceptions( error: any ) {

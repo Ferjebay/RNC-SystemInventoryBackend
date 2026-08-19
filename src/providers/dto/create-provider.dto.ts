@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, MaxLength, MinLength } from "class-validator";
+import { IsIn, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 
 export class CreateProviderDto {
 
@@ -16,27 +16,26 @@ export class CreateProviderDto {
     @MaxLength(13)
     numero_documento: string
 
+    // Celular, email y dirección son opcionales, igual que en clientes: de
+    // muchos proveedores solo se tiene la razón social y el RUC.
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
-    @MinLength(5)
-    @MaxLength(10)
-    celular: string
+    celular?: string
 
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
-    @MinLength(5)
-    email: string
+    email?: string
 
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
-    provincia: string
+    direccion?: string
 
+    @IsOptional()
     @IsString()
-    @IsNotEmpty()
-    ciudad: string
+    observacion?: string
 
-    @IsString()
-    @IsNotEmpty()
-    direccion: string
+    @IsOptional()
+    @IsIn(['NATURAL', 'JURIDICA'], { message: 'El tipo de persona debe ser NATURAL o JURIDICA' })
+    tipo_persona?: string
 
 }

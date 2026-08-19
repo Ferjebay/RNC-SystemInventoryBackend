@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, DefaultValuePipe, ParseBoolPipe, ParseUUIDPipe, Headers, Put, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, DefaultValuePipe, ParseBoolPipe, ParseUUIDPipe, Headers, Put, Res, Query } from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -33,9 +33,20 @@ export class CustomersController {
   @Get(':estado?')
   async findAll(
     @Headers('company-id') company_id: Company,
-    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
+    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('busqueda') busqueda?: string
   ) {
-    return await this.customersService.findAll( estado, company_id );
+    // Sin page/limit se devuelve el arreglo completo: los selectores de cliente
+    // de facturación necesitan todos los registros para buscar dentro del combo.
+    // El mantenedor sí los manda y recibe { items, meta }.
+    if ( page === undefined && limit === undefined )
+      return await this.customersService.findAll( estado, company_id, busqueda );
+
+    return await this.customersService.findAllPaginado(
+      { page, limit }, estado, company_id, busqueda
+    );
   }
 
   @Get('/find/:term')

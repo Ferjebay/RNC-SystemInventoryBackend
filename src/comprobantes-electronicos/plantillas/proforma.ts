@@ -1,5 +1,5 @@
 const puppeteer = require('puppeteer')
-const { writeFile, mkdirSync } = require('fs');
+const { writeFileSync, mkdirSync } = require('fs');
 const path = require('path');
 const moment = require('moment');
 
@@ -239,6 +239,18 @@ export class Proforma {
                     ${ (datosFactura.subtotal - datosFactura.descuento).toFixed(2) }
                   </div>
                 </li>
+                ${ Number( datosFactura.ice ?? 0 ) > 0 ? `
+                <li style="display: flex;padding-right: 0px;">
+                  <div class="col-8 column2Titulo text-center" style="border-left: 1px solid #34495E;">
+                  </div>
+                  <div class="col-2 column2Titulo subtotal" style="background-color: #34495E;color: white;">
+                    ICE
+                  </div>
+                  <div class="col-2 column2Titulo text-end pe-2"
+                    style="border-left: 1px solid #34495E;border-bottom: 1px solid #34495E;border-right: 1px solid #34495E;background-color: #34495E;color: white;">
+                    ${ Number( datosFactura.ice ).toFixed(2) }
+                  </div>
+                </li>` : '' }
                 <li style="display: flex;padding-right: 0px;">
                   <div class="col-8 column2Titulo text-center" style="border-left: 1px solid #34495E;">
                   </div>
@@ -269,16 +281,21 @@ export class Proforma {
                   </div>
                 </li>`
 
-                infoCompany.company_id.proforma[0].clausulas.forEach((clausula, index) => {
+                // Una empresa que todavía no configuró la proforma dejaba caer todo
+                // el PDF: proforma[0] venía undefined y reventaba al leer .clausulas.
+                const configProforma = infoCompany.company_id.proforma?.[0] ?? {};
+                const clausulas = configProforma.clausulas ?? [];
+
+                clausulas.forEach((clausula, index) => {
                   html += /*html*/ `
                   <li style="display: flex;padding-right: 0px;">
                   <div
-                    class="col-4 column2Titulo text-left fw-bolder ${ (index + 1) == infoCompany.company_id.proforma[0].clausulas.length
+                    class="col-4 column2Titulo text-left fw-bolder ${ (index + 1) == clausulas.length
                       ? 'ultima-clausulas-1' : 'primeras-clausulas-1' }">
                     ${ clausula.nombre }:
                   </div>
                   <div
-                    class="col-8 column2Titulo text-left ${ (index + 1) == infoCompany.company_id.proforma[0].clausulas.length
+                    class="col-8 column2Titulo text-left ${ (index + 1) == clausulas.length
                       ? 'ultima-clausulas-2' : 'primeras-clausulas-2' }">
                     ${ clausula.descripcion }
                   </div>
@@ -294,7 +311,7 @@ export class Proforma {
                 <li style="display: flex;padding-right: 0px;">
                   <div class="col-12 column2Titulo text-left pa-2" style="padding: 8px;border: 1px solid #34495E;font-family: none;line-height: 16px;
                     font-size: 12px;">
-                    ${ infoCompany.company_id.proforma[0].aceptacion_proforma }
+                    ${ configProforma.aceptacion_proforma ?? '' }
                   </div>
                 </li>
               </ul>
@@ -399,9 +416,19 @@ export class Proforma {
   }
 
   async generarProformaPDF( ...data ) {
-    const [ datosFactura, clientFound, infoCompany, total_proforma ] = data;
+    const [ datosFactura, clientFound, infoCompany, total_proforma, invoice_id ] = data;
 
-    const name_proforma = `proforma-${ total_proforma }.pdf`
+    // El que ve el cliente en el correo: legible y con el número de la proforma.
+    const nombreVisible = `proforma-${ total_proforma }.pdf`;
+
+    // El del disco lleva además un sufijo del comprobante. El contador es por
+    // sucursal, así que sin el sufijo dos sucursales generan el mismo
+    // `proforma-1.pdf` y la segunda pisa el PDF de la primera: al descargar,
+    // el usuario se bajaba la proforma de otra sucursal (o de otra empresa).
+    const sufijo = String( invoice_id ?? '' ).replace(/-/g, '').slice(0, 8);
+    const name_proforma = sufijo
+      ? `proforma-${ total_proforma }-${ sufijo }.pdf`
+      : nombreVisible;
 
     let imageName;
     if(infoCompany[0].company_id.logo == null || infoCompany[0].company_id.logo == 'null')
@@ -437,13 +464,17 @@ export class Proforma {
     await browser.close();
     const pathPDF = path.resolve(__dirname, `../../../static/SRI/PROFORMAS/${ name_proforma }`);
 
-    writeFile(pathPDF, pdf, {}, (err) => {
-      if(err) return console.error('error')
-    });
+    // La carpeta no existe en una instalación nueva. Sin esto writeFile fallaba
+    // con ENOENT, el callback solo imprimía 'error' y nadie se enteraba: la
+    // proforma se guardaba en la BD con su nombre de PDF pero el archivo nunca
+    // llegaba al disco, y la descarga respondía "No se encontró la proforma".
+    mkdirSync(path.dirname(pathPDF), { recursive: true });
+    writeFileSync(pathPDF, pdf);
 
     return {
       buffer: pathPDF,
       name: name_proforma,
+      nombreVisible,
       tipo: 'proforma'
     };
   }

@@ -3,9 +3,10 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Customer } from './entities/customer.entity';
-import { DataSource, Not, Repository } from 'typeorm';
+import { DataSource, ILike, Not, Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
 import { Company } from 'src/companies/entities/company.entity';
+import { paginar, OpcionesPaginacion, Paginado } from 'src/common/helpers/paginar.helper';
 const ExcelJS = require('exceljs');
 const path = require('path');
 
@@ -22,8 +23,18 @@ export class CustomersService {
 
 
   async downloadClientsToExcel( company_id ){
+
+    // Sin empresa, TypeORM descarta la condición y el archivo salía con los
+    // clientes de TODAS las empresas. Mejor fallar que filtrar datos ajenos.
+    if ( !company_id )
+      throw new BadRequestException('Falta la empresa: no se puede exportar el listado.');
+
     const customers = await this.customerRepository.find({
-      where: { company_id: { id: company_id } }
+      where: {
+        company_id: { id: company_id },
+        nombres: Not("CONSUMIDOR FINAL")
+      },
+      order: { created_at: "DESC" }
     });
 
     const pathPlantilla = path.resolve(__dirname, `../../static/resource/clientes_plantilla.xlsx`);
@@ -42,12 +53,18 @@ export class CustomersService {
         if ( customer.tipo_documento == '05' ) tipo_documento = 'Cedula'
         if ( customer.tipo_documento == '06' ) tipo_documento = 'Pasaporte'
 
-        worksheet.getCell(`A${ index + 2 }`).value = customer.nombres.toUpperCase();
-        worksheet.getCell(`B${ index + 2 }`).value = tipo_documento;
-        worksheet.getCell(`C${ index + 2 }`).value = customer.numero_documento;
-        worksheet.getCell(`D${ index + 2 }`).value = customer.email;
-        worksheet.getCell(`E${ index + 2 }`).value = customer.celular;
-        worksheet.getCell(`F${ index + 2 }`).value = customer.direccion;
+        // La plantilla lleva banda de título en la fila 1 y cabeceras en la 2:
+        // los datos arrancan en la 3.
+        const fila = index + 3;
+
+        worksheet.getCell(`A${ fila }`).value = customer.nombres.toUpperCase();
+        worksheet.getCell(`B${ fila }`).value = tipo_documento;
+        worksheet.getCell(`C${ fila }`).value = customer.numero_documento;
+        worksheet.getCell(`D${ fila }`).value = customer.email;
+        worksheet.getCell(`E${ fila }`).value = customer.celular;
+        worksheet.getCell(`F${ fila }`).value = customer.direccion;
+        worksheet.getCell(`G${ fila }`).value = customer.tipo_persona ?? 'NATURAL';
+        worksheet.getCell(`H${ fila }`).value = customer.observacion;
       }
 
       return workbook.xlsx.writeBuffer();
@@ -56,22 +73,65 @@ export class CustomersService {
     }
   }
 
-  async findAll( estado: boolean, company_id: Company ) {
+  /**
+   * Criterios comunes del listado.
+   *
+   * `estado` en true = solo clientes activos (lo que necesitan los selectores
+   * de facturación). Sin él se devuelve todo, que es lo que quiere el
+   * mantenedor de clientes para poder reactivarlos.
+   */
+  private criteriosListado( estado: boolean, company_id: Company, busqueda: string = '' ) {
+
+    // Va fuera del try de los métodos que lo usan: handleDBExceptions
+    // convertiría este 400 en un 500 sin mensaje. Sin empresa, TypeORM descarta
+    // la condición y devolvería los clientes de todas.
+    if ( !company_id )
+      throw new BadRequestException('Falta la empresa: no se puede listar clientes.');
+
+    const filtros: any = {
+      company_id: { id: company_id },
+      nombres: Not("CONSUMIDOR FINAL")
+    };
+
+    if ( estado ) filtros.isActive = true;
+
+    const termino = ( busqueda ?? '' ).trim();
+
+    // La búsqueda va al servidor: con paginación real, filtrar solo la página
+    // visible daría resultados incompletos.
+    const where = termino === ''
+      ? filtros
+      : [
+          { ...filtros, nombres: ILike(`%${ termino }%`) },
+          { ...filtros, numero_documento: ILike(`%${ termino }%`) },
+          { ...filtros, email: ILike(`%${ termino }%`) }
+        ];
+
+    return { where, order: { created_at: "DESC" } };
+  }
+
+  /** Listado completo. Lo usan los selectores de cliente al facturar. */
+  async findAll( estado: boolean, company_id: Company, busqueda: string = '' ) {
+    const option = this.criteriosListado( estado, company_id, busqueda );
+
     try {
-      let option:any = {
-        where: {
-          company_id: { id: company_id },
-          nombres: Not("CONSUMIDOR FINAL"),
-          isActive: null
-        },
-        order: {
-          created_at: "DESC"
-        }
-      }
+      return await this.customerRepository.find( option as any );
+    } catch (error) {
+      this.handleDBExceptions(error);
+    }
+  }
 
-      if ( estado ) option.where.isActive = true;
+  /** Listado paginado. Lo usa el mantenedor de clientes. */
+  async findAllPaginado(
+    options: OpcionesPaginacion,
+    estado: boolean,
+    company_id: Company,
+    busqueda: string = ''
+  ): Promise<Paginado<Customer>> {
+    const option = this.criteriosListado( estado, company_id, busqueda );
 
-      return await this.customerRepository.find( option );
+    try {
+      return await paginar<Customer>( this.customerRepository, options, option as any );
     } catch (error) {
       this.handleDBExceptions(error);
     }

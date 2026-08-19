@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, InternalServerErrorException, BadRequestException } from '@nestjs/common';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { ConfigWhatsappDto } from './dto/config-whatsapp.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Company } from './entities/company.entity';
 import { Repository } from 'typeorm';
@@ -186,6 +187,30 @@ export class CompaniesService {
       await this.companyRepository.update( id, { isActive: true })
     else
       await this.companyRepository.update( id, { isActive: false })
+
+    return { ok: true, msg: 'Actualizado Exitosamente' };
+  }
+
+  /**
+   * Guarda el canal de WhatsApp: el interruptor y/o el número vinculado. Los dos
+   * son opcionales, así que solo se escribe lo que realmente vino en el cuerpo.
+   */
+  async configWhatsapp( id: string, configWhatsappDto: ConfigWhatsappDto ) {
+    const empresa = await this.companyRepository.findOneBy({ id });
+
+    if ( !empresa )
+      throw new NotFoundException(`No se encontró la empresa ${ id }`);
+
+    const cambios: Partial<Company> = {};
+
+    if ( configWhatsappDto.whatsapp_activo !== undefined )
+      cambios.whatsapp_activo = configWhatsappDto.whatsapp_activo;
+
+    if ( configWhatsappDto.numero_whatsApp !== undefined )
+      cambios.numero_whatsApp = configWhatsappDto.numero_whatsApp;
+
+    if ( Object.keys( cambios ).length )
+      await this.companyRepository.update( id, cambios );
 
     return { ok: true, msg: 'Actualizado Exitosamente' };
   }

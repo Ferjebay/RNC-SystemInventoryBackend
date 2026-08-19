@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Headers } from '@nestjs/common';
 import { EmailService } from './email.service';
 import { CreateEmailDto } from './dto/create-email.dto';
 import { UpdateEmailDto } from './dto/update-email.dto';
@@ -13,8 +13,10 @@ export class EmailController {
   }
 
   @Get()
-  findAll() {
-    return this.emailService.findAll();
+  findAll(
+    @Headers('company-id') company_id: string
+  ) {
+    return this.emailService.findAll( company_id );
   }
 
   @Get('/:id')

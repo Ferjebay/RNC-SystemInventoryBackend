@@ -18,6 +18,7 @@ import { InvoicesModule } from './invoices/invoices.module';
 import { FacturasModule } from './comprobantes-electronicos/facturas/facturas.module';
 import { SucursalModule } from './sucursal/sucursal.module';
 import { EmailModule } from './email/email.module';
+import { CloudApiModule } from './cloud-api/cloud-api.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RolesAndPermisosModule } from './roles-and-permisos/roles-and-permisos.module';
 import { ProformaModule } from './proforma/proforma.module';
@@ -63,6 +64,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     FacturasModule,
     SucursalModule,
     EmailModule,
+    CloudApiModule,
     RolesAndPermisosModule,
     ProformaModule,
     DashboardModule,

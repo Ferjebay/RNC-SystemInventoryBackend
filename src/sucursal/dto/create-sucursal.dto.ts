@@ -29,11 +29,7 @@ export class CreateSucursalDto {
     @IsNumber()
     secuencia_factura_pruebas?: number;
 
-    @IsNumber()
-    secuencia_retencion_produccion: number;
 
-    @IsNumber()
-    secuencia_retencion_pruebas?: number;
 
     @IsNumber()
     secuencia_nota_credito_produccion: number;

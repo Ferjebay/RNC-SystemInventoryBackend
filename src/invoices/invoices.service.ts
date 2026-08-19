@@ -7,11 +7,7 @@ import { Between, ILike, Not, Repository } from 'typeorm';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { FacturasService } from 'src/comprobantes-electronicos/facturas/facturas.service';
 import { InvoiceToProduct } from './entities/invoiceToProduct.entity';
-import {
-  paginate,
-  Pagination,
-  IPaginationOptions
-} from 'nestjs-typeorm-paginate';
+import { paginar, OpcionesPaginacion, Paginado } from 'src/common/helpers/paginar.helper';
 import { Company } from 'src/companies/entities/company.entity';
 const path = require('path');
 const AdmZip = require('adm-zip');
@@ -116,12 +112,14 @@ export class InvoicesService {
             createInvoiceDto.send_messages
           )
         }else{
+          // Corre en segundo plano: la respuesta no espera al PDF. El .catch es
+          // obligatorio, sin él un fallo acá se vuelve unhandled rejection.
           this.facturaService.generarProforma(
             createInvoiceDto,
             sucursal_id,
             invoiceCreated.id,
             createInvoiceDto.send_messages
-          );
+          ).catch( error => console.error('Error generando la proforma:', error?.message ?? error) );
         }
       } catch (error) {
         this.handleDBExceptions( error )
@@ -131,13 +129,13 @@ export class InvoicesService {
   }
 
   async findAll(
-      options: IPaginationOptions,
+      options: OpcionesPaginacion,
       tipo: string,
       sucursal_id: string,
       desde,
       hasta,
       busqueda,
-      company_id: Company ): Promise<Pagination<Invoice>> {
+      company_id: Company ): Promise<Paginado<Invoice>> {
     try {
       return await this.getVentas(options, tipo, sucursal_id, desde, hasta, busqueda, company_id)
     } catch (error) {
@@ -156,7 +154,7 @@ export class InvoicesService {
     return proformas.length + 1;
   }
 
-  async getVentas(options: IPaginationOptions, tipo: string, sucursal_id: string, desde, hasta, busqueda, company_id?: Company){
+  async getVentas(options: OpcionesPaginacion, tipo: string, sucursal_id: string, desde, hasta, busqueda, company_id?: Company){
     try {
 
       let inicio, fin;
@@ -216,7 +214,7 @@ export class InvoicesService {
         order: { created_at: "DESC" }
       }
 
-      return await paginate<Invoice>(this.invoiceRepository, options, option);
+      return await paginar<Invoice>(this.invoiceRepository, options, option);
 
     } catch (error) {
       this.handleDBExceptions(error)
@@ -227,8 +225,7 @@ export class InvoicesService {
 
     const ventas = await this.getVentas({
       page: 1,
-      limit: 1000000,
-      route: `${ process.env.HOST_API }/invoices`,
+      limit: 1000000
     }, 'FACTURAS', sucursal_id, desde, hasta, '');
 
     const zip = new AdmZip();
@@ -262,24 +259,97 @@ export class InvoicesService {
    * conserva. La proforma sí sigue siendo local: no es un comprobante del SRI,
    * se genera aquí con puppeteer.
    */
-  async downloadRideXml( clave_acceso: string, tipo_documento: string, razon_social: string ) {
+  async downloadRideXml(
+    clave_acceso: string,
+    tipo_documento: string,
+    razon_social: string,
+    tipo_comprobante: 'factura' | 'nota-credito' = 'factura',
+    invoice_id?: string
+  ) {
 
     if ( tipo_documento == 'proforma' ) {
-      try {
-        return fs.readFileSync(
-          path.resolve(__dirname, `../../static/SRI/PROFORMAS/${ clave_acceso }`)
-        );
-      } catch (error) {
-        throw new BadRequestException('No se encontró la proforma');
-      }
+      const carpeta = path.resolve(__dirname, `../../static/SRI/PROFORMAS`);
+
+      if ( clave_acceso && fs.existsSync(`${ carpeta }/${ clave_acceso }`) )
+        return fs.readFileSync(`${ carpeta }/${ clave_acceso }`);
+
+      // El archivo no está: proforma anterior al arreglo de la carpeta, disco
+      // limpiado o despliegue en otro servidor. El PDF de la proforma solo vive
+      // acá (el SRI no la custodia, no es un comprobante), así que se rehace con
+      // lo que hay en la base en vez de dejar al usuario sin descarga.
+      if ( !invoice_id )
+        throw new BadRequestException('Esta proforma no tiene PDF y no se puede regenerar. Edítala y guárdala.');
+
+      const nombre = await this.regenerarProforma( invoice_id );
+
+      return fs.readFileSync(`${ carpeta }/${ nombre }`);
     }
 
     if ( tipo_documento !== 'ride' && tipo_documento !== 'xml' )
       throw new BadRequestException(`Tipo de documento no soportado: ${ tipo_documento }`);
 
+    if ( !clave_acceso )
+      throw new BadRequestException(
+        tipo_comprobante == 'nota-credito'
+          ? 'La factura no tiene nota de crédito: no hay nada que descargar.'
+          : 'La factura no tiene clave de acceso: no hay nada que descargar.'
+      );
+
     return this.facturaService.descargarComprobante(
-      tipo_documento, clave_acceso, 'factura', razon_social
+      tipo_documento, clave_acceso, tipo_comprobante, razon_social
     );
+  }
+
+  /**
+   * Rehace el PDF de una proforma a partir de lo guardado y devuelve el nombre
+   * del archivo (cambia al regenerarse, por eso se relee de la BD).
+   */
+  private async regenerarProforma( invoice_id: string ): Promise<string> {
+    const invoice = await this.invoiceRepository.findOne({
+      where: { id: invoice_id },
+      relations: {
+        customer_id: true,
+        sucursal_id: true,
+        invoiceToProduct: { product_id: true }
+      }
+    });
+
+    if ( !invoice )
+      throw new NotFoundException('No se encontró la proforma');
+
+    // Postgres devuelve los numeric como texto y la plantilla llama .toFixed():
+    // sin convertirlos revienta al armar el HTML.
+    const numero = ( valor: any ) => Number( valor ?? 0 );
+
+    const datosFactura = {
+      ...invoice,
+      customer_id: ( invoice.customer_id as any )?.id,
+      subtotal:    numero( invoice.subtotal ),
+      descuento:   numero( invoice.descuento ),
+      iva:         numero( invoice.iva ),
+      ice:         numero( invoice.ice ),
+      total:       numero( invoice.total ),
+      descripcion: invoice.descripcion ?? '',   // la plantilla hace .length
+      products: ( invoice.invoiceToProduct ?? [] ).map( item => ({
+        cantidad: numero( item.cantidad ),
+        nombre:   item.product_id?.nombre ?? '',
+        pvp:      numero( item.product_id?.pvp ),
+        v_total:  numero( item.v_total )
+      }))
+    };
+
+    // send_messages en false a propósito: esto es una descarga, no se le puede
+    // reenviar el correo ni el WhatsApp al cliente por bajar un PDF.
+    await this.facturaService.generarProforma(
+      datosFactura,
+      ( invoice.sucursal_id as any ).id,
+      invoice.id,
+      false
+    );
+
+    const actualizada = await this.invoiceRepository.findOne({ where: { id: invoice_id } });
+
+    return actualizada.name_proforma;
   }
 
   async findOne(id: string) {

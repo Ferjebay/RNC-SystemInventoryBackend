@@ -10,11 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
 import { ILike, Repository } from 'typeorm';
 import { isNumberString, isUUID } from 'class-validator';
-import {
-  paginate,
-  Pagination,
-  IPaginationOptions
-} from 'nestjs-typeorm-paginate';
+import { paginar, OpcionesPaginacion, Paginado } from 'src/common/helpers/paginar.helper';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 const ExcelJS = require('exceljs');
 const path = require('path');
@@ -29,9 +25,31 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>
   ){}
 
+  /**
+   * Mantiene coherentes el sí/no histórico y la tarifa nueva, y limpia el ICE
+   * cuando queda en "No aplica" para no dejar un valor huérfano que después se
+   * mande al SRI.
+   */
+  private normalizarImpuestos( dto: any ) {
+    const datos = { ...dto };
+
+    if ( datos.impuesto !== undefined && datos.impuesto !== null )
+      datos.aplicaIva = Number( datos.impuesto ) > 0;
+
+    if ( !datos.ice ) {
+      datos.ice       = null;
+      datos.valor_ice = null;
+      datos.tipo_ice  = null;
+    }
+
+    return datos;
+  }
+
   async create(createProductDto: CreateProductDto, sucursal_id: Sucursal){
     try {
-      const product = this.productRepository.create( createProductDto );
+      const product = this.productRepository.create(
+        this.normalizarImpuestos( createProductDto ) as CreateProductDto
+      );
 
       product.sucursal_id = sucursal_id;
 
@@ -76,19 +94,27 @@ export class ProductsService {
     }
   }
 
-  async findAll( options: IPaginationOptions, sucursal_id: string, busqueda: string ): Promise<Pagination<Product>> {
+  /**
+   * `soloActivos` lo piden los selectores de facturación y compras: un producto
+   * inactivo no debe poder agregarse a un comprobante. El mantenedor de
+   * productos NO lo manda, porque necesita ver los inactivos para reactivarlos.
+   */
+  async findAll(
+    options: OpcionesPaginacion,
+    sucursal_id: string,
+    busqueda: string,
+    soloActivos: boolean = false
+  ): Promise<Paginado<Product>> {
     try {
-      return await paginate<Product>(this.productRepository, options, {
+      const filtros: any = { sucursal_id: { id: sucursal_id } };
+
+      if ( soloActivos ) filtros.isActive = true;
+
+      return await paginar<Product>(this.productRepository, options, {
           relations: { sucursal_id: true },
           where: [
-            {
-              nombre: ILike(`%${ busqueda }%`),
-              sucursal_id: { id: sucursal_id }
-            },
-            {
-              codigoBarra: ILike(`%${ busqueda }%`),
-              sucursal_id: { id: sucursal_id }
-            },
+            { ...filtros, nombre: ILike(`%${ busqueda }%`) },
+            { ...filtros, codigoBarra: ILike(`%${ busqueda }%`) }
           ],
           order: { created_at: "DESC" }
         }
@@ -135,7 +161,7 @@ export class ProductsService {
     await this.findOne( id );
 
     try {
-      await this.productRepository.update( id, { ...updateProductDto, sucursal_id });
+      await this.productRepository.update( id, { ...this.normalizarImpuestos( updateProductDto ), sucursal_id });
 
       return {
         ok: true,

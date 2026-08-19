@@ -27,11 +27,18 @@ export class Customer {
     @Column({ type: 'varchar', nullable: true })
     celular: string;
 
-    @Column({ type: 'varchar', length: 75 })
+    @Column({ type: 'varchar', length: 75, nullable: true })
     email: string;
 
-    @Column({ type: 'varchar', length: 300 })
+    @Column({ type: 'varchar', length: 300, nullable: true })
     direccion: string;
+
+    /** Nota interna del cliente. No sale en el comprobante. */
+    @Column({ type: 'text', nullable: true })
+    observacion?: string;
+
+    @Column({ type: 'enum', enum: ["NATURAL", "JURIDICA"], default: 'NATURAL' })
+    tipo_persona: string;
 
     @Column({ type: 'bool', default: true })
     isActive: boolean;

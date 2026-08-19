@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, Delete, ParseBoolPipe, DefaultValue
 import { CompaniesService } from './companies.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
+import { ConfigWhatsappDto } from './dto/config-whatsapp.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { fileFilter } from './helpers/fileFilter.helper';
@@ -34,6 +35,18 @@ export class CompaniesController {
     @UploadedFiles() files: { archivo_certificado?: Express.Multer.File[], logo?: Express.Multer.File[] }
   ) {
     return await this.companiesService.create(createCompanyDto, files);
+  }
+
+  /**
+   * Canal de WhatsApp de Mensajería. La ruta lleva tres segmentos a propósito:
+   * `@Patch(':id/:estado')` de más abajo se comería cualquier patrón de dos.
+   */
+  @Patch('config/whatsapp/:id')
+  async configWhatsapp(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() configWhatsappDto: ConfigWhatsappDto
+  ) {
+    return await this.companiesService.configWhatsapp( id, configWhatsappDto );
   }
 
   @Get(':estado?')

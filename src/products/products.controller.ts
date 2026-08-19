@@ -3,7 +3,7 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
-import { Pagination } from 'nestjs-typeorm-paginate';
+import { Paginado } from 'src/common/helpers/paginar.helper';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { Company } from 'src/companies/entities/company.entity';
 import { Response } from 'express';
@@ -25,14 +25,14 @@ export class ProductsController {
     @Headers('sucursal-id') sucursal_id: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe ) page: number = 1,
     @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number = 5,
-    @Query('busqueda' ) busqueda: string
-  ): Promise<Pagination<Product>> {
+    @Query('busqueda' ) busqueda: string,
+    @Query('activos') activos?: string
+  ): Promise<Paginado<Product>> {
 
     return await this.productsService.findAll({
       page,
       limit,
-      route: `${ process.env.HOST_API }/products`,
-    }, sucursal_id, busqueda);
+    }, sucursal_id, busqueda, activos === 'true');
   }
 
   @Post('/download-products-excel/')

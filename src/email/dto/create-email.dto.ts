@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsNumber, IsNumberString, IsOptional, IsString } from "class-validator";
+import { Transform } from "class-transformer";
+import { IsBoolean, IsNotEmpty, IsNumber, IsNumberString, IsOptional, IsString } from "class-validator";
 
 export class CreateEmailDto {
 
@@ -25,5 +26,12 @@ export class CreateEmailDto {
 
     @IsOptional()
     id: string;
+
+    // El front manda un booleano JSON. Se transforma por si algún cliente lo
+    // envía como texto: sin esto un "false" string entraría como true.
+    @IsOptional()
+    @Transform(({ value }) => value === true || value === 'true')
+    @IsBoolean()
+    activo?: boolean;
 
 }

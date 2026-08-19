@@ -39,6 +39,10 @@ export class CreateInvoiceDto {
     @IsNumber()
     iva: number;
 
+    @IsOptional()
+    @IsNumber()
+    ice?: number;
+
     @IsNumber()
     total: number;
 

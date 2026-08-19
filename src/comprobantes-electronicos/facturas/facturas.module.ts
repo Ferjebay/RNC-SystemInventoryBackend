@@ -7,6 +7,7 @@ import { InvoicesModule } from 'src/invoices/invoices.module';
 import { EmailModule } from 'src/email/email.module';
 import { MessagesWsModule } from '../../messages-ws/messages-ws.module';
 import { FacturacionMsModule } from '../facturacion-ms/facturacion-ms.module';
+import { CloudApiModule } from 'src/cloud-api/cloud-api.module';
 
 @Module({
   controllers: [FacturasController],
@@ -17,6 +18,7 @@ import { FacturacionMsModule } from '../facturacion-ms/facturacion-ms.module';
     EmailModule,
     MessagesWsModule,
     FacturacionMsModule,
+    CloudApiModule,
     forwardRef(() => InvoicesModule),
   ],
   exports: [ FacturasService ]

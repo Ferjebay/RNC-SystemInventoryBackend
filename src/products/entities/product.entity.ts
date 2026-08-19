@@ -22,8 +22,32 @@ export class Product {
     @Column({ type: 'varchar', length: 20 })
     codigoBarra: string;
 
+    /**
+     * Se conserva por compatibilidad: el armador de comprobantes y la carga
+     * masiva siguen trabajando con el sí/no. Se mantiene en sincronía con
+     * `impuesto` (aplicaIva = impuesto > 0).
+     */
     @Column('bool')
     aplicaIva: boolean;
+
+    /** Tarifa de IVA del producto (0, 12, 14, 15). */
+    @Column({ type: 'int', default: 0 })
+    impuesto: number;
+
+    /**
+     * ICE (Impuesto a Consumos Especiales), opcional:
+     *   ice       → null | 'tarifa' (porcentaje) | 'valor' (monto fijo)
+     *   valor_ice → el porcentaje o el monto, según lo anterior
+     *   tipo_ice  → código del catálogo del SRI (3000, 3011, …)
+     */
+    @Column({ type: 'text', nullable: true })
+    ice: string;
+
+    @Column({ type: 'numeric', nullable: true })
+    valor_ice: number;
+
+    @Column({ type: 'numeric', nullable: true })
+    tipo_ice: number;
 
     @Column({ type: 'text', nullable: false })
     nombre: string;

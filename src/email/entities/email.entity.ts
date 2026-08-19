@@ -26,6 +26,10 @@ export class Email {
     @Column({ type: 'varchar', length: 75 })
     password: string;
 
+    /** Si está apagado no se intenta enviar nada por correo. */
+    @Column({ type: 'bool', default: true })
+    activo?: boolean;
+
     @CreateDateColumn()
     created_at?: Date;
 

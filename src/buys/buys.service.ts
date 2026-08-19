@@ -3,11 +3,12 @@ import { CreateBuyDto } from './dto/create-buy.dto';
 import { UpdateBuyDto } from './dto/update-buy.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Buy } from './entities/buy.entity';
-import { Between, Repository } from 'typeorm';
+import { Between, ILike, Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { BuyToProduct } from './entities/buyToProduct.entity';
 import { Company } from 'src/companies/entities/company.entity';
+import { paginar, OpcionesPaginacion, Paginado } from 'src/common/helpers/paginar.helper';
 
 @Injectable()
 export class BuysService {
@@ -51,50 +52,76 @@ export class BuysService {
     }
   }
 
-  async findAll( estado: boolean, sucursal_id: Sucursal, desde: string, hasta: string, tipo: string | boolean, company_id: Company ) {
+  /**
+   * Listado paginado de compras.
+   *
+   * Antes devolvía TODAS las compras de la sucursal y la tabla del front
+   * paginaba en memoria: con el tiempo eso se vuelve una descarga enorme por
+   * cada visita a la pantalla. Ahora pagina en la base, igual que ventas.
+   *
+   * El filtro de fecha acepta un solo día (basta con `desde`) o un rango.
+   */
+  async findAll(
+    options: OpcionesPaginacion,
+    estado: boolean,
+    sucursal_id: Sucursal,
+    desde: string,
+    hasta: string,
+    tipo: string | boolean,
+    company_id: Company,
+    busqueda: string = ''
+  ): Promise<Paginado<Buy>> {
+
+    const inicioTexto = desde || hasta || '';
+    const finTexto    = hasta || desde || '';
+
+    let inicio: Date, fin: Date;
+
+    if ( inicioTexto !== '' ) {
+      inicio = new Date( inicioTexto );
+      fin    = new Date( finTexto );
+      fin.setHours(23, 59, 59, 999);
+    }
+
+    const filtros: any = {
+      sucursal_id: { id: sucursal_id, company_id: { id: company_id } },
+      created_at: inicioTexto !== '' ? Between( inicio, fin ) : undefined
+    };
+
+    if ( tipo == 'Aceptados' ) filtros.isActive = true;
+    if ( tipo == 'Anulados' )  filtros.isActive = false;
+
+    const termino = ( busqueda ?? '' ).trim();
+
+    // La búsqueda también viaja al servidor: con paginación real, filtrar solo
+    // la página visible daría resultados incompletos.
+    const where = termino === ''
+      ? filtros
+      : [
+          { ...filtros, numero_comprobante: ILike(`%${ termino }%`) },
+          { ...filtros, proveedor_id: { razon_social: ILike(`%${ termino }%`) } }
+        ];
+
+    const option: any = {
+      relations: {
+        buyToProduct: { product_id: true },
+        sucursal_id: true,
+        user_id: true
+      },
+      select: {
+        user_id:     { fullName: true },
+        sucursal_id: { nombre: true },
+        buyToProduct: { v_total: true, cantidad: true, product_id: true, descuento: true, iva: true }
+      },
+      where,
+      order: { created_at: "DESC" }
+    }
+
     try {
-      let inicio, fin;
-      if ( desde != "" && hasta == "" ) {
-        inicio = new Date( desde );
-        fin = new Date( desde );
-        fin.setHours(23, 59, 59, 999);
-      }
-      if ( desde == "" && hasta != "" ) {
-        inicio = new Date( hasta );
-        fin = new Date( hasta );
-        fin.setHours(23, 59, 59, 999);
-      }
-      if ( desde != "" && hasta != "" ) {
-        inicio = new Date( desde );
-        fin = new Date( hasta );
-        fin.setHours(23, 59, 59, 999);
-      }
-
-      let option:any = {
-        relations: {
-          buyToProduct: { product_id: true },
-          sucursal_id: true,
-          user_id: true
-        },
-        select: {
-          user_id:     { fullName: true },
-          sucursal_id: { nombre: true },
-          buyToProduct: { v_total: true, cantidad: true, product_id: true, descuento: true, iva: true }
-        },
-        where: {
-          sucursal_id: { id: sucursal_id, company_id: { id: company_id } },
-          created_at: ( desde != "" || hasta != "" ) ? Between( inicio, fin ) : null
-        },
-        order: { created_at: "DESC" }
-      }
-
-      if ( tipo == 'TODOS' ) option.where.isActive = null;
-      if ( tipo == 'Aceptados' ) option.where.isActive = true;
-      if ( tipo == 'Anulados' ) option.where.isActive = false;
-
-      return await this.buyRepository.find(option);
+      return await paginar<Buy>( this.buyRepository, options, option );
     } catch (error) {
-      console.log( error );
+      this.logger.error('No se pudo listar las compras', error?.stack);
+      throw new InternalServerErrorException('No se pudo obtener el listado de compras.');
     }
   }
 

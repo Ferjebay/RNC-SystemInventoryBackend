@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, DefaultValuePipe, ParseBoolPipe, ParseUUIDPipe, Headers } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, DefaultValuePipe, ParseBoolPipe, ParseUUIDPipe, Headers, Res, Query } from '@nestjs/common';
 import { ProvidersService } from './providers.service';
 import { CreateProviderDto } from './dto/create-provider.dto';
 import { UpdateProviderDto } from './dto/update-provider.dto';
 import { Company } from 'src/companies/entities/company.entity';
+import { Response } from 'express';
 
 @Controller('providers')
 export class ProvidersController {
@@ -16,12 +17,36 @@ export class ProvidersController {
     return await this.providersService.create(createProviderDto, company_id );
   }
 
+  @Post('/download-providers-excel')
+  async downloadProvidersToExcel(
+    @Headers('company-id') company_id: Company,
+    @Res() res: Response
+  ){
+    const file = await this.providersService.downloadProvidersToExcel( company_id );
+
+    res.setHeader('Content-Disposition', 'attachment; filename=proveedores.xlsx');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    res.send( file );
+  }
+
   @Get(':estado?')
   async findAll(
     @Headers('company-id') company_id: Company,
-    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean
+    @Param('estado', new DefaultValuePipe( false ), ParseBoolPipe) estado: boolean,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('busqueda') busqueda?: string
   ) {
-    return await this.providersService.findAll( estado, company_id );
+    // Sin page/limit se devuelve el arreglo completo: el selector de proveedor
+    // al registrar una compra necesita todos los registros para buscar dentro
+    // del combo. El mantenedor sí los manda y recibe { items, meta }.
+    if ( page === undefined && limit === undefined )
+      return await this.providersService.findAll( estado, company_id, busqueda );
+
+    return await this.providersService.findAllPaginado(
+      { page, limit }, estado, company_id, busqueda
+    );
   }
 
   @Get('/find/:term')

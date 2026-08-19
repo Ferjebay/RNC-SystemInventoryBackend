@@ -31,6 +31,10 @@ export class Invoice {
     @Column({ type: 'varchar', length: 50, unique: true, nullable: true })
     clave_acceso_nota_credito?: string;
 
+    /** Nº de la nota de crédito con la que se anuló la factura (001-001-000000001). */
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    numero_comprobante_nota_credito?: string;
+
     @Column({ type: 'varchar', length: 50, nullable: true })
     name_proforma?: string;
 
@@ -54,6 +58,10 @@ export class Invoice {
 
     @Column({ type: "decimal", precision: 8, scale: 2 })
     iva: number;
+
+    /** ICE del comprobante. Va aparte del IVA porque el SRI los declara por separado. */
+    @Column({ type: "decimal", precision: 8, scale: 2, default: 0 })
+    ice?: number;
 
     @Column({ type: "decimal", precision: 8, scale: 2 })
     total: number;
