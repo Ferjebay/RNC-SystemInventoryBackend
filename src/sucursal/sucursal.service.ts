@@ -39,7 +39,7 @@ export class SucursalService {
       order: { created_at: "DESC" }
     }
 
-    if ( estado ) option.where = { isActive: true }
+    if ( estado ) option.where.isActive = true;
 
     return await this.sucursalRepository.find( option );
   }
