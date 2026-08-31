@@ -8,6 +8,7 @@ import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { CustomersService } from '../../customers/customers.service';
+import { esConsumidorFinal } from '../../customers/consumidor-final';
 import { InvoicesService } from 'src/invoices/invoices.service';
 import { EmailService } from 'src/email/email.service';
 import { MessagesWsService } from 'src/messages-ws/messages-ws.service';
@@ -101,6 +102,24 @@ export class FacturasService {
 
     if ( !datosFactura.clave_acceso )
       throw new BadRequestException('La factura no tiene clave de acceso: no se puede anular.');
+
+    // Ficha tecnica, Tabla 6: en las notas de credito se debe identificar
+    // obligatoriamente al receptor con RUC, cedula, pasaporte o identificacion
+    // del exterior. El tipo 07 (venta a consumidor final) no esta habilitado,
+    // asi que una factura emitida a consumidor final no se puede anular.
+    // El cliente se lee de la base y no del cuerpo de la peticion: el front ya
+    // oculta el boton, pero el endpoint es alcanzable igual.
+    const customerId = datosFactura.customer_id?.id ?? datosFactura.customer_id;
+
+    if ( customerId ) {
+      const [ cliente ] = await this.customerService.findOne( customerId );
+
+      if ( esConsumidorFinal( cliente ) )
+        throw new BadRequestException(
+          'Una factura emitida a CONSUMIDOR FINAL no se puede anular: ' +
+          'el SRI exige identificar al receptor en la nota de credito.'
+        );
+    }
 
     const { numComprobante, ambiente } = await this.getNumComprobante( sucursal_id, 'nota_credito' );
     const secuencial = numComprobante.split('-')[2];
@@ -250,7 +269,8 @@ export class FacturasService {
 
     this.messageWsService.updateStateInvoice( datosFactura.user_id );
 
-    if ( send_messages && cliente.nombres !== 'CONSUMIDOR FINAL' )
+    // Al consumidor final no se le envia nada: no hay correo ni celular reales.
+    if ( send_messages && !esConsumidorFinal( cliente ) )
       await this.enviarComprobantes( data, infoCompany[0], cliente );
 
     return { ok: true, ...data };

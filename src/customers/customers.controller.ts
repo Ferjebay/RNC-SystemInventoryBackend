@@ -30,6 +30,17 @@ export class CustomersController {
     return await this.customersService.createCustomer(createCustomerDto, company_id);
   }
 
+  /**
+   * Va declarado ANTES de @Get(':estado?'): esa ruta tambien matchea un unico
+   * segmento y se tragaria 'consumidor-final' (ParseBoolPipe lo rechazaria).
+   */
+  @Get('consumidor-final')
+  async obtenerConsumidorFinal(
+    @Headers('company-id') company_id: Company
+  ) {
+    return await this.customersService.obtenerConsumidorFinal( company_id );
+  }
+
   @Get(':estado?')
   async findAll(
     @Headers('company-id') company_id: Company,

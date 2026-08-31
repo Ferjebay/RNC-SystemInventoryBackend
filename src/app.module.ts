@@ -43,7 +43,10 @@ import { DashboardModule } from './dashboard/dashboard.module';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       autoLoadEntities: true,
-      synchronize: true
+      // El esquema se versiona con migraciones (src/migrations, ver
+      // src/data-source.ts). Con synchronize en true TypeORM alteraba la base
+      // en cada arranque segun las entidades, sin dejar rastro de que cambio.
+      synchronize: false
     }),
 
     ServeStaticModule.forRoot({

@@ -3,10 +3,15 @@ import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Customer } from './entities/customer.entity';
-import { DataSource, ILike, Not, Repository } from 'typeorm';
+import { And, DataSource, ILike, Not, Repository } from 'typeorm';
 import { isUUID } from 'class-validator';
 import { Company } from 'src/companies/entities/company.entity';
 import { paginar, OpcionesPaginacion, Paginado } from 'src/common/helpers/paginar.helper';
+import {
+  CONSUMIDOR_FINAL_NOMBRES,
+  CONSUMIDOR_FINAL_NUM_DOCUMENTO,
+  CONSUMIDOR_FINAL_TIPO_DOCUMENTO
+} from './consumidor-final';
 const ExcelJS = require('exceljs');
 const path = require('path');
 
@@ -32,7 +37,7 @@ export class CustomersService {
     const customers = await this.customerRepository.find({
       where: {
         company_id: { id: company_id },
-        nombres: Not("CONSUMIDOR FINAL")
+        numero_documento: Not( CONSUMIDOR_FINAL_NUM_DOCUMENTO )
       },
       order: { created_at: "DESC" }
     });
@@ -88,9 +93,12 @@ export class CustomersService {
     if ( !company_id )
       throw new BadRequestException('Falta la empresa: no se puede listar clientes.');
 
+    // El consumidor final se excluye por su identificacion y no por el nombre:
+    // el nombre se pisaba con el ILike de la busqueda y volvia a aparecer en el
+    // listado. La identificacion es un campo aparte, asi que nunca colisiona.
     const filtros: any = {
       company_id: { id: company_id },
-      nombres: Not("CONSUMIDOR FINAL")
+      numero_documento: Not( CONSUMIDOR_FINAL_NUM_DOCUMENTO )
     };
 
     if ( estado ) filtros.isActive = true;
@@ -103,7 +111,13 @@ export class CustomersService {
       ? filtros
       : [
           { ...filtros, nombres: ILike(`%${ termino }%`) },
-          { ...filtros, numero_documento: ILike(`%${ termino }%`) },
+          {
+            ...filtros,
+            numero_documento: And(
+              Not( CONSUMIDOR_FINAL_NUM_DOCUMENTO ),
+              ILike(`%${ termino }%`)
+            )
+          },
           { ...filtros, email: ILike(`%${ termino }%`) }
         ];
 
@@ -137,6 +151,70 @@ export class CustomersService {
     }
   }
 
+
+  /**
+   * Devuelve el "CONSUMIDOR FINAL" de la empresa y lo crea si todavia no
+   * existe.
+   *
+   * Antes el front lo tomaba de la variable VITE_CONSUMIDOR_FINAL_ID: un unico
+   * UUID fijo para todas las empresas. Si ese id no existia en la base, la
+   * factura reventaba con un error de llave foranea, y si existia pero era de
+   * otra empresa se facturaba contra un cliente ajeno. El id tiene que salir de
+   * la empresa con la que se esta facturando.
+   */
+  async obtenerConsumidorFinal( company_id: Company ) {
+
+    if ( !company_id )
+      throw new BadRequestException('Falta la empresa: no se puede resolver el consumidor final.');
+
+    const buscar = () => this.customerRepository.findOne({
+      where: {
+        company_id: { id: company_id as any },
+        numero_documento: CONSUMIDOR_FINAL_NUM_DOCUMENTO
+      }
+    });
+
+    const existente = await buscar();
+    if ( existente ) return existente;
+
+    try {
+      return await this.customerRepository.save(
+        this.customerRepository.create({
+          nombres:          CONSUMIDOR_FINAL_NOMBRES,
+          tipo_documento:   CONSUMIDOR_FINAL_TIPO_DOCUMENTO,
+          numero_documento: CONSUMIDOR_FINAL_NUM_DOCUMENTO,
+          isActive:         true,
+          company_id
+        })
+      );
+    } catch (error) {
+      // Dos ventas abiertas a la vez pueden intentar crearlo al mismo tiempo:
+      // si otro lo gano, se devuelve ese en lugar de fallar.
+      const creadoPorOtro = await buscar();
+      if ( creadoPorOtro ) return creadoPorOtro;
+
+      this.handleDBExceptions( error );
+    }
+  }
+
+  /**
+   * Cliente valido para emitir un comprobante: tiene que existir y pertenecer a
+   * la empresa que factura. La validacion por empresa importa porque el id del
+   * cliente llega desde el navegador.
+   */
+  async obtenerParaFacturar( id: string, company_id: Company ) {
+
+    const cliente = await this.customerRepository.findOne({
+      where: { id, company_id: { id: company_id as any } }
+    });
+
+    if ( !cliente )
+      throw new BadRequestException(
+        'El cliente de la factura no existe o no pertenece a esta empresa: vuelve a elegirlo en el listado.'
+      );
+
+    return cliente;
+  }
 
   async findOne(term: string) {
     let customer: Customer[];

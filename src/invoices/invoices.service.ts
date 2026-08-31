@@ -9,6 +9,12 @@ import { FacturasService } from 'src/comprobantes-electronicos/facturas/facturas
 import { InvoiceToProduct } from './entities/invoiceToProduct.entity';
 import { paginar, OpcionesPaginacion, Paginado } from 'src/common/helpers/paginar.helper';
 import { Company } from 'src/companies/entities/company.entity';
+import { CustomersService } from 'src/customers/customers.service';
+import {
+  CONSUMIDOR_FINAL_MONTO_MAXIMO,
+  CONSUMIDOR_FINAL_NOMBRES,
+  esConsumidorFinal
+} from 'src/customers/consumidor-final';
 const path = require('path');
 const AdmZip = require('adm-zip');
 const fs = require('fs');
@@ -23,12 +29,60 @@ export class InvoicesService {
     private readonly invoiceRepository: Repository<Invoice>,
     @InjectRepository(InvoiceToProduct)
     private readonly tablePivotRepository: Repository<InvoiceToProduct>,
-    private readonly facturaService: FacturasService
+    @InjectRepository(Sucursal)
+    private readonly sucursalRepository: Repository<Sucursal>,
+    private readonly facturaService: FacturasService,
+    private readonly customerService: CustomersService
   ){}
+
+  /**
+   * Reglas del SRI que dependen del cliente.
+   *
+   * Se validan en el backend y no solo en el formulario porque la factura se
+   * guarda antes de emitirse y el envio al SRI corre en segundo plano: un
+   * comprobante invalido quedaria registrado igual.
+   */
+  private async validarCliente( createInvoiceDto: CreateInvoiceDto, tipo: string, sucursal_id: Sucursal ) {
+
+    const customerId: any = ( createInvoiceDto.customer_id as any )?.id
+      ?? createInvoiceDto.customer_id;
+
+    const sucursal = await this.sucursalRepository.findOne({
+      where: { id: ( sucursal_id as any )?.id ?? sucursal_id as any },
+      relations: { company_id: true }
+    });
+
+    if ( !sucursal )
+      throw new BadRequestException('La sucursal del comprobante no existe.');
+
+    // El cliente tiene que existir y ser de la misma empresa. Sin esto la
+    // insercion moria con un error de llave foranea (500 sin mensaje util)
+    // cuando llegaba un customer_id que no estaba en la base.
+    const cliente = await this.customerService.obtenerParaFacturar(
+      customerId,
+      sucursal.company_id?.id as any
+    );
+
+    // La proforma no es un comprobante autorizado por el SRI: ahi el tope no
+    // aplica.
+    const esComprobante = tipo === 'FACTURA' || tipo === 'EMISION';
+
+    if ( !esComprobante || !esConsumidorFinal( cliente ) ) return;
+
+    // Ficha tecnica, numeral 9.10: sobre 50 USD hay que identificar al
+    // adquirente.
+    if ( Number( createInvoiceDto.total ) > CONSUMIDOR_FINAL_MONTO_MAXIMO )
+      throw new BadRequestException(
+        `La factura supera los $${ CONSUMIDOR_FINAL_MONTO_MAXIMO.toFixed(2) }: ` +
+        `debe emitirse a un cliente identificado y no a ${ CONSUMIDOR_FINAL_NOMBRES }`
+      );
+  }
 
   async create(createInvoiceDto: CreateInvoiceDto, sucursal_id: Sucursal) {
 
     const { products, tipo, send_messages, name_proforma, ...rest } = createInvoiceDto;
+
+    await this.validarCliente( createInvoiceDto, tipo, sucursal_id );
 
     if ( createInvoiceDto.estadoSRI == 'PROFORMA' && tipo == 'PROFORMA' ) { // Editar proforma
       try {
