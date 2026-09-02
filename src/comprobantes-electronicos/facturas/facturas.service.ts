@@ -609,6 +609,120 @@ export class FacturasService {
     }
   }
 
+  /**
+   * Reconcilia contra el microservicio una factura que quedo a medias.
+   *
+   * La emision corre en segundo plano: si la respuesta del MS se pierde (un
+   * timeout, un reinicio, la red), la factura se queda en PENDIENTE y sin clave
+   * de acceso aunque el SRI ya la haya autorizado. Esto vuelve a preguntar por
+   * ella y sincroniza lo que diga el MS.
+   *
+   * Sirve para PENDIENTE (nunca se guardo la respuesta) y para RECIBIDA (el SRI
+   * la recibio pero todavia no se consulto la autorizacion).
+   */
+  async verificarEstadoSRI( datosFactura ) {
+
+    const claveGuardada = ( datosFactura.clave_acceso ?? '' ).toString().trim();
+    const numero = ( datosFactura.numero_comprobante ?? datosFactura.num_comprobante ?? '' )
+      .toString().trim();
+
+    // El MS busca indistintamente por clave de acceso o por numero de
+    // comprobante, que es lo unico que queda cuando la emision no respondio.
+    const termino = claveGuardada || numero;
+
+    if ( !termino )
+      throw new BadRequestException(
+        'La factura no tiene clave de acceso ni numero de comprobante: no se puede verificar.'
+      );
+
+    let comprobante;
+
+    try {
+      comprobante = await this.facturacionMs.consultarFactura( termino );
+    } catch (error) {
+      throw new BadRequestException(
+        `El servicio de facturacion no tiene registrado el comprobante ${ termino }: ` +
+        'la emision nunca llego a enviarse. Vuelve a emitir la factura.'
+      );
+    }
+
+    // Al buscar por numero de comprobante puede aparecer el de otra empresa: ese
+    // numero se repite entre emisores. Se compara el RUC antes de adoptar nada.
+    if ( !claveGuardada )
+      await this.validarEmisorDelComprobante( comprobante, datosFactura );
+
+    let estado  = ( comprobante.estado ?? '' ).toString().trim();
+    let mensaje = comprobante.mensaje ?? '';
+
+    // Si el SRI todavia no la dio por autorizada, el MS vuelve a consultarla (o
+    // la reenvia si habia sido devuelta).
+    if ( estado !== 'AUTORIZADO' ) {
+      const reenvio = await this.facturacionMs.reenviarFactura(
+        comprobante.claveAcceso ?? termino
+      );
+
+      if ( reenvio?.estado ) estado = reenvio.estado.toString().trim();
+      if ( reenvio?.mensaje ) mensaje = reenvio.mensaje;
+    }
+
+    this.logger.log(
+      `Verificacion de ${ comprobante.numeroComprobante ?? termino }: ${ estado }`
+    );
+
+    const entity_id = datosFactura.id ?? datosFactura.pago_id;
+
+    if ( entity_id ) {
+      await this.invoiceService.update( entity_id, {
+        // La clave de acceso es lo que faltaba: sin ella no se puede descargar
+        // el RIDE ni el XML, ni anular la factura.
+        clave_acceso:       comprobante.claveAcceso,
+        numero_comprobante: comprobante.numeroComprobante ?? numero,
+        estadoSRI:          estado,
+        respuestaSRI:       mensaje || null
+      } as any );
+    }
+
+    this.messageWsService.updateStateInvoice( datosFactura.user_id?.id ?? datosFactura.user_id );
+
+    return {
+      ok: true,
+      estado,
+      clave_acceso: comprobante.claveAcceso,
+      numero_comprobante: comprobante.numeroComprobante ?? numero,
+      mensaje
+    };
+  }
+
+  /** Que el comprobante hallado sea de la misma empresa que emitio la factura. */
+  private async validarEmisorDelComprobante( comprobante, datosFactura ) {
+
+    const sucursalId = datosFactura.sucursal_id?.id ?? datosFactura.sucursal_id;
+
+    if ( !sucursalId ) return;
+
+    const [ sucursal ] = await this.sucursalRepository.find({
+      relations: { company_id: true },
+      where: { id: sucursalId }
+    });
+
+    const rucEmpresa = sucursal?.company_id?.ruc?.toString().trim();
+    const rucComprobante = (
+      comprobante?.factura?.infoTributaria?.ruc ??
+      this.rucDeClaveAcceso( comprobante?.claveAcceso )
+    )?.toString().trim();
+
+    if ( rucEmpresa && rucComprobante && rucEmpresa !== rucComprobante )
+      throw new BadRequestException(
+        `El comprobante ${ comprobante?.numeroComprobante } encontrado es del RUC ${ rucComprobante }, ` +
+        'no del emisor de esta factura.'
+      );
+  }
+
+  /** En la clave de acceso el RUC ocupa los digitos 11 al 23 de los 49. */
+  private rucDeClaveAcceso( clave?: string ): string | undefined {
+    return clave?.length === 49 ? clave.substring( 10, 23 ) : undefined;
+  }
+
   async reintentarEnvioSRI( datosFactura ) {
     const esNotaCredito = datosFactura.tipo_comprobante == 'nota_credito';
 

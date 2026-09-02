@@ -45,9 +45,23 @@ export class FacturasController {
     return this.facturasService.reintentarEnvioSRI( datosFactura );
   }
 
+  /**
+   * Vuelve a preguntarle al microservicio por una factura que quedo PENDIENTE o
+   * RECIBIDA y sincroniza clave de acceso y estado.
+   */
+  @Post('verificarEstado')
+  async verificarEstado( @Body() datosFactura: any ){
+    return this.facturasService.verificarEstadoSRI( datosFactura );
+  }
+
+  /**
+   * Se mantiene el nombre por compatibilidad con el front anterior. Antes
+   * devolvia { ok: true } sin hacer nada, asi que el boton de reenvio de las
+   * facturas en RECIBIDA nunca sincronizaba el estado.
+   */
   @Post('autorizacionComprobantesOffline')
   async autorizacionComprobantesOffline( @Body() datosFactura: any ){
-    return { ok: true };
+    return this.facturasService.verificarEstadoSRI( datosFactura );
   }
 
   @Post('anularFactura')

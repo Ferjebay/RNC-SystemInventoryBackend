@@ -158,13 +158,25 @@ export class InvoicesService {
         }
 
         if (createInvoiceDto.tipo == 'FACTURA' || createInvoiceDto.tipo == 'EMISION') {
+          // Corre en segundo plano: la respuesta no espera al SRI. Sin el .catch
+          // un fallo se perdia como unhandled rejection y la factura quedaba en
+          // PENDIENTE sin ninguna pista de por que.
           this.facturaService.generarFacturaElectronica(
             createInvoiceDto,
             sucursal_id,
             invoiceCreated.id,
             'Invoice',
             createInvoiceDto.send_messages
-          )
+          ).catch( async error => {
+            const motivo = error?.response?.data?.message ?? error?.message ?? 'error desconocido';
+
+            this.logger.error(`Fallo la emision de la factura ${ invoiceCreated.id }: ${ motivo }`);
+
+            if ( invoiceCreated.id )
+              await this.invoiceRepository
+                .update( invoiceCreated.id, { respuestaSRI: `ERROR EMISION: ${ motivo }` } )
+                .catch(() => undefined);
+          });
         }else{
           // Corre en segundo plano: la respuesta no espera al PDF. El .catch es
           // obligatorio, sin él un fallo acá se vuelve unhandled rejection.

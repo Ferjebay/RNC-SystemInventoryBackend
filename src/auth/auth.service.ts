@@ -13,6 +13,13 @@ import { Company } from 'src/companies/entities/company.entity';
 @Injectable()
 export class AuthService {
 
+  /** Mensaje unico de login fallido: no distingue correo de contrasena. */
+  private static readonly CREDENCIALES_INVALIDAS = 'Correo o contraseña incorrectos';
+
+  /** Hash contra el que se compara cuando el correo no existe. */
+  private static readonly HASH_DESCARTE = bcrypt.hashSync( 'usuario-inexistente', 10 );
+
+
   private readonly logger = new Logger('AuthServices');
 
   constructor(
@@ -145,11 +152,19 @@ export class AuthService {
       }
     })
 
-    if ( !user )
-      throw new UnauthorizedException('Credentials not valid(email)')
+    // Un solo mensaje para los dos casos: decir cual de los dos fallo le
+    // confirma a cualquiera si un correo esta registrado en el sistema.
+    if ( !user ) {
+      // Se compara igual contra un hash de descarte para que la respuesta tarde
+      // lo mismo que con un correo que si existe; si no, el tiempo delata cuales
+      // estan registrados.
+      bcrypt.compareSync( password.trim(), AuthService.HASH_DESCARTE );
+
+      throw new UnauthorizedException( AuthService.CREDENCIALES_INVALIDAS );
+    }
 
     if ( !bcrypt.compareSync( password.trim(), user.password) )
-      throw new UnauthorizedException('Credentials not valid(password)')
+      throw new UnauthorizedException( AuthService.CREDENCIALES_INVALIDAS );
 
     //Generar JWT
     const { password: ps, permisos, ...restUser } = user;
