@@ -69,7 +69,38 @@ export class FacturasService {
       select: { id: true, logo: true }
     });
 
-    return this.urlLogo( empresa?.logo );
+    return this.logoComoImagen( empresa?.logo );
+  }
+
+  /**
+   * El logo viaja embebido en base64, no como enlace.
+   *
+   * El RIDE lo pinta un navegador headless dentro del microservicio: si se le
+   * manda una URL, ese proceso tiene que poder abrirla, y desde el servidor del
+   * MS la direccion de FactuCash no siempre es alcanzable (ahi salia el icono de
+   * imagen rota). Embebida no depende de la red ni de que el dominio este bien
+   * configurado.
+   */
+  private logoComoImagen( logo?: string ): string | undefined {
+
+    if ( !logo ) return undefined;
+
+    const ruta = path.resolve( __dirname, `../../../public/images/${ logo }` );
+
+    try {
+      const base64 = fs.readFileSync( ruta, { encoding: 'base64' } );
+
+      const extension = path.extname( logo ).replace('.', '').toLowerCase();
+      const tipo = extension === 'jpg' ? 'jpeg' : ( extension || 'png' );
+
+      return `data:image/${ tipo };base64,${ base64 }`;
+    } catch (error) {
+      // Si el archivo no esta donde se espera queda el enlace publico, que al
+      // menos funciona cuando el MS corre en la misma maquina.
+      this.logger.warn(`No se pudo leer el logo ${ logo } en ${ ruta }: se usara el enlace publico.`);
+
+      return this.urlLogo( logo );
+    }
   }
 
   /**
@@ -392,7 +423,7 @@ export class FacturasService {
       const rutas = await this.facturacionMs.guardarComprobantes(
         data.claveAcceso,
         empresa.ruc,
-        { nameEmisor: empresa.nombre_comercial, image_url: this.urlLogo( empresa.logo ) }
+        { nameEmisor: empresa.nombre_comercial, image_url: this.logoComoImagen( empresa.logo ) }
       );
 
       if ( !rutas ) return;
