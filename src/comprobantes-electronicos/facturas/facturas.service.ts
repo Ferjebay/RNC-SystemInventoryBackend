@@ -69,38 +69,7 @@ export class FacturasService {
       select: { id: true, logo: true }
     });
 
-    return this.logoComoImagen( empresa?.logo );
-  }
-
-  /**
-   * El logo viaja embebido en base64, no como enlace.
-   *
-   * El RIDE lo pinta un navegador headless dentro del microservicio: si se le
-   * manda una URL, ese proceso tiene que poder abrirla, y desde el servidor del
-   * MS la direccion de FactuCash no siempre es alcanzable (ahi salia el icono de
-   * imagen rota). Embebida no depende de la red ni de que el dominio este bien
-   * configurado.
-   */
-  private logoComoImagen( logo?: string ): string | undefined {
-
-    if ( !logo ) return undefined;
-
-    const ruta = path.resolve( __dirname, `../../../public/images/${ logo }` );
-
-    try {
-      const base64 = fs.readFileSync( ruta, { encoding: 'base64' } );
-
-      const extension = path.extname( logo ).replace('.', '').toLowerCase();
-      const tipo = extension === 'jpg' ? 'jpeg' : ( extension || 'png' );
-
-      return `data:image/${ tipo };base64,${ base64 }`;
-    } catch (error) {
-      // Si el archivo no esta donde se espera queda el enlace publico, que al
-      // menos funciona cuando el MS corre en la misma maquina.
-      this.logger.warn(`No se pudo leer el logo ${ logo } en ${ ruta }: se usara el enlace publico.`);
-
-      return this.urlLogo( logo );
-    }
+    return this.urlLogo( empresa?.logo );
   }
 
   /**
@@ -122,7 +91,13 @@ export class FacturasService {
       return undefined;
     }
 
-    return `${ base }/images/${ logo }`;
+    const url = `${ base }/images/${ logo }`;
+
+    // Se registra la URL exacta: el navegador del microservicio tiene que poder
+    // abrirla, y si no puede el RIDE sale con la imagen rota sin decir por que.
+    this.logger.log(`Logo del RIDE: ${ url }`);
+
+    return url;
   }
 
   async getRide( claveAcceso ){
@@ -423,7 +398,7 @@ export class FacturasService {
       const rutas = await this.facturacionMs.guardarComprobantes(
         data.claveAcceso,
         empresa.ruc,
-        { nameEmisor: empresa.nombre_comercial, image_url: this.logoComoImagen( empresa.logo ) }
+        { nameEmisor: empresa.nombre_comercial, image_url: this.urlLogo( empresa.logo ) }
       );
 
       if ( !rutas ) return;
