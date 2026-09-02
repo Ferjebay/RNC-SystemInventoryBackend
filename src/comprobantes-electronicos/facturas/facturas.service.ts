@@ -5,6 +5,7 @@ const path = require('path');
 
 import { Injectable, forwardRef, Inject, BadRequestException, Logger } from '@nestjs/common';
 import { Sucursal } from 'src/sucursal/entities/sucursal.entity';
+import { Company } from 'src/companies/entities/company.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { CustomersService } from '../../customers/customers.service';
@@ -42,7 +43,55 @@ export class FacturasService {
     tipo: 'factura' | 'nota-credito' = 'factura',
     nameEmisor = ''
   ): Promise<Buffer> {
-    return this.facturacionMs.descargar( formato, claveAcceso, tipo, { nameEmisor });
+    // El logo solo pinta en el RIDE; el XML no lo necesita y ahorra la consulta.
+    const image_url = formato === 'ride'
+      ? await this.imagenEmisor( claveAcceso )
+      : undefined;
+
+    return this.facturacionMs.descargar( formato, claveAcceso, tipo, { nameEmisor, image_url });
+  }
+
+  /**
+   * Logo de la empresa emisora, deducido del RUC que lleva la clave de acceso.
+   *
+   * Se resuelve aca y no en cada llamada porque el RIDE se descarga desde varios
+   * lados (impresion, descarga masiva, adjuntos del correo) y ninguno tenia a
+   * mano los datos de la empresa.
+   */
+  private async imagenEmisor( claveAcceso: string ): Promise<string | undefined> {
+
+    const ruc = this.rucDeClaveAcceso( claveAcceso );
+
+    if ( !ruc ) return undefined;
+
+    const empresa = await this.dataSource.getRepository( Company ).findOne({
+      where: { ruc },
+      select: { id: true, logo: true }
+    });
+
+    return this.urlLogo( empresa?.logo );
+  }
+
+  /**
+   * URL publica del logo para el RIDE.
+   *
+   * El PDF lo arma el microservicio con un navegador headless, asi que la imagen
+   * tiene que ser una direccion que ese proceso pueda abrir: una ruta local no
+   * le sirve. Sin logo o sin dominio configurado se devuelve undefined y el MS
+   * usa su imagen por defecto.
+   */
+  private urlLogo( logo?: string ): string | undefined {
+
+    const base = ( process.env.DOMINIO ?? process.env.HOST_API ?? '' ).replace(/\/+$/, '');
+
+    if ( !logo ) return undefined;
+
+    if ( !base ) {
+      this.logger.warn('Sin DOMINIO ni HOST_API: el RIDE saldra sin el logo de la empresa.');
+      return undefined;
+    }
+
+    return `${ base }/images/${ logo }`;
   }
 
   async getRide( claveAcceso ){
@@ -343,7 +392,7 @@ export class FacturasService {
       const rutas = await this.facturacionMs.guardarComprobantes(
         data.claveAcceso,
         empresa.ruc,
-        { nameEmisor: empresa.nombre_comercial }
+        { nameEmisor: empresa.nombre_comercial, image_url: this.urlLogo( empresa.logo ) }
       );
 
       if ( !rutas ) return;
@@ -771,7 +820,10 @@ export class FacturasService {
         const rutas = await this.facturacionMs.guardarComprobantes(
           clave_acceso,
           sucursal_id.company_id.ruc,
-          { nameEmisor: sucursal_id.company_id.nombre_comercial }
+          {
+            nameEmisor: sucursal_id.company_id.nombre_comercial,
+            image_url: await this.imagenEmisor( clave_acceso )
+          }
         );
 
         if ( !rutas )
