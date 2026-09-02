@@ -22,6 +22,17 @@ export class FacturasService {
 
   private readonly logger = new Logger('FacturasService');
 
+  /**
+   * Pixel transparente para las empresas sin logo.
+   *
+   * Si no se manda imagen, el microservicio pone una suya de relleno que dice
+   * "NO IMAGE AVAILABLE": queda impresa en un documento tributario y ademas
+   * depende de que un servicio externo este disponible. Con esto el espacio
+   * simplemente queda en blanco.
+   */
+  private static readonly SIN_LOGO =
+    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
   constructor(
     @InjectRepository( Sucursal )
     private readonly sucursalRepository: Repository<Sucursal>,
@@ -58,11 +69,11 @@ export class FacturasService {
    * lados (impresion, descarga masiva, adjuntos del correo) y ninguno tenia a
    * mano los datos de la empresa.
    */
-  private async imagenEmisor( claveAcceso: string ): Promise<string | undefined> {
+  private async imagenEmisor( claveAcceso: string ): Promise<string> {
 
     const ruc = this.rucDeClaveAcceso( claveAcceso );
 
-    if ( !ruc ) return undefined;
+    if ( !ruc ) return FacturasService.SIN_LOGO;
 
     const empresa = await this.dataSource.getRepository( Company ).findOne({
       where: { ruc },
@@ -80,15 +91,15 @@ export class FacturasService {
    * le sirve. Sin logo o sin dominio configurado se devuelve undefined y el MS
    * usa su imagen por defecto.
    */
-  private urlLogo( logo?: string ): string | undefined {
+  private urlLogo( logo?: string ): string {
 
     const base = ( process.env.DOMINIO ?? process.env.HOST_API ?? '' ).replace(/\/+$/, '');
 
-    if ( !logo ) return undefined;
+    if ( !logo ) return FacturasService.SIN_LOGO;
 
     if ( !base ) {
       this.logger.warn('Sin DOMINIO ni HOST_API: el RIDE saldra sin el logo de la empresa.');
-      return undefined;
+      return FacturasService.SIN_LOGO;
     }
 
     const url = `${ base }/images/${ logo }`;
