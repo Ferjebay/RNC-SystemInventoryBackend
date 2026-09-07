@@ -309,7 +309,6 @@ export class FacturasService {
       pagos: [
         {
           formaPago:    datosFactura.forma_pago,
-          total:        Number( datosFactura.total ),
           plazo:        datosFactura.plazo ?? 0,
           unidadTiempo: datosFactura.unidad_tiempo ?? 'DIA'
         }
