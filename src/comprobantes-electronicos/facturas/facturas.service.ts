@@ -48,6 +48,10 @@ export class FacturasService {
     private readonly dataSource: DataSource
   ){}
 
+  private estadoOPendiente( estado?: string ): string {
+    return ( estado ?? '' ).toString().trim() || 'PENDIENTE';
+  }
+
   async descargarComprobante(
     formato: 'ride' | 'xml',
     claveAcceso: string,
@@ -212,7 +216,9 @@ export class FacturasService {
     // anularla. Cuando la nota queda autorizada, la factura pasa a ANULADO; los
     // estados intermedios/de error sí se guardan para que reEmitirFactura pueda
     // reintentar el envío de la nota.
-    const estadoFactura = data.estado == 'AUTORIZADO' ? 'ANULADO' : data.estado;
+    const estadoFactura = data.estado == 'AUTORIZADO'
+      ? 'ANULADO'
+      : this.estadoOPendiente( data.estado );
 
     if ( datosFactura.id ) {
       await this.invoiceService.update( datosFactura.id, {
@@ -326,7 +332,7 @@ export class FacturasService {
       await this.invoiceService.update( entity_id, {
         clave_acceso:       data.claveAcceso,
         numero_comprobante: data.numeroComprobante,
-        estadoSRI:          data.estado
+        estadoSRI:          this.estadoOPendiente( data.estado )
       } as any );
     }
 
@@ -734,6 +740,10 @@ export class FacturasService {
       `Verificacion de ${ comprobante.numeroComprobante ?? termino }: ${ estado }`
     );
 
+    // Con el SRI caido el MS responde sin estado: se normaliza una sola vez para
+    // que coincida lo que se guarda y lo que se le contesta al front.
+    estado = this.estadoOPendiente( estado );
+
     const entity_id = datosFactura.id ?? datosFactura.pago_id;
 
     if ( entity_id ) {
@@ -805,7 +815,10 @@ export class FacturasService {
     const entity_id = datosFactura.id ?? datosFactura.pago_id;
 
     if ( entity_id && data?.estado ) {
-      await this.invoiceService.update( entity_id, { estadoSRI: data.estado } as any );
+      await this.invoiceService.update(
+        entity_id,
+        { estadoSRI: this.estadoOPendiente( data.estado ) } as any
+      );
     }
 
     this.messageWsService.updateStateInvoice( datosFactura.user_id?.id ?? datosFactura.user_id );
