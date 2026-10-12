@@ -128,18 +128,34 @@ export class InvoicesService {
     }else{ //Crear Factura o Proforma
       try {
         let invoiceCreated: any = { id: null };
-        const { numComprobante } = await this.facturaService.getNumComprobante( sucursal_id );
 
         if (createInvoiceDto.tipo !== 'EMISION'){
+          // La factura toma y CONSUME su número acá, de forma atómica: la
+          // secuencia no puede depender de lo que conteste el SRI. La proforma no
+          // es un comprobante, no lleva número ni toca la secuencia.
+          const numeroReservado = createInvoiceDto.tipo == 'PROFORMA'
+            ? null
+            : await this.facturaService.reservarNumeroComprobante( sucursal_id );
+
           let invoiceEntity = new Invoice();
           invoiceEntity = {
             ...createInvoiceDto,
             sucursal_id,
-            numero_comprobante: createInvoiceDto.tipo == 'PROFORMA' ? '--- --- ---------' : numComprobante,
+            numero_comprobante: numeroReservado?.numComprobante ?? '--- --- ---------',
             estadoSRI: createInvoiceDto.tipo == 'PROFORMA' ? 'PROFORMA' : 'PENDIENTE'
           }
 
-          invoiceCreated = await this.invoiceRepository.save( invoiceEntity );
+          try {
+            invoiceCreated = await this.invoiceRepository.save( invoiceEntity );
+          } catch ( error ) {
+            // La factura no quedó guardada: nadie va a usar el número reservado.
+            if ( numeroReservado )
+              await this.facturaService.devolverNumeroComprobante(
+                sucursal_id, 'factura', numeroReservado.ambiente, numeroReservado.secuencial
+              ).catch(() => undefined);
+
+            throw error;
+          }
 
           const pivot: Array<InvoiceToProduct> = [];
           createInvoiceDto.products.forEach( product => {

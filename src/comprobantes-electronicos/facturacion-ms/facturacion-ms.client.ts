@@ -236,6 +236,13 @@ export class FacturacionMsClient {
 
     this.logger.error(`Falló al ${accion}: ${mensaje}`);
 
-    return new InternalServerErrorException(`No se pudo ${accion}: ${mensaje}`);
+    const excepcion: any = new InternalServerErrorException(`No se pudo ${accion}: ${mensaje}`);
+
+    // Sin respuesta HTTP el MS nunca recibió la petición (ECONNREFUSED, ENOTFOUND…).
+    // Quien reservó un secuencial necesita distinguir ese caso de un timeout o de
+    // un 4xx/5xx, donde el comprobante pudo llegar al SRI.
+    excepcion.codigoRed = error?.response ? undefined : error?.code;
+
+    return excepcion;
   }
 }

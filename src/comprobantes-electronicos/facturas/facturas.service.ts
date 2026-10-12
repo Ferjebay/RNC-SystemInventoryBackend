@@ -16,6 +16,17 @@ import { MessagesWsService } from 'src/messages-ws/messages-ws.service';
 import { Proforma } from '../plantillas/proforma';
 import { FacturacionMsClient } from '../facturacion-ms/facturacion-ms.client';
 import { CloudApiService } from 'src/cloud-api/cloud-api.service';
+import { Invoice } from 'src/invoices/entities/invoice.entity';
+import { isUUID } from 'class-validator';
+
+/** Número de comprobante ya armado: 001-010-000002551. */
+const NUMERO_COMPROBANTE = /^\d{3}-\d{3}-\d{9}$/;
+
+/** Con alguno de estos estados el número ya está registrado en el SRI. */
+const ESTADOS_NUMERO_TOMADO = [ 'AUTORIZADO', 'ANULADO', 'RECIBIDA' ];
+
+/** Errores de red en los que el microservicio nunca llegó a recibir la petición. */
+const ERRORES_SIN_LLEGAR_AL_MS = [ 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN' ];
 
 @Injectable()
 export class FacturasService {
@@ -163,6 +174,225 @@ export class FacturasService {
     return { numComprobante, ambiente };
   }
 
+  /** Columnas de secuencia según el tipo de comprobante: [producción, pruebas]. */
+  private columnasSecuencia( tipo: string ): [ string, string ] {
+    return tipo == 'factura'
+      ? [ 'secuencia_factura_produccion', 'secuencia_factura_pruebas' ]
+      : [ 'secuencia_nota_credito_produccion', 'secuencia_nota_credito_pruebas' ];
+  }
+
+  /**
+   * Toma el próximo número Y lo consume, en una sola sentencia.
+   *
+   * Antes el número se leía al empezar, se mandaba al microservicio y la secuencia
+   * se subía DESPUÉS de que éste respondía. Cualquier cosa que cortara ese camino
+   * (el timeout de 30 s mientras el SRI tardaba, un 400 del MS, un reinicio, o la
+   * factura que se autorizó y se sincronizó con "Verificar") dejaba la secuencia
+   * donde estaba aunque el SRI ya hubiera registrado el número: la factura
+   * siguiente salía con el MISMO número y el SRI la devolvía por "secuencial
+   * registrado". Además la secuencia se escribía con un valor absoluto leído
+   * antes, así que dos ventas simultáneas se pisaban.
+   *
+   * Con UPDATE ... RETURNING cada emisión se lleva un número distinto y la
+   * secuencia avanza siempre, salga como salga la llamada al microservicio. Es la
+   * misma mecánica de ISPMAX.
+   */
+  async reservarNumeroComprobante( sucursal_id: any, tipo: string = 'factura' ) {
+
+    const sucursalId = sucursal_id?.id ?? sucursal_id;
+
+    if ( !isUUID( sucursalId ) )
+      throw new BadRequestException('Falta la sucursal: no se puede numerar el comprobante.');
+
+    const [ colProduccion, colPruebas ] = this.columnasSecuencia( tipo );
+    const tabla = this.sucursalRepository.metadata.tableName;
+
+    const resultado = await this.sucursalRepository.query(
+      `UPDATE "${ tabla }"
+          SET "${ colProduccion }" = CASE WHEN ambiente = 'PRODUCCION'
+                                          THEN "${ colProduccion }" + 1
+                                          ELSE "${ colProduccion }" END,
+              "${ colPruebas }"    = CASE WHEN ambiente <> 'PRODUCCION'
+                                          THEN "${ colPruebas }" + 1
+                                          ELSE "${ colPruebas }" END
+        WHERE id = $1
+       RETURNING establecimiento, punto_emision, ambiente,
+                 (CASE WHEN ambiente = 'PRODUCCION'
+                       THEN "${ colProduccion }" ELSE "${ colPruebas }" END) - 1 AS secuencial`,
+      [ sucursalId ]
+    );
+
+    // OJO: en un UPDATE, query() de TypeORM devuelve [filas, cantidadAfectada] y
+    // no las filas a secas (un SELECT sí las devuelve directas).
+    const filas = Array.isArray( resultado?.[0] ) ? resultado[0] : resultado;
+
+    if ( !filas?.length )
+      throw new BadRequestException(`No se encontró la sucursal ${ sucursalId }.`);
+
+    const { establecimiento, punto_emision, ambiente, secuencial } = filas[0];
+
+    // La columna es nullable: si nunca se configuró, NULL + 1 sigue en NULL y no
+    // se consumió nada. Se avisa en vez de emitir un número inventado.
+    if ( secuencial === null || secuencial === undefined )
+      throw new BadRequestException(
+        `La sucursal no tiene configurado el secuencial de ${ tipo == 'factura' ? 'facturas' : 'notas de crédito' } ` +
+        `para el ambiente de ${ ambiente }. Configúralo en Sucursales.`
+      );
+
+    const numero = Number( secuencial );
+
+    return {
+      ambiente,
+      secuencial: numero,
+      numComprobante: [
+        establecimiento.toString().padStart(3, '0'),
+        punto_emision.toString().padStart(3, '0'),
+        numero.toString().padStart(9, '0')
+      ].join('-')
+    };
+  }
+
+  /**
+   * Devuelve un número reservado, SOLO si nadie más avanzó la secuencia mientras
+   * tanto (`= secuencial + 1`): revertir sin esa condición le quitaría el número
+   * a otra emisión que ya se lo llevó. Úsese únicamente cuando hay certeza de que
+   * el comprobante nunca llegó al microservicio.
+   */
+  async devolverNumeroComprobante( sucursal_id: any, tipo: string, ambiente: string, secuencial: number ) {
+    const [ colProduccion, colPruebas ] = this.columnasSecuencia( tipo );
+    const columna = ambiente == 'PRUEBA' ? colPruebas : colProduccion;
+    const tabla = this.sucursalRepository.metadata.tableName;
+
+    await this.sucursalRepository.query(
+      `UPDATE "${ tabla }" SET "${ columna }" = $2 WHERE id = $1 AND "${ columna }" = $2 + 1`,
+      [ sucursal_id?.id ?? sucursal_id, secuencial ]
+    );
+  }
+
+  /**
+   * Cierra el desfase cuando un comprobante ya existe con un número que la
+   * secuencia todavía no pasó (facturas anteriores al arreglo, o secuencias que
+   * alguien movió a mano): sube la secuencia a `número + 1`. Solo sube, nunca
+   * baja, y solo si el número es de la misma serie y del mismo ambiente que la
+   * sucursal: el ambiente sale del dígito 24 de la clave de acceso, así un número
+   * de PRUEBA no puede arrastrar la secuencia de PRODUCCION.
+   */
+  private async avanzarSecuenciaSiHaceFalta( sucursal_id: any, numeroComprobante: string, claveAcceso: string ) {
+    try {
+      const numero = String( numeroComprobante ?? '' ).trim();
+      const clave  = String( claveAcceso ?? '' ).trim();
+      const sucursalId = sucursal_id?.id ?? sucursal_id;
+
+      if ( !NUMERO_COMPROBANTE.test( numero ) || clave.length !== 49 || !isUUID( sucursalId ) )
+        return;
+
+      const sucursal = await this.sucursalRepository.findOne({
+        where:  { id: sucursalId },
+        select: { id: true, establecimiento: true, punto_emision: true, ambiente: true }
+      });
+
+      if ( !sucursal ) return;
+
+      const [ estab, pto, sec ] = numero.split('-');
+
+      if ( parseInt( estab, 10 ) !== sucursal.establecimiento ||
+           parseInt( pto, 10 )   !== sucursal.punto_emision )
+        return;
+
+      const ambienteClave = clave[23] === '2' ? 'PRODUCCION' : 'PRUEBA';
+
+      if ( ambienteClave !== sucursal.ambiente ) return;
+
+      const [ colProduccion, colPruebas ] = this.columnasSecuencia( 'factura' );
+      const columna = sucursal.ambiente === 'PRODUCCION' ? colProduccion : colPruebas;
+      const tabla = this.sucursalRepository.metadata.tableName;
+      const usado = parseInt( sec, 10 );
+
+      const resultado = await this.sucursalRepository.query(
+        `UPDATE "${ tabla }" SET "${ columna }" = $2 WHERE id = $1 AND "${ columna }" <= $3`,
+        [ sucursalId, usado + 1, usado ]
+      );
+
+      // [filas, cantidadAfectada]
+      if ( resultado?.[1] > 0 )
+        this.logger.warn(
+          `La secuencia de la sucursal ${ sucursalId } estaba en ${ usado } y el comprobante ` +
+          `${ numero } ya existe: se subió a ${ usado + 1 }.`
+        );
+    } catch ( error ) {
+      // Nunca debe tumbar la verificación del comprobante.
+      this.logger.warn(`No se pudo reconciliar la secuencia: ${ error?.message }`);
+    }
+  }
+
+  /** Otra factura de la sucursal ya tiene ese número en un estado que lo ocupa. */
+  private async numeroTomadoPorOtraFactura( sucursal_id: string, numero: string, entity_id: string ): Promise<boolean> {
+    const tabla = this.dataSource.getRepository( Invoice ).metadata.tableName;
+
+    const filas = await this.dataSource.query(
+      `SELECT COUNT(*)::int AS total
+         FROM "${ tabla }"
+        WHERE "sucursal_id" = $1
+          AND "numero_comprobante" = $2
+          AND "id" <> $3
+          AND TRIM("estadoSRI") = ANY($4)`,
+      [ sucursal_id, numero, entity_id, ESTADOS_NUMERO_TOMADO ]
+    );
+
+    return Number( filas?.[0]?.total ) > 0;
+  }
+
+  /**
+   * Número con el que se emite una factura. Siempre queda escrito en la propia
+   * factura ANTES de hablar con el microservicio, así que si la emisión falla o
+   * se corta la factura conserva su número y la secuencia ya avanzó.
+   *
+   *  - Factura nueva (o proforma que se emite): reserva uno.
+   *  - Factura que ya trae un número real (se vuelve a emitir tras un fallo):
+   *    reutiliza el suyo, sin consumir otro, siempre que ese número ya haya sido
+   *    consumido por la secuencia y ninguna otra factura lo tenga ocupado.
+   */
+  private async numeroParaEmitir( sucursal_id: any, entity_id: string | null ) {
+
+    const sucursalId = sucursal_id?.id ?? sucursal_id;
+    const hayFactura = !!entity_id && isUUID( entity_id );
+
+    if ( hayFactura ) {
+      const factura = await this.dataSource.getRepository( Invoice ).findOne({
+        where:  { id: entity_id },
+        select: { id: true, numero_comprobante: true }
+      });
+
+      const propio = ( factura?.numero_comprobante ?? '' ).trim();
+
+      if ( NUMERO_COMPROBANTE.test( propio ) ) {
+        const { numComprobante: siguiente, ambiente } = await this.getNumComprobante( sucursalId );
+
+        const [ estab, pto, sec ] = propio.split('-');
+        const [ estabSig, ptoSig, secSig ] = siguiente.split('-');
+
+        const yaConsumido = estab === estabSig
+          && pto === ptoSig
+          && parseInt( sec, 10 ) < parseInt( secSig, 10 );
+
+        if ( yaConsumido && !( await this.numeroTomadoPorOtraFactura( sucursalId, propio, entity_id ) ) ) {
+          this.logger.log(`Factura ${ entity_id }: se reutiliza su número ${ propio }.`);
+
+          return { numComprobante: propio, ambiente };
+        }
+      }
+    }
+
+    const reservado = await this.reservarNumeroComprobante( sucursalId );
+
+    if ( hayFactura )
+      await this.invoiceService.update( entity_id, { numero_comprobante: reservado.numComprobante } as any );
+
+    this.logger.log(`Factura ${ entity_id ?? '(sin id)' }: número ${ reservado.numComprobante } reservado.`);
+
+    return reservado;
+  }
+
   async generarNotaCredito( datosFactura, entity: string = 'Invoice' ){
 
     const sucursal_id = datosFactura.sucursal_id?.id ?? datosFactura.sucursal_id;
@@ -191,7 +421,12 @@ export class FacturasService {
         );
     }
 
-    const { numComprobante, ambiente } = await this.getNumComprobante( sucursal_id, 'nota_credito' );
+    // El número de la nota se consume ANTES de llamar al MS (ver
+    // reservarNumeroComprobante): la anulación puede fallar o cortarse con la nota
+    // ya registrada en el SRI, y la secuencia no puede depender de la respuesta.
+    const { numComprobante, ambiente, secuencial: numeroReservado } =
+      await this.reservarNumeroComprobante( sucursal_id, 'nota_credito' );
+
     const secuencial = numComprobante.split('-')[2];
 
     // La anulación pasa por el MS y puede fallar por varios lados (la factura no
@@ -202,12 +437,24 @@ export class FacturasService {
       `con nota de crédito ${ numComprobante } (${ ambiente })`
     );
 
-    const data = await this.facturacionMs.anularFactura({
-      ambiente: ambiente == 'PRUEBA' ? 'test' : 'prod',
-      emisor:   { secuencial },
-      factura:  datosFactura.clave_acceso,
-      motivo:   datosFactura.motivo ?? 'Anulación de factura'
-    });
+    let data;
+
+    try {
+      data = await this.facturacionMs.anularFactura({
+        ambiente: ambiente == 'PRUEBA' ? 'test' : 'prod',
+        emisor:   { secuencial },
+        factura:  datosFactura.clave_acceso,
+        motivo:   datosFactura.motivo ?? 'Anulación de factura'
+      });
+    } catch ( error ) {
+      // Solo se devuelve el número cuando el MS ni siquiera recibió la petición.
+      // Ante cualquier otro fallo (timeout, 400, 500) la nota pudo llegar al SRI,
+      // y devolverlo reutilizaría un número ya emitido.
+      if ( ERRORES_SIN_LLEGAR_AL_MS.includes( error?.codigoRed ) )
+        await this.devolverNumeroComprobante( sucursal_id, 'nota_credito', ambiente, numeroReservado );
+
+      throw error;
+    }
 
     this.logger.log(`Nota de crédito ${ data?.numeroComprobante }: ${ data?.estado }`);
 
@@ -228,21 +475,9 @@ export class FacturasService {
       } as any );
     }
 
-    await this.aumentarSecuencialNotaCredito( sucursal_id, secuencial, ambiente );
-
     this.messageWsService.updateStateInvoice( datosFactura.user_id?.id ?? datosFactura.user_id );
 
     return { ok: true, ...data };
-  }
-
-  /** Avanza el secuencial de notas de crédito de la sucursal. */
-  private async aumentarSecuencialNotaCredito( sucursal_id: any, secuencial: string, ambiente: string ) {
-    const siguiente = parseInt( secuencial, 10 ) + 1;
-
-    await this.sucursalRepository.update( sucursal_id, ambiente == 'PRUEBA'
-      ? { secuencia_nota_credito_pruebas: siguiente }
-      : { secuencia_nota_credito_produccion: siguiente }
-    );
   }
 
   async generarFacturaElectronica(
@@ -254,7 +489,6 @@ export class FacturasService {
   ){
 
     const clientFound = await this.customerService.findOne( datosFactura.customer_id );
-    const { numComprobante, ambiente } = await this.getNumComprobante( sucursal_id );
 
     const infoCompany = await this.sucursalRepository.find({
       relations: { company_id: true },
@@ -279,8 +513,17 @@ export class FacturasService {
       where: { id: sucursal_id }
     });
 
+    if ( !infoCompany[0] )
+      throw new BadRequestException(`No se encontró la sucursal ${ sucursal_id?.id ?? sucursal_id }.`);
+
     const empresa = infoCompany[0].company_id;
     const cliente = clientFound[0];
+
+    // El número se consume ACÁ, antes de hablar con el microservicio, y queda
+    // escrito en la factura (ver reservarNumeroComprobante). Va después de las
+    // validaciones de arriba para no gastar un número en una factura que ni
+    // siquiera se puede armar.
+    const { numComprobante, ambiente } = await this.numeroParaEmitir( sucursal_id, entity_id );
 
     const payload = {
       ambiente: ambiente == 'PRUEBA' ? 'test' : 'prod',
@@ -332,11 +575,12 @@ export class FacturasService {
       await this.invoiceService.update( entity_id, {
         clave_acceso:       data.claveAcceso,
         numero_comprobante: data.numeroComprobante,
-        estadoSRI:          this.estadoOPendiente( data.estado )
+        estadoSRI:          this.estadoOPendiente( data.estado ),
+        // El microservicio respondió: el error de un intento anterior ya no
+        // aplica y, si se dejara, se vería como si el SRI lo hubiera devuelto.
+        respuestaSRI:       null
       } as any );
     }
-
-    await this.aumentarSecuencial( sucursal_id, numComprobante, ambiente );
 
     this.messageWsService.updateStateInvoice( datosFactura.user_id );
 
@@ -395,16 +639,6 @@ export class FacturasService {
     return item.ice === 'tarifa'
       ? { tipo_ice: Number( item.tipo_ice ), tarifa_ice: valor }
       : { tipo_ice: Number( item.tipo_ice ), valor_ice: valor };
-  }
-
-  /** Avanza el secuencial de la sucursal según el ambiente. */
-  private async aumentarSecuencial( sucursal_id: any, numComprobante: string, ambiente: string ) {
-    const secuencial = parseInt( numComprobante.split('-')[2], 10 ) + 1;
-
-    await this.sucursalRepository.update( sucursal_id, ambiente == 'PRUEBA'
-      ? { secuencia_factura_pruebas: secuencial }
-      : { secuencia_factura_produccion: secuencial }
-    );
   }
 
   private async enviarComprobantes( data: any, sucursal: any, cliente: any ) {
@@ -757,6 +991,14 @@ export class FacturasService {
       } as any );
     }
 
+    // Una factura que se autorizó pero cuya respuesta se perdió llega acá con un
+    // número que la secuencia puede no haber pasado todavía.
+    await this.avanzarSecuenciaSiHaceFalta(
+      datosFactura.sucursal_id,
+      comprobante.numeroComprobante ?? numero,
+      comprobante.claveAcceso
+    );
+
     this.messageWsService.updateStateInvoice( datosFactura.user_id?.id ?? datosFactura.user_id );
 
     return {
@@ -820,6 +1062,13 @@ export class FacturasService {
         { estadoSRI: this.estadoOPendiente( data.estado ) } as any
       );
     }
+
+    if ( !esNotaCredito )
+      await this.avanzarSecuenciaSiHaceFalta(
+        datosFactura.sucursal_id,
+        data?.numeroComprobante ?? datosFactura.num_comprobante ?? datosFactura.numero_comprobante,
+        data?.claveAcceso ?? clave
+      );
 
     this.messageWsService.updateStateInvoice( datosFactura.user_id?.id ?? datosFactura.user_id );
 
