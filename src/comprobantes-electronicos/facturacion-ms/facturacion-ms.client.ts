@@ -41,6 +41,19 @@ export class FacturacionMsClient {
   }
 
   /**
+   * Cabecera que exige el MS en todas sus rutas (x-service-token = su SERVICE_TOKEN).
+   * Sin FACTURACION_SERVICE_TOKEN el MS responde 401.
+   */
+  private get auth(): Record<string, string> {
+    const token = process.env.FACTURACION_SERVICE_TOKEN?.trim();
+    if (!token) {
+      this.logger.warn('Falta FACTURACION_SERVICE_TOKEN: el microservicio rechazará la petición (401).');
+      return {};
+    }
+    return { 'x-service-token': token };
+  }
+
+  /**
    * Sube el .p12 al microservicio, que es quien firma.
    *
    * Se guarda con el mismo nombre que usa FactuCash (`archivo_certificado`),
@@ -56,7 +69,7 @@ export class FacturacionMsClient {
       });
 
       await axios.post(url, form, {
-        headers: form.getHeaders(),
+        headers: { ...form.getHeaders(), ...this.auth },
         timeout: this.TIMEOUT,
         maxBodyLength: Infinity,
       });
@@ -82,7 +95,7 @@ export class FacturacionMsClient {
       const { data } = await axios.post(
         url,
         { nombre_certificado: nombreArchivo, password },
-        { timeout: this.TIMEOUT },
+        { timeout: this.TIMEOUT, headers: this.auth },
       );
 
       const fecha = data?.fechaCaducidad ? new Date(data.fechaCaducidad) : null;
@@ -104,7 +117,7 @@ export class FacturacionMsClient {
   async emitirFactura(payload: any): Promise<EmisionResponse> {
     const url = `${this.host}/v1/factura/emision`;
     try {
-      const { data } = await axios.post(url, payload, { timeout: this.TIMEOUT });
+      const { data } = await axios.post(url, payload, { timeout: this.TIMEOUT, headers: this.auth });
       return data;
     } catch (error) {
       throw this.traducirError(error, 'emitir la factura');
@@ -125,7 +138,7 @@ export class FacturacionMsClient {
   }): Promise<AnulacionResponse> {
     const url = `${this.host}/v1/nota-credito/anular-factura-sin-referencia`;
     try {
-      const { data } = await axios.post(url, payload, { timeout: this.TIMEOUT });
+      const { data } = await axios.post(url, payload, { timeout: this.TIMEOUT, headers: this.auth });
       return data;
     } catch (error) {
       throw this.traducirError(error, 'anular la factura');
@@ -136,7 +149,7 @@ export class FacturacionMsClient {
   async reenviarNotaCredito(claveAcceso: string) {
     const url = `${this.host}/v1/nota-credito/reenviar/${claveAcceso}`;
     try {
-      const { data } = await axios.put(url, {}, { timeout: this.TIMEOUT });
+      const { data } = await axios.put(url, {}, { timeout: this.TIMEOUT, headers: this.auth });
       return data;
     } catch (error) {
       throw this.traducirError(error, 'reenviar la nota de crédito');
@@ -147,7 +160,7 @@ export class FacturacionMsClient {
   async consultarFactura(claveAcceso: string) {
     const url = `${this.host}/v1/factura/${claveAcceso}`;
     try {
-      const { data } = await axios.get(url, { timeout: this.TIMEOUT });
+      const { data } = await axios.get(url, { timeout: this.TIMEOUT, headers: this.auth });
       return data;
     } catch (error) {
       throw this.traducirError(error, 'consultar la factura');
@@ -158,7 +171,7 @@ export class FacturacionMsClient {
   async reenviarFactura(claveAcceso: string) {
     const url = `${this.host}/v1/factura/reenviar/${claveAcceso}`;
     try {
-      const { data } = await axios.put(url, {}, { timeout: this.TIMEOUT });
+      const { data } = await axios.put(url, {}, { timeout: this.TIMEOUT, headers: this.auth });
       return data;
     } catch (error) {
       throw this.traducirError(error, 'reenviar la factura');
@@ -180,6 +193,7 @@ export class FacturacionMsClient {
       const { data } = await axios.post(url, extra, {
         responseType: 'arraybuffer',
         timeout: this.TIMEOUT,
+        headers: this.auth,
       });
       return Buffer.from(data);
     } catch (error) {
